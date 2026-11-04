@@ -10,8 +10,9 @@ import {
   skinsTable,
   circuitPhrase,
   theCircuit,
+  levelClock,
 } from "../viewer/data.js";
-import { BASE, discWord, levelOn, releaseOf } from "../viewer/release.js";
+import { BASE, discWord, levelOn, releaseOf, releases, rulesOf } from "../viewer/release.js";
 import { selectLevel, showLevel } from "../viewer/chrome/navigate.js";
 import { say, describeLevel } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";
@@ -37,7 +38,7 @@ import { TYPE } from "../format/lattice.js";
 const CONFIRM_MS = 4000;
 const NOTE_MS = 2000;
 const TITLE_LENGTH = 80;
-const TIME_RANGE = `The time is from 1 to ${TIME_LIMIT} seconds.`;
+const TIME_RANGE = `The time is from 1 to ${TIME_LIMIT}.`;
 const GAME_FILE = "application/octet-stream";
 const NO_KEY = "How the game plays the level while it has no key";
 const HAS_KEY =
@@ -333,8 +334,9 @@ function buildForm(id, box) {
     max: TIME_LIMIT,
     step: 1,
     inputMode: "numeric",
-    title: "The seconds the clock starts at",
+    title: "The level's time as its file holds it, which each disc's clock counts its own way",
   });
+  time.setAttribute("aria-describedby", "draftClock");
   time.onchange = () => {
     const v = timeOf(time.value);
     if (v !== null) {
@@ -345,6 +347,15 @@ function buildForm(id, box) {
       toast(TIME_RANGE);
     }
   };
+
+  // what each disc's clock starts at for the number the field holds
+  const clock = el("p", { id: "draftClock", className: "sub" });
+  const starts = (doc) =>
+    releases()
+      .filter((r) => rulesOf(r.id))
+      .map((r) => `${levelClock(doc, r.id)} on ${r.label}`);
+  const listed = (xs) =>
+    xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : xs.join("");
 
   const mode = el("select", { id: "draftMode" });
   mode.onchange = () => edit({ simon: mode.value === "simon" }, "changed how the level plays");
@@ -421,6 +432,7 @@ function buildForm(id, box) {
     source,
     field("World", world),
     field("Time", time),
+    clock,
     field("Plays as", mode),
     el("label", { className: "check" }, hidden, " Hidden level"),
     el("label", { className: "check" }, afar, " Invisible blocks show from afar"),
@@ -442,6 +454,9 @@ function buildForm(id, box) {
       source.hidden = !source.textContent;
       set(world, d.doc.world);
       set(time, String(d.doc.time));
+      const at = starts(d.doc);
+      clock.hidden = !at.length;
+      clock.textContent = at.length ? `The clock starts at ${listed(at)}.` : "";
       const key = keyed(d.doc);
       offer(key, key ? "arcade" : d.doc.simon ? "simon" : "bonus");
       hidden.checked = !!d.doc.hidden;

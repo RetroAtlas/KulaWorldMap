@@ -44,6 +44,7 @@ import {
   setObjects,
   typeModels,
   worldTint,
+  motionTableOf,
 } from "../../public/js/viewer/data.js";
 
 const [us, eu, jp] = releases;
@@ -428,7 +429,7 @@ test("the releases a slot differs on are those whose file holds it, and none for
       assert.ok(differsOn(key).includes(r.id), `${r.id} ${key}`);
 });
 
-test("the clock a release's start fills is the level's time in that disc's ticks a second, the Japanese start making a 99-second level's 5940 into 7140 and no other clock, and the level line's time is the figure that disc's HUD shows once the clock has ticked, the level's own time where the disc shown has no rules", (t) => {
+test("the clock a release's start fills is the level's time in that disc's ticks a second, the Japanese start making a 99-second level's 5940 into 7140 and no other clock, and the level line's time is the figure that disc's HUD shows once the clock has ticked, under the disc shown or any disc named, the level's own time where the disc has no rules", (t) => {
   t.after(() => {
     setObjects({});
     setReleases(releases);
@@ -454,6 +455,13 @@ test("the clock a release's start fills is the level's time in that disc's ticks
     }),
     [83, 99, 119],
   );
+  assert.deepEqual(
+    ["us", "eu", "jp"].map((id) => levelClock({ time: 99 }, id)),
+    [83, 99, 119],
+    "under any disc shown",
+  );
+  assert.equal(motionTableOf("eu").hz, 50);
+  assert.equal(motionTableOf("nope"), motionTableOf("us"));
   setCurrent("us");
   assert.deepEqual(
     [30, 20, 98].map((time) => levelClock({ time })),

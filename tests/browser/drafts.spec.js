@@ -653,7 +653,7 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   expect(errors).toEqual([]);
 });
 
-test("the card's time field takes the seconds the file can hold and says when it keeps the old value, and the title stops at eighty letters", async ({
+test("the card's time field takes the numbers the file can hold and says when it keeps the old value, its line saying what the clock starts at on each disc, and the title stops at eighty letters", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -665,13 +665,13 @@ test("the card's time field takes the seconds the file can hold and says when it
   const time = page.locator("#draftTime");
   await expect(time).toHaveAttribute("min", "1");
   await expect(time).toHaveAttribute("max", "32767");
+  const clock = page.locator("#draftClock");
+  await expect(clock).toHaveText("The clock starts at 83 on US, 99 on EU and 119 on JP.");
   for (const bad of ["0", "", "32768", "-5", "0.5", "32767.4"]) {
     await time.fill(bad);
     await time.blur();
     await expect(time).toHaveValue("99");
-    await expect(page.locator("#toastStack .toast")).toHaveText([
-      "The time is from 1 to 32767 seconds.",
-    ]);
+    await expect(page.locator("#toastStack .toast")).toHaveText(["The time is from 1 to 32767."]);
   }
   expect((await shown(page)).time).toBe(99);
   // a fraction of a second lands as the nearest whole second, with nothing to say, and the
@@ -699,6 +699,7 @@ test("the card's time field takes the seconds the file can hold and says when it
   await expect(time).toHaveValue("200");
   expect((await shown(page)).time).toBe(200);
   await expect(page.locator("#chipLine")).toContainText("time 167");
+  await expect(clock).toHaveText("The clock starts at 167 on US, 200 on EU and 200 on JP.");
 
   const title = page.locator("#draftTitle");
   await expect(title).toHaveAttribute("maxlength", "80");

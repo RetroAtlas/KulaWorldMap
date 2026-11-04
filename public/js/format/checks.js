@@ -350,7 +350,7 @@ export function recordOverflow(project) {
 
 export const TIME_LIMIT = 2 ** 15 - 1;
 
-/** The nearest whole second a time yields, or null where it is not from 1 to the limit. */
+/** The nearest whole number a time yields, or null where it is not from 1 to the limit. */
 export const timeOf = (value) => {
   const n = Number(value);
   return n >= 1 && n <= TIME_LIMIT ? Math.round(n) : null;
@@ -375,9 +375,9 @@ export function validate(project, hides, names = {}) {
     if (!/^\d+$/.test(index) || !slotOf(pack, Number(index))) err(`target '${text}': no such slot`);
   }
   const time = project.time ?? DEFAULT_TIME;
-  if (!inWord(time)) err(`time ${time} s: outside the file's range`);
-  else if (timeOf(time) === null) err(`time ${time} s: below 1`);
-  else if (time > TIME_MAX) warn(`time ${time} s: above the disc's ${TIME_MAX}`);
+  if (!inWord(time)) err(`time ${time}: outside the file's range`);
+  else if (timeOf(time) === null) err(`time ${time}: below 1`);
+  else if (time > TIME_MAX) warn(`time ${time}: above the disc's ${TIME_MAX}`);
 
   const blocks = [...project.blocks].sort(byCell);
   const blocksAt = new Map();

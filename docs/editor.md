@@ -47,7 +47,7 @@ It spells the game's own structure in the game's own numbers: cells are lattice 
 | `into` | the target slot on the disc, in the repo's `pack#index` form, a world pack's slot 0 to 19, a finals pack's slot 0 or 1 or the Simon rooms' pack's slot 0 to 9 | none, and a longer text is cut to 2000 with a line |
 | `from` | where a template came from, the shipped level's `pack#index` | none, and a longer text is cut to 2000 with a line |
 | `fromRelease` | the disc the template came from, `eu` or `jp`, where it was not the US one | none, a `from` without it is a template of the US release, and a longer text is cut to 2000 with a line |
-| `time` | seconds, which the game multiplies by 50 into its clock | 99 |
+| `time` | the level's time as the file holds it, which each disc's start fills its clock from in its own ticks ([motion.md](motion.md)) | 99 |
 | `hidden` | the settings record's type 1: the glass ball and translucent faces | `false` |
 | `invisibleFromAfar` | the settings record's `f2` 1: invisible blocks show from afar and fade near the ball | `false` |
 | `simon` | the level is a Simon room, played in the game's Simon mode as the rooms of the Copycat pack are, with its world's artwork, no clock and the pad read one move at a time ([motion.md](motion.md)); a copy of a shipped room carries it, and a level with a key plays as an arcade level whatever the flag, which stays stored and inert until the key goes | `false` |
@@ -241,7 +241,7 @@ Each bullet below ends with the sentence its finding says, a value the finding p
 - A beam crossing a block, or ending on a block that is neither plain nor another laser's block, since the loader writes style 0 over both ends and `-2` between unconditionally: "beam: crosses the block at {cell}" and "beam end at {cell}: not a plain block or a laser".
 - A platform's run through a beam or over a beam's end, a beam through a platform's run, or a beam ending in another's beam, since the loaders fill the lattice in record order and the last to write a cell has it: "run: crosses the beam from {cell}", "run: crosses the end of the beam from {cell}", "beam: crosses the run from {cell}" and "beam end: in the beam from {cell}".
 - No start: "no start".
-- A time below 1 or outside the file's range: "time {time} s: below 1" and "time {time} s: outside the file's range".
+- A time below 1 or outside the file's range: "time {time}: below 1" and "time {time}: outside the file's range".
 - A world that is not one of the ten: "world '{world}': not one of the disc's ten".
 - A target that is not a world or finals slot: "target '{target}': no such slot".
 - A counter over its cap, below: "{count} {counter}: over the cap of {cap}".
@@ -254,7 +254,7 @@ Each bullet below ends with the sentence its finding says, a value the finding p
 - A hidden exit 26 on a block that is not plain, which the glow loader passes over and the game has not been seen to take: "hidden exit on a non-plain block: untested".
 - A level with no key that is neither hidden nor a Simon room, which the game draws with the bonus artwork, placing a block or a face that artwork has no picture for, the fire, ice and acid blocks, the moving platform's four textures and the fire, ice and acid paint, the exit, the clock, the start on a clock and the fruit, whose models in the second set are the placeholder texture ([tgi.md](tgi.md)), named in the warning by their annotation names, and which no keyless level of the disc places: "no key: the bonus artwork has no texture for {names}".
 - A platform's speed other than 30 or length outside 2 to 3: "speed {speed}: the disc's is 30" and "length {length}: the disc's are 2 and 3".
-- A time above 99, which the clock has never been seen to show: "time {time} s: above the disc's 99".
+- A time above 99, the most any level on the disc holds: "time {time}: above the disc's 99".
 - A phase of 4 or 5: "phase {phase}: dims at once".
 - A colour that starts off with teleporters or lasers and no switch to turn it on: "{colour} circuit: starts off, no switch", or "circuit {n}: starts off, no switch" where the annotations give the colour no word.
 - A lone teleporter leading to itself: "{colour} teleporter: alone, leads to itself", or "teleporter of circuit {n}: alone, leads to itself".
@@ -320,7 +320,9 @@ A hashchange to a `#DRAFT` link after a plain boot loads the editor when the sto
 
 ### The card and a new draft
 
-The card's title field takes at most 80 characters, and its time field any number of seconds from 1 to 32767, the most the file's word holds, saying so in a toast when it keeps the old value, and a fraction lands as the nearest whole second; the checks warn above 99 rather than refuse.
+The card's title field takes at most 80 characters, and its time field any whole number from 1 to 32767, the most the file's word holds, saying so in a toast when it keeps the old value, and a fraction lands as the nearest whole number; the checks warn above 99 rather than refuse.
+
+A line under the time field says what the clock starts at on each disc for the number the field holds, the figure that disc's HUD shows once its clock has ticked, as the level line gives it, since the discs count the file's number each its own way ([motion.md](motion.md)).
 
 The card's Plays as select writes `simon` through `setMeta` as one step, labelled "changed how the level plays", offering a bonus level or a Simon room while the level has no key, and shows an arcade level alone, disabled, where a key stands, since the keys decide and the flag waits, stored, for the last key to go; the sentence under the settings says the result, by `playsAs`.
 

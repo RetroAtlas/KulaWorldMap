@@ -389,7 +389,7 @@ test("the reader leaves out what the writer has no bytes for, and holds a word t
     "facing: 1 to 4 needed",
     "type 32767: unknown to the game",
     "phase 32767: outside 0 to 5",
-    "time -32768 s: below 1",
+    "time -32768: below 1",
   ])
     assert.ok(found.includes(text), text);
   assert.ok(texts(validate(p, HIDES, NAMES), "warning").includes("speed -32768: the disc's is 30"));

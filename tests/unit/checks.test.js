@@ -447,7 +447,7 @@ test("a document that bypassed the reader is checked alike on both sides", () =>
   assert.deepEqual(findings, [
     "error: world '': not one of the disc's ten",
     "error: target '{\"pack\":1}': no such slot",
-    "error: time true s: outside the file's range",
+    "error: time true: outside the file's range",
     "error at 5,5,5 face 0: facing: 1 to 4 needed",
     "error at 5,5,5 face 1: variant true: outside its range",
     "error at 6,5,5: kind true: no such kind",
@@ -477,7 +477,7 @@ test("a document that bypassed the reader is checked alike on both sides", () =>
   ]
 }`);
   assert.deepEqual(validate(spelled, HIDES, NAMES).map(describe), [
-    "error: time false s: outside the file's range",
+    "error: time false: outside the file's range",
     "error at 6,5,5: kind null: no such kind",
     "error at 8,5,5: span: no far end",
     "error at 8,13,17: beam: crosses the run from 10,10,17",

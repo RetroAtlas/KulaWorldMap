@@ -18,10 +18,10 @@ export const setObjects = (o) => {
 };
 export const modelUnit = () => 1 / shapes.block;
 export const blockUnits = () => shapes.block;
-// The release shown's motion and skins tables: the base's with what its file
-// carries written over, an entry of the motion table's types and kinds whole and
-// every other key whole, composed once per release and base, so an entry the file
-// does not carry stays the base's own object.
+// A release's motion and skins tables: the base's with what its file carries
+// written over, an entry of the motion table's types and kinds whole and every
+// other key whole, composed once per release and base, so an entry the file does
+// not carry stays the base's own object.
 const NESTED = ["types", "kinds"];
 function overlaid(base, own, nested = []) {
   if (!base || !own || !Object.keys(own).length) return base;
@@ -29,26 +29,33 @@ function overlaid(base, own, nested = []) {
   for (const k of nested) if (own[k]) out[k] = { ...base[k], ...own[k] };
   return out;
 }
-let composed = null;
-function tables() {
-  const release = releaseOf(current());
-  if (composed?.shapes !== shapes || composed.release !== release) {
+let composed = new Map();
+let composedOf = null;
+function tablesOf(id) {
+  if (composedOf !== shapes) {
+    composed = new Map();
+    composedOf = shapes;
+  }
+  const release = releaseOf(id);
+  let c = composed.get(release);
+  if (!c) {
     const own = release?.objects ?? {};
-    composed = {
-      shapes,
-      release,
+    c = {
       motion: overlaid(shapes.motion, own.motion, NESTED),
       skins: overlaid(shapes.skins, own.skins),
     };
+    composed.set(release, c);
   }
-  return composed;
+  return c;
 }
-export const motionTable = () => tables().motion;
+/** The motion table of the release `id`, the base's where the map knows no such release. */
+export const motionTableOf = (id) => tablesOf(id).motion;
+export const motionTable = () => motionTableOf(current());
 export const jumpTable = () => {
   const own = releaseOf(current())?.objects?.jump;
   return own?.rows?.length ? own : (shapes.jump ?? { count: 0, rows: [] });
 };
-export const skinsTable = () => tables().skins;
+export const skinsTable = () => tablesOf(current()).skins;
 export const worldTint = (world) => {
   const c = releaseOf(current())?.art?.tint?.[world] ?? shapes.skins?.tint?.[world];
   return c ? "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("") : null;
@@ -101,12 +108,13 @@ export const levelNote = (l) =>
 /** The maximum a level can score where that is less than everything it holds, else null. */
 export const levelScore = (l) => levelEntry(l)?.score ?? null;
 export const levelTitle = (l) => l.shown || l.name;
-/** The time the level line gives `l`: the figure the disc shown's HUD shows once the clock has
-    ticked, one more than the whole seconds the clock its start fills holds in the ticks that HUD
-    counts a second; the level's own time where the disc's rules or the table are not to hand. */
-export function levelClock(l) {
-  const rules = rulesOf(current());
-  const tick = motionTable()?.play.clock.tick;
+/** The time the level line gives `l` under the release `id`, the disc shown's by default: the
+    figure that disc's HUD shows once the clock has ticked, one more than the whole seconds the
+    clock its start fills holds in the ticks that HUD counts a second; the level's own time where
+    the disc's rules or the table are not to hand. */
+export function levelClock(l, id = current()) {
+  const rules = rulesOf(id);
+  const tick = motionTableOf(id)?.play.clock.tick;
   if (!rules || tick === undefined) return l.time;
   return rules.clock.plus + Math.floor((clockFilled(l.time, rules) - tick) / rules.clock.shown);
 }

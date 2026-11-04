@@ -60,9 +60,9 @@ test("what the format takes, and what it warns about", () => {
     [],
   );
   const one = [plain([5, 5, 5], 0, { 0: start() })];
-  assert.ok(errors(one, { time: 0 }).includes("time 0 s: below 1"));
-  assert.ok(warnings(one, { time: 120 }).includes("time 120 s: above the disc's 99"));
-  assert.ok(errors(one, { time: 40000 }).includes("time 40000 s: outside the file's range"));
+  assert.ok(errors(one, { time: 0 }).includes("time 0: below 1"));
+  assert.ok(warnings(one, { time: 120 }).includes("time 120: above the disc's 99"));
+  assert.ok(errors(one, { time: 40000 }).includes("time 40000: outside the file's range"));
   const wide = {
     cell: [10, 10, 17],
     kind: KIND.PLATFORM,
