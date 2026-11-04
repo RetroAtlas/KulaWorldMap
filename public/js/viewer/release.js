@@ -70,6 +70,14 @@ export const differs = (key) =>
 export const layoutOf = (id) => releaseOf(id)?.packs ?? null;
 export const rulesOf = (id) => releaseOf(id)?.rules ?? null;
 
+/** The clock a release's start fills for a level of `time`: the time in that release's ticks a
+    second, one clock made another where its start makes one. */
+export function clockFilled(time, rules) {
+  const { fill, swap } = rules.clock;
+  const clock = time * fill;
+  return swap && clock === swap[0] ? swap[1] : clock;
+}
+
 /** The base entry with the overlay's keys written over it, a null taking a key away. */
 export function compose(base, overlay) {
   if (!overlay) return base;

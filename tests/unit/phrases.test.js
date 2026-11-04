@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, objects, releases } from "./fixtures.js";
-import { index } from "../../public/js/viewer/data.js";
+import { index, levelClock, setObjects } from "../../public/js/viewer/data.js";
+import { setCurrent, setReleases } from "../../public/js/viewer/release.js";
 import { end, startRun } from "../../public/js/play/rules.js";
 import { conclude, startGame, startSimon } from "../../public/js/play/game.js";
 import { banked, howEnded, hudOf, roomTold, thenOn } from "../../public/js/play/phrases.js";
@@ -232,7 +233,11 @@ test("the HUD's figures count the time, the keys or the blocks left and the poin
   });
 });
 
-test("under a release's rules the HUD counts the time as that disc's HUD does, one more than the whole seconds the clock holds in its ticks, 83 as a 99-second level starts on the US disc, 100 on the PAL disc and 120 on the Japanese, and 1 as the clock runs out, while the ending's seconds left are the whole seconds alone, and with no rules the table's seconds count with nothing added", () => {
+test("under a release's rules the HUD counts the time as that disc's HUD does, one more than the whole seconds the clock holds in its ticks, 83 as a 99-second level starts on the US disc, 100 on the PAL disc and 120 on the Japanese, and 1 as the clock runs out, while the ending's seconds left are the whole seconds alone, and with no rules the table's seconds count with nothing added, and once the clock has ticked the HUD reads the figure the level line gives, 83, 99 and 119", (t) => {
+  t.after(() => {
+    setObjects({});
+    setReleases([]);
+  });
   const l = forms().exit;
   const under = (rules) => startRun(l, index(l), { ...TABLES, rules }, circuits());
   const exit = "Out by the exit: the level is done.";
@@ -248,6 +253,21 @@ test("under a release's rules the HUD counts the time as that disc's HUD does, o
       ["Time 83", `${exit} 0 points, 82 seconds left.`],
       ["Time 100", `${exit} 0 points, 99 seconds left.`],
       ["Time 120", `${exit} 0 points, 119 seconds left.`],
+    ],
+  );
+  setObjects(objects);
+  setReleases(releases);
+  assert.deepEqual(
+    releases.map((r) => {
+      setCurrent(r.id);
+      const { words } = under(r.rules);
+      words.clock -= play.clock.tick;
+      return [hudOf(words, null, null, play, r.rules).clock, levelClock(l)];
+    }),
+    [
+      ["Time 83", 83],
+      ["Time 99", 99],
+      ["Time 119", 119],
     ],
   );
   const us = releases[0].rules;

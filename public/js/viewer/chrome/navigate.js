@@ -10,6 +10,7 @@ import {
   blockCount,
   counted,
   levelScore,
+  levelClock,
 } from "../data.js";
 import { levelPoints } from "../draw/points.js";
 import { draw, drawSoon, invalidatePick } from "../draw/render.js";
@@ -153,7 +154,7 @@ export function chip() {
   if (score !== null) parts.push(`<span class="sep">·</span>${score} of ${points} points`);
   else if (points) parts.push(`<span class="sep">·</span>${points} points`);
   if (l.time !== undefined)
-    parts.push(`<span class="sep">·</span><span class="t">time ${l.time}</span>`);
+    parts.push(`<span class="sep">·</span><span class="t">time ${levelClock(l)}</span>`);
   if (sliceZ() > l.min[2]) parts.push(`<span class="sep">·</span>sliced to z\u2265${sliceZ()}`);
   $("chipLine").innerHTML = parts.join("");
   if (noted === l && notedOn === current()) return;

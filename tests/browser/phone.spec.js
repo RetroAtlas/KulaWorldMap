@@ -472,7 +472,7 @@ test.describe("editing on a phone", () => {
     const time = page.locator("#draftTime");
     await time.fill("45");
     await time.blur();
-    await expect(page.locator("#chipLine")).toContainText("time 45");
+    await expect(page.locator("#chipLine")).toContainText("time 38");
     await page.locator("#menuBtn").tap();
     await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "false");
     await still(page);

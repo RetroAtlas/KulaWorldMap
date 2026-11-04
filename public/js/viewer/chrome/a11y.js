@@ -9,6 +9,7 @@ import {
   blockCount,
   counted,
   levelScore,
+  levelClock,
 } from "../data.js";
 import { levelPoints } from "../draw/points.js";
 
@@ -22,7 +23,7 @@ export function describeLevel(l) {
   const score = levelScore(l);
   if (score !== null) parts.push(`${score} of ${points} points`);
   else if (points) parts.push(`${points} points`);
-  if (l.time !== undefined) parts.push(`time ${l.time}`);
+  if (l.time !== undefined) parts.push(`time ${levelClock(l)}`);
   const note = levelNote(l);
   return parts.join(", ") + (note ? `. ${note}` : ".");
 }

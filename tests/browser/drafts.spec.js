@@ -352,7 +352,7 @@ test("the Level card edits the draft as the game would load it, keeping the view
   );
   await afar.check();
   expect((await shown(page)).time).toBe(45);
-  await expect(page.locator("#chipLine")).toContainText("time 45");
+  await expect(page.locator("#chipLine")).toContainText("time 38");
   await expect(page.locator("#draftRows button .state")).toHaveText(
     /^not saved to a file · \d+ changes$/,
   );
@@ -648,7 +648,7 @@ test("the Level card's Circuits rows set a colour's starting state as one step, 
   await expect(page.locator("#say")).toHaveText("Turned the green circuit off");
   await page.locator("#draftTime").fill("45");
   await page.locator("#draftTime").blur();
-  await expect(page.locator("#chipLine")).toContainText("time 45");
+  await expect(page.locator("#chipLine")).toContainText("time 38");
   await expect(page.locator("#say")).toBeEmpty();
   expect(errors).toEqual([]);
 });
@@ -698,7 +698,7 @@ test("the card's time field takes the seconds the file can hold and says when it
   await time.blur();
   await expect(time).toHaveValue("200");
   expect((await shown(page)).time).toBe(200);
-  await expect(page.locator("#chipLine")).toContainText("time 200");
+  await expect(page.locator("#chipLine")).toContainText("time 167");
 
   const title = page.locator("#draftTitle");
   await expect(title).toHaveAttribute("maxlength", "80");

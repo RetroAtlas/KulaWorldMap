@@ -2,7 +2,7 @@ import { state } from "./state.js";
 import { SIDE, cellKey, FACE_NORMAL, KIND, TYPE, STARTS } from "../format/lattice.js";
 import { platesOf, lookOf, keyed, shadowed } from "./skins.js";
 import { glowing, byLight } from "./motion.js";
-import { compose, current, levelsOf, releaseOf } from "./release.js";
+import { clockFilled, compose, current, levelsOf, releaseOf, rulesOf } from "./release.js";
 
 let ann = { worlds: {}, kinds: {}, types: {}, levels: {} };
 export const setAnnotations = (a) => {
@@ -101,6 +101,15 @@ export const levelNote = (l) =>
 /** The maximum a level can score where that is less than everything it holds, else null. */
 export const levelScore = (l) => levelEntry(l)?.score ?? null;
 export const levelTitle = (l) => l.shown || l.name;
+/** The time the level line gives `l`: the figure the disc shown's HUD shows once the clock has
+    ticked, one more than the whole seconds the clock its start fills holds in the ticks that HUD
+    counts a second; the level's own time where the disc's rules or the table are not to hand. */
+export function levelClock(l) {
+  const rules = rulesOf(current());
+  const tick = motionTable()?.play.clock.tick;
+  if (!rules || tick === undefined) return l.time;
+  return rules.clock.plus + Math.floor((clockFilled(l.time, rules) - tick) / rules.clock.shown);
+}
 /** The level of the release shown in pack `pack` at `index`, else null. */
 export const levelAt = (pack, index) =>
   levelsOf(current()).find((l) => l.pack === pack && l.index === index) ?? null;

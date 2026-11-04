@@ -28,6 +28,7 @@ import {
   worldOf,
 } from "./world.js";
 import { contact } from "./contact.js";
+import { clockFilled } from "../viewer/release.js";
 import {
   boosting,
   broken,
@@ -81,14 +82,8 @@ const rulesOf = ({ motion, unit, jump }) => ({
   ride: motion.kinds[String(KIND.PLATFORM)].ride,
 });
 
-// The clock the start fills: the level's time in the release's ticks a second, one clock made
-// another where the start makes one, or in the table's second where no rules are given.
-function filled(time, play, rules) {
-  if (!rules) return time * play.clock.second;
-  const { fill, swap } = rules.clock;
-  const clock = time * fill;
-  return swap && clock === swap[0] ? swap[1] : clock;
-}
+// The clock the start fills: the release's own, or the table's second where no rules are given.
+const filled = (time, play, rules) => (rules ? clockFilled(time, rules) : time * play.clock.second);
 
 /** The start the game takes, as a station, or null. */
 function startOf(l) {

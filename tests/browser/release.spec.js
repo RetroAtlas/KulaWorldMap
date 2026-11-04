@@ -360,11 +360,11 @@ test("with JP pressed a fall off LEVEL 1 ends in the word the Japanese disc's en
 test("the live region says the disc on a press", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
-  const level = "LEVEL 1, HIRO, 20 blocks, 6 objects, 4000 points, time 99.";
-  await expect(page.locator("#say")).toHaveText(level);
+  const level = (time) => `LEVEL 1, HIRO, 20 blocks, 6 objects, 4000 points, time ${time}.`;
+  await expect(page.locator("#say")).toHaveText(level(83));
   await press(page, "jp");
   await expect(page.locator("#say")).toHaveText(
-    `Showing the Japanese release. ${jp.name}, ${level}`,
+    `Showing the Japanese release. ${jp.name}, ${level(119)}`,
   );
 });
 
@@ -380,6 +380,21 @@ test("the disc's tag stands on the level line after a press of EU, the game and 
   await expect(tag).toHaveAttribute("title", `${eu.name}, the PAL release`);
   await press(page, "us");
   await expect(tag).toHaveCount(0);
+});
+
+test("the level line's time after a press of EU is the figure the PAL HUD shows, after JP the Japanese one and after US the US one", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const chip = page.locator("#chipLine");
+  await expect(chip).toContainText("time 83");
+  await press(page, "eu");
+  await expect(chip).toContainText("time 99");
+  await press(page, "jp");
+  await expect(chip).toContainText("time 119");
+  await press(page, "us");
+  await expect(chip).toContainText("time 83");
 });
 
 test("the canvas's label opens with the game's name on a disc other than the US one", async ({

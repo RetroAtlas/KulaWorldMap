@@ -117,6 +117,10 @@ The bar under the box narrows a search to the world or the level in hand, or, by
 
 The line at the top of the map names the level and counts what it holds, with the level's note under it where there is one.
 
+Its time is the figure the disc shown's HUD shows as the level starts, once its clock has ticked, one more than the whole seconds the clock holds in the ticks that HUD counts a second, so a level whose file gives 99 reads 83 under the US disc, whose clock runs 82.5 seconds, 99 under the PAL disc and 119 under the Japanese, as The three discs below says of play's clock.
+
+Where the disc shown has no rules to hand, its file having failed to load, or the tables are missing, the line gives the file's own number, as play's clock does with no rules.
+
 While the ball is on the level a HUD stands in the line's place, naming the level and showing the clock, the points and the keys, as Rolling the ball below says, and the line is back when play is left.
 
 Where the disc shown is not the US one, the line carries the disc's tag, EU or JP, after the title, the game and its release named in the tag's tooltip, the HUD's title carries the same word while the ball is on the level, and the level as it is spoken puts the game's name first, while under the US disc none of the three names it.

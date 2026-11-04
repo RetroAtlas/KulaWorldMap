@@ -133,7 +133,7 @@ test("a switch in the settings puts the compass away, and is remembered", async 
 test("arriving somewhere is spoken, and names the map with it", async ({ page }) => {
   await page.goto("/#HIRO/0");
   await settle(page);
-  const line = "LEVEL 1, HIRO, 20 blocks, 6 objects, 4000 points, time 99.";
+  const line = "LEVEL 1, HIRO, 20 blocks, 6 objects, 4000 points, time 83.";
   await expect(page.locator("#say")).toHaveText(line);
   await expect(page.locator("#cv")).toHaveAttribute("aria-label", line);
   await page.keyboard.press("]");
@@ -148,7 +148,7 @@ test("a level that holds more than can be scored gives its best out of all it ho
   await expect(page.locator("#chipLine")).toContainText("19050 of 23525 points");
   await expect(page.locator("#chipNote")).toHaveText(/^The level holds 4475 more points, /);
   await expect(page.locator("#say")).toContainText(
-    "19050 of 23525 points, time 99. The level holds 4475 more points, ",
+    "19050 of 23525 points, time 83. The level holds 4475 more points, ",
   );
 });
 

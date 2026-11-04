@@ -25,6 +25,7 @@ import {
   releaseOf,
   releases as known,
   rulesOf,
+  clockFilled,
   setCurrent,
   setReleases,
 } from "../../public/js/viewer/release.js";
@@ -32,6 +33,7 @@ import { blank, toLevel } from "../../public/js/format/project.js";
 import {
   jumpTable,
   levelAt,
+  levelClock,
   levelMarkers,
   levelScore,
   levelsIn,
@@ -424,6 +426,39 @@ test("the releases a slot differs on are those whose file holds it, and none for
   for (const r of releases)
     for (const key of Object.keys(r.levels))
       assert.ok(differsOn(key).includes(r.id), `${r.id} ${key}`);
+});
+
+test("the clock a release's start fills is the level's time in that disc's ticks a second, the Japanese start making a 99-second level's 5940 into 7140 and no other clock, and the level line's time is the figure that disc's HUD shows once the clock has ticked, the level's own time where the disc shown has no rules", (t) => {
+  t.after(() => {
+    setObjects({});
+    setReleases(releases);
+    setCurrent("us");
+  });
+  assert.deepEqual(
+    releases.map((r) => clockFilled(99, r.rules)),
+    [4950, 4950, 7140],
+  );
+  assert.deepEqual(
+    [30, 98, 100].map((time) => clockFilled(time, releases[2].rules)),
+    [1800, 5880, 6000],
+  );
+  assert.equal(clockFilled(30, releases[0].rules), 1500);
+  setObjects(objects);
+  setReleases([null, null, null]);
+  assert.equal(levelClock({ time: 99 }), 99);
+  setReleases(releases);
+  assert.deepEqual(
+    ["us", "eu", "jp"].map((id) => {
+      setCurrent(id);
+      return levelClock({ time: 99 });
+    }),
+    [83, 99, 119],
+  );
+  setCurrent("us");
+  assert.deepEqual(
+    [30, 20, 98].map((time) => levelClock({ time })),
+    [25, 17, 82],
+  );
 });
 
 test("the release shown is the base until a loaded one is chosen, and an unknown id changes nothing", (t) => {
