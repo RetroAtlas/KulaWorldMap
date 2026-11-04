@@ -1,5 +1,6 @@
 import { $ } from "./dom.js";
 import { openDialog } from "./dialog.js";
+import { lightCap } from "./keycap.js";
 
 // The panel only shows its switches; each is wired, saved and keyed as any
 // other, and its key works inside the panel as well.
@@ -23,6 +24,7 @@ export function wireSettings() {
         ?.querySelector("input");
       if (!box || box.disabled) return;
       if (!e.repeat) box.click();
+      lightCap(panel, e);
       e.preventDefault();
     },
     { capture: true },

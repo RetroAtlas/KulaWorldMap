@@ -16,6 +16,8 @@ const atEye = (page) =>
 
 const amber = ([r, g, b]) => r > 200 && g > 150 && b < 150;
 
+const colour = (cap) => cap.evaluate((k) => getComputedStyle(k).color);
+
 test("the settings hold the start camera, which keeps its key", async ({ page }) => {
   await page.goto("/#HIRO/0/45,35/1");
   await settle(page);
@@ -91,6 +93,59 @@ test("a switch's key held down flips the switch once, from the map and in the se
   await expect(page.locator("#settings")).toBeVisible();
   await hold("c");
   await expect(page.locator("#showCamera")).toBeChecked();
+});
+
+test("a key's cap lights while the key is held, in the sidebar and in the settings", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const skins = page.locator("label:has(#showSkins) kbd");
+  const rest = await colour(skins);
+  for (const [key, cap] of [
+    ["t", skins],
+    [",", page.locator(".slice kbd").first()],
+  ]) {
+    await page.keyboard.down(key);
+    await page.keyboard.down(key);
+    expect(await colour(cap), key).not.toBe(rest);
+    await page.keyboard.up(key);
+    expect(await colour(cap), key).toBe(rest);
+  }
+  await page.keyboard.press("Shift+s");
+  await expect(page.locator("#settings")).toBeVisible();
+  const camera = page.locator("label:has(#showCamera) kbd");
+  await page.keyboard.down("c");
+  expect(await colour(camera)).not.toBe(rest);
+  await page.keyboard.up("c");
+  expect(await colour(camera)).toBe(rest);
+});
+
+test("a lit cap goes out as its key is let go, though Shift or Cmd came between or the window lost the focus", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  const skins = page.locator("label:has(#showSkins) kbd");
+  const rest = await colour(skins);
+  const lit = async () => {
+    await page.keyboard.down("KeyT");
+    expect(await colour(skins)).not.toBe(rest);
+  };
+  await lit();
+  await page.keyboard.down("Shift");
+  await page.keyboard.up("KeyT");
+  await page.keyboard.up("Shift");
+  expect(await colour(skins)).toBe(rest);
+  await lit();
+  await page.keyboard.down("Meta");
+  await page.keyboard.up("Meta");
+  expect(await colour(skins)).toBe(rest);
+  await page.keyboard.up("KeyT");
+  await lit();
+  await page.evaluate(() => dispatchEvent(new Event("blur")));
+  expect(await colour(skins)).toBe(rest);
+  await page.keyboard.up("KeyT");
 });
 
 test("a switch clicked leaves the keys to the map, and the slider keeps its own keys", async ({

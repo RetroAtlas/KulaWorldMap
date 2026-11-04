@@ -8,6 +8,7 @@ import { OFF_LATTICE, kindName, ownMarker, markerLabel, markerNow } from "../dat
 import { setSidebar, sidebarOverlays, held } from "./sidebar.js";
 import { toast } from "../ui/toast.js";
 import { openSettings } from "../ui/settings.js";
+import { lightCap } from "../ui/keycap.js";
 
 const cv = $("cv");
 const tip = $("tip");
@@ -465,6 +466,7 @@ addEventListener("keydown", (e) => {
       return;
   }
   e.preventDefault();
+  lightCap($("sidebar"), e);
 });
 
 function toggle(id, e) {

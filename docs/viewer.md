@@ -81,6 +81,8 @@ What moves in play moves here, as the game moves it:
 
 A switch's key flips it once a press, however long the key is held down.
 
+The key shown beside a switch or the slice lights for as long as it is held, in the sidebar and in Settings.
+
 A switch that does something only while another is on is greyed while that one is off, and keeps its tick for when it comes back: the models, seeing through the blocks and the labels need the objects on, the face in the labels needs the labels, and dimming what the slice hides needs the slice lowered. Its key, or a click or tap on it, then leaves it as it is and says for a moment at the foot of the map what it needs.
 
 The gear at the top of the sidebar, or `Shift-s`, opens Settings, for the switches used less, their keys working from the map as the others do and in the panel itself. The Display's reset leaves them as they are.

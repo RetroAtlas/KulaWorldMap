@@ -446,6 +446,10 @@ kbd {
 kbd + kbd {
   margin-left: 3px;
 }
+kbd.held {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 .slice {
   padding-top: 6px;
