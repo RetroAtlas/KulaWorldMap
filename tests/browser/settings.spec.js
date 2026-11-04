@@ -75,6 +75,24 @@ test("a setting's key works inside the settings, once a press", async ({ page })
   await expect(panel).toBeHidden();
 });
 
+test("a switch's key held down flips the switch once, from the map and in the settings", async ({
+  page,
+}) => {
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  // a key pressed again before it is let go arrives as the key repeating
+  const hold = async (key) => {
+    for (let i = 0; i < 4; i++) await page.keyboard.down(key);
+    await page.keyboard.up(key);
+  };
+  await hold("t");
+  await expect(page.locator("#showSkins")).not.toBeChecked();
+  await page.keyboard.press("Shift+s");
+  await expect(page.locator("#settings")).toBeVisible();
+  await hold("c");
+  await expect(page.locator("#showCamera")).toBeChecked();
+});
+
 test("a switch clicked leaves the keys to the map, and the slider keeps its own keys", async ({
   page,
 }) => {

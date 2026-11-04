@@ -408,47 +408,47 @@ addEventListener("keydown", (e) => {
       refit();
       break;
     case "t":
-      toggle("showSkins");
+      toggle("showSkins", e);
       break;
     case "b":
-      toggle("showOutlines");
+      toggle("showOutlines", e);
       break;
     case "o":
-      toggle("showObjects");
+      toggle("showObjects", e);
       break;
     case "m":
-      toggle("showModels");
+      toggle("showModels", e);
       break;
     case "x":
-      toggle("showThrough");
+      toggle("showThrough", e);
       break;
     case "c":
-      toggle("showCamera");
+      toggle("showCamera", e);
       break;
     case "h":
-      toggle("showHidden");
+      toggle("showHidden", e);
       break;
     case "d":
-      toggle("panMode");
+      toggle("panMode", e);
       break;
     case "r":
-      toggle("showCourse");
+      toggle("showCourse", e);
       break;
     case "s":
     case "S":
       e.shiftKey ? openSettings() : $("menuBtn").click();
       break;
     case "l":
-      toggle("showLabels");
+      toggle("showLabels", e);
       break;
     case "n":
-      toggle("showFaces");
+      toggle("showFaces", e);
       break;
     case "g":
-      toggle("showBase");
+      toggle("showBase", e);
       break;
     case "v":
-      toggle("showMotion");
+      toggle("showMotion", e);
       break;
     case "?":
       emit("help");
@@ -467,7 +467,8 @@ addEventListener("keydown", (e) => {
   e.preventDefault();
 });
 
-function toggle(id) {
+function toggle(id, e) {
+  if (e.repeat) return;
   const box = $(id);
   const why = held(box);
   if (why) return toast(`${why}.`);

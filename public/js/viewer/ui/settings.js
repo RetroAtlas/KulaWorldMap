@@ -22,7 +22,7 @@ export function wireSettings() {
         .find((label) => label.querySelector("kbd")?.textContent === e.key)
         ?.querySelector("input");
       if (!box || box.disabled) return;
-      box.click();
+      if (!e.repeat) box.click();
       e.preventDefault();
     },
     { capture: true },
