@@ -69,7 +69,7 @@ def _add_alpha(rgb, key):
 
 
 def _unfilter(data, stride, bpp, h):
-    """The scanlines with their filters undone: none, sub, up, average and Paeth."""
+    """The scanlines with their filters undone."""
     out, prev = bytearray(), bytes(stride)
     for y in range(h):
         at = y * (stride + 1)
