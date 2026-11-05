@@ -114,8 +114,12 @@ export function deathOf(w) {
   return DYING[name] ? name : null;
 }
 
-/** The word closed with a full stop where it ends in a letter or a digit. */
-const closed = (word) => (/[\p{L}\p{N}]$/u.test(word) ? `${word}.` : word);
+const KANA_OR_KANJI = /[\p{scx=Hiragana}\p{scx=Katakana}\p{scx=Han}]$/u;
+
+/** The word closed with a full stop where it ends in a letter or a digit, the Japanese full stop
+    where the letter is kana or kanji. */
+const closed = (word) =>
+  /[\p{L}\p{N}]$/u.test(word) ? `${word}${KANA_OR_KANJI.test(word) ? "。" : "."}` : word;
 
 /** A room's word for its ending `code`: the end screen's `word`, or the winner's where the match
     is won, and whether the round is done or lost, with whose point it is where a match is on. */

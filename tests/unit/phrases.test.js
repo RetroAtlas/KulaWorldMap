@@ -116,21 +116,27 @@ test("what the ending did to the run's total: the points banked or the penalty t
   );
 });
 
-test("the game's word is closed with a full stop before the run starts afresh where it ends in a letter or a digit, and keeps the mark it ends in", () => {
+test("the game's word is closed with a full stop before the run starts afresh where it ends in a Latin letter or a digit, with the Japanese full stop where it ends in the prolonged sound mark or in kanji, and keeps the mark it ends in", () => {
   const did = (over) =>
     banked({ penalty: 800, banked: 0, total: -800, over: true }, { ...play.words, over });
   const sum = "800 points off the total, -800 points in all.";
   assert.equal(did("Game Over"), `${sum} Game Over. The run starts afresh.`);
   assert.equal(did("Game Over 2"), `${sum} Game Over 2. The run starts afresh.`);
+  assert.equal(did("ゲームオーバー"), `${sum} ゲームオーバー。 The run starts afresh.`);
+  assert.equal(did("合格"), `${sum} 合格。 The run starts afresh.`);
   assert.equal(did("Game Over!"), `${sum} Game Over! The run starts afresh.`);
   assert.equal(did("Game Over."), `${sum} Game Over. The run starts afresh.`);
 });
 
-test("how the level ended closes the Japanese disc's word for a death with a full stop before the points, and keeps the mark the US word ends in", () => {
+test("how the level ended closes the Japanese disc's word for a death with the Japanese full stop before the points, in hiragana or in katakana, and keeps the mark the US word ends in", () => {
   const l = forms().exit;
   assert.equal(
     endedBy(l, play.ending.lost, 50, null, japanese()),
-    "落ちた. 50 points, 99 seconds left.",
+    "落ちた。 50 points, 99 seconds left.",
+  );
+  assert.equal(
+    endedBy(l, play.ending.time, 50, null, japanese()),
+    "タイムアウト。 50 points, 99 seconds left.",
   );
   assert.equal(endedBy(l, play.ending.lost, 50), "FELL OFF! 50 points, 99 seconds left.");
 });
@@ -153,13 +159,13 @@ test("a room's word says the round is done, or lost, with whose point it is wher
   );
 });
 
-test("a room's word is closed with a full stop before the round's verdict where it is the Japanese disc's, the winner's too, and the US words keep their marks", () => {
+test("a room's word is closed with the Japanese full stop before the round's verdict where it is the Japanese disc's, the winner's too, and the US words keep their marks", () => {
   const { exit, simon, won1 } = japanese().words;
-  assert.equal(roomTold(play.ending.exit, exit, null), "良くできました. The round is done.");
-  assert.equal(roomTold(play.ending.simon, simon, null), "間違えた. The round is lost.");
+  assert.equal(roomTold(play.ending.exit, exit, null), "良くできました。 The round is done.");
+  assert.equal(roomTold(play.ending.simon, simon, null), "間違えた。 The round is lost.");
   assert.equal(
     roomTold(play.ending.simon, simon, { point: 0, won: won1 }),
-    "1プレイヤーの勝ち. The round is lost, a point to Player 1.",
+    "1プレイヤーの勝ち。 The round is lost, a point to Player 1.",
   );
   assert.equal(roomTold(play.ending.exit, play.words.exit, null), "Well Done! The round is done.");
   assert.equal(
