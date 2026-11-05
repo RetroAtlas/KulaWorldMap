@@ -40,6 +40,6 @@ export const PINNED_CELLS = [
   ],
 ];
 
-/** The most an hourglass scores under a release's rules, nothing where its case never divides the clock. */
+/** The most an hourglass scores under a release's rules, nothing where its points or its second is null. */
 export const most = ({ from, second, points }) =>
-  second === null ? 0 : points * Math.floor(from / second);
+  second === null || points === null ? 0 : points * Math.floor(from / second);
