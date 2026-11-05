@@ -435,29 +435,19 @@ class Mapped(unittest.TestCase):
         self.assertNotIn(hexed(AT), str(stopped.exception))
 
 
+LISTED = [row[1] for rows in (IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS) for row in rows]
+
+
 def tabled(game):
-    """The fixture's readings filled out with the things' motion and the few readings the table takes that the fixture
-    does not type, so the table runs over them."""
+    """The fixture's readings filled out with every reading the readers' tables key that the fixture does not type, each
+    1 but for a few at figures the tests read back off the table, and the few the reader derives otherwise that the
+    table takes, so the table runs over them."""
     r = dict(game)
-    for key in ("coin.turn", "coin.bob", "coin.bob.reach", "fruit.turn", "fruit.tilt",
-                "fruit.tilt.reach", "fruit.bob", "fruit.bob.reach", "gem.turn",
-                "hourglass.swing", "hourglass.turn", "hourglass.lean", "pill.flip",
-                "pill.turn", "hedgehog.form", "hedgehog.form.past", "hedgehog.orbit.brown",
-                "hedgehog.orbit.green", "hedgehog.orbit.radius", "teleporter.turn",
-                "exit.turn", "exit.turn.open", "platform.dwell", "corkscrew.phase0",
-                "corkscrew.phase1", "corkscrew.phase2", "corkscrew.bounce",
-                "corkscrew.wrap", "corkscrew.rise", "corkscrew.spin", "star52.sway",
-                "star52.sway.reach", "star52.tumble.x", "star52.tumble.y",
-                "star50.tumble.x", "star50.tumble.y", "star50.tumble.z", "star50.travel",
-                "ball53.shake", "ball53.lurch.reach", "ball53.dash", "ball53.settle",
-                "ball53.ways", "wheel.roll",
-                "wheel.travel", "wheel.turning", "wheel.turn.right", "wheel.turn.about",
-                "corkscrew.drop", "ball.breathe", "ball.breathe.reach",
-                "button.start", "button.full", "button.sink", "button.rise", "button.reach",
-                "ball.breathe.full", "ball.breathe.over", "time.tick"):
+    for key in LISTED:
         r.setdefault(key, 1)
     r.update({"ball.light.down": 2, "ball.light.into": 1, "ball.light.background": 2048,
               "ball.light.colour": 4000, "ball.light.base": 178})
+    r["button.reach"] = 700
     r["platform.scale"] = 50
     r["captivator.standoff"] = 456
     r["corkscrew.drop"] = 150
@@ -619,8 +609,7 @@ class Lists(unittest.TestCase):
         self.assertEqual({tuple(type(x) for x in check) for check in CHECKS}, {(int, str, str)})
 
     def test_every_key_is_read_once_and_none_of_them_is_set_by_hand(self):
-        keys = [entry[1] for t in (IMMEDIATES, MULTIPLIERS, DIVISORS, GREYS, SCANS) for entry in t]
-        self.assertEqual(sorted(set(keys) - self.BY_HAND), sorted(keys))
+        self.assertEqual(sorted(set(LISTED) - self.BY_HAND), sorted(LISTED))
 
     def test_no_check_sentence_and_no_readings_meaning_names_an_address(self):
         sentences = [check[2] for check in (*CHECKS, *SKIN_CHECKS)]
