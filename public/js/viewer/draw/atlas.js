@@ -84,17 +84,14 @@ export function atlasFor(world) {
 /** Fetch the atlases of `worlds` ahead of their levels, one at a time and
     behind whatever the page asks for itself, and behind each the sheets the
     disc shown draws over it. One that fails is forgotten, the base's or the
-    disc's, so that a level of its world asks again. */
+    disc's, fetched here or found, so that a level of its world asks again. */
 export async function warm(worlds) {
   const lowly = () => Object.assign(new Image(), { fetchPriority: "low" });
   for (const world of worlds) {
-    let base = ATLAS.worlds.get(world);
-    if (!base) {
-      base = load(world, lowly());
-      if (!(await base.landed)) {
-        if (ATLAS.worlds.get(world) === base) ATLAS.worlds.delete(world);
-        continue;
-      }
+    const base = ATLAS.worlds.get(world) ?? load(world, lowly());
+    if (!(await base.landed)) {
+      if (ATLAS.worlds.get(world) === base) ATLAS.worlds.delete(world);
+      continue;
     }
     const disc = current();
     const paths = sheetsOf(disc, world);

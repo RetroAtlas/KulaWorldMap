@@ -107,3 +107,40 @@ test("a disc's sheet that fails to land is asked for once by the level shown, ho
   });
   expect(sheet()).toHaveLength(1);
 });
+
+test("a world's atlas the level shown asks for and loses is asked for once more as the worlds are fetched ahead", async ({
+  page,
+}) => {
+  const asked = record(page);
+  const haze = () => asked.filter((p) => p === "/tex/HAZE.png");
+  // the other worlds wait until the level shown has lost its own, so that the fetch ahead finds it failed
+  let lost;
+  const losing = new Promise((r) => (lost = r));
+  await page.route("**/tex/*.png", async (route) => {
+    const url = route.request().url();
+    if (url.endsWith("/HAZE.png")) {
+      await route.fulfill({ status: 404 });
+      lost();
+    } else {
+      if (!url.endsWith("/INCA.png")) await losing;
+      await route.continue();
+    }
+  });
+  await page.goto("/#INCA/11/45,35/fit/33");
+  await settle(page);
+  await textured(page);
+  await page.evaluate(() => {
+    location.hash = "#HAZE/0/45,35/fit/33";
+  });
+  // the level shown asks for its atlas and loses it; the fetch ahead passes the failed atlas and forgets it,
+  // so the level draws on and asks once more
+  await expect.poll(() => haze().length).toBe(2);
+  await page.evaluate(async () => {
+    const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
+    for (let i = 0; i < 20; i++) {
+      await new Promise(requestAnimationFrame);
+      draw();
+    }
+  });
+  expect(haze()).toHaveLength(2);
+});
