@@ -5,7 +5,11 @@ import { BASE, current, releaseOf } from "../release.js";
 // and, along the row, every texture of the world in order. A disc that draws
 // a world otherwise names sheets of the atlas's size, transparent but for the
 // cells it changes, and its atlas of the world is the base's with them drawn
-// over it; each atlas is kept by disc and world, which its key names.
+// over it; each atlas is kept by disc and world, which its key names. An atlas
+// that fails to land stays failed, so the level shown asks for it once, and
+// warm() forgets a failed one as it passes, so a later level of the world asks
+// once more; a sheet that fails is forgotten at once, so the next atlas drawn
+// with it asks again.
 const ATLAS = { size: 64, worlds: new Map(), sheets: new Map(), discs: new Map() };
 
 /** Fetch `src` into `img`, resolving to whether it landed. */
@@ -44,7 +48,7 @@ const sheetsOf = (disc, world) => releaseOf(disc)?.art?.sheets?.[world] ?? [];
 
 /** The disc's atlas of `world`, drawn once the base atlas and every sheet
     have landed, the sheets over the base in the order the disc names them,
-    and forgotten as a sheet is where any of them fails. */
+    and failed where any of them fails. */
 function composite(disc, world, base, paths, image = () => new Image()) {
   const key = `${disc}/${world}`;
   let c = ATLAS.discs.get(key);
@@ -52,10 +56,7 @@ function composite(disc, world, base, paths, image = () => new Image()) {
   const parts = [base, ...paths.map((path) => ATLAS.sheets.get(path) ?? sheet(path, image()))];
   c = { img: null, key, ready: false };
   c.landed = Promise.all(parts.map((p) => p.landed)).then((landed) => {
-    if (!landed.every(Boolean)) {
-      if (ATLAS.discs.get(key) === c) ATLAS.discs.delete(key);
-      return false;
-    }
+    if (!landed.every(Boolean)) return false;
     const cv = document.createElement("canvas");
     cv.width = base.img.naturalWidth;
     cv.height = base.img.naturalHeight;
@@ -82,8 +83,8 @@ export function atlasFor(world) {
 
 /** Fetch the atlases of `worlds` ahead of their levels, one at a time and
     behind whatever the page asks for itself, and behind each the sheets the
-    disc shown draws over it. One that fails is forgotten, so that a level of
-    its world asks again. */
+    disc shown draws over it. One that fails is forgotten, the base's or the
+    disc's, so that a level of its world asks again. */
 export async function warm(worlds) {
   const lowly = () => Object.assign(new Image(), { fetchPriority: "low" });
   for (const world of worlds) {
@@ -97,7 +98,9 @@ export async function warm(worlds) {
     }
     const disc = current();
     const paths = sheetsOf(disc, world);
-    if (paths.length) await composite(disc, world, base, paths, lowly).landed;
+    if (!paths.length) continue;
+    const c = composite(disc, world, base, paths, lowly);
+    if (!(await c.landed) && ATLAS.discs.get(c.key) === c) ATLAS.discs.delete(c.key);
   }
 }
 

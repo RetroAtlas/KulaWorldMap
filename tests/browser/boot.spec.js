@@ -83,3 +83,27 @@ test("a link to a draft preloads no texture, and the level shown asks for its ow
   expect(textures(asked)[0]).toBe("/tex/HIRO.png");
   expect(textures(asked).filter((p) => p === "/tex/HIRO.png")).toHaveLength(1);
 });
+
+test("a disc's sheet that fails to land is asked for once by the level shown, however many frames it draws", async ({
+  page,
+}) => {
+  const asked = record(page);
+  // set to save data, so that no world is fetched ahead and only the level shown asks
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "connection", { value: { saveData: true } });
+  });
+  await page.route("**/tex/jp/all.png", (route) => route.fulfill({ status: 404 }));
+  await page.goto("/#HIRO/0/45,35/fit/33/d-jp");
+  await settle(page);
+  const sheet = () => asked.filter((p) => p === "/tex/jp/all.png");
+  await expect.poll(() => sheet().length).toBe(1);
+  // the level draws on, each frame asking for the world's atlas again
+  await page.evaluate(async () => {
+    const { draw } = await import(new URL("js/viewer/draw/render.js", location.href).href);
+    for (let i = 0; i < 20; i++) {
+      await new Promise(requestAnimationFrame);
+      draw();
+    }
+  });
+  expect(sheet()).toHaveLength(1);
+});
