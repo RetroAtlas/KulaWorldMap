@@ -38,7 +38,7 @@ const forms = () => ({
 });
 
 /** A run of `l` scoring `score`, ended by `code` over `game`: how it ended, in `table`'s words. */
-function endedBy(l, code, score, game = null, table = play) {
+function endedBy(l, code, score, { game = null, table = play } = {}) {
   const live = begin(l, null, game);
   live.words.score = score;
   end(live, code, []);
@@ -84,16 +84,16 @@ test("how the level ended gives the map's word for each way out and the end scre
 test("with a run on, how the level ended adds the points banked or the penalty taken and the total, and the game's word where the total has gone below nothing", () => {
   const first = () => counted(forms().exit, 0, 0);
   assert.equal(
-    endedBy(first(), play.ending.exit, 1500, startGame()),
+    endedBy(first(), play.ending.exit, 1500, { game: startGame() }),
     "Out by the exit: the level is done. 1500 points, 99 seconds left. 1500 points banked, 1500 points in all.",
   );
   const game = { ...startGame(), total: 1000 };
   assert.equal(
-    endedBy(first(), play.ending.lost, 50, game),
+    endedBy(first(), play.ending.lost, 50, { game }),
     `${play.words.lost} 50 points, 99 seconds left. 100 points off the total, 900 points in all.`,
   );
   assert.equal(
-    endedBy(first(), play.ending.lost, 50, startGame()),
+    endedBy(first(), play.ending.lost, 50, { game: startGame() }),
     `${play.words.lost} 50 points, 99 seconds left. 100 points off the total, -100 points in all. ${play.words.over} The run starts afresh.`,
   );
 });
@@ -131,11 +131,11 @@ test("the game's word is closed with a full stop before the run starts afresh wh
 test("how the level ended closes the Japanese disc's word for a death with the Japanese full stop before the points, in hiragana or in katakana, and keeps the mark the US word ends in", () => {
   const l = forms().exit;
   assert.equal(
-    endedBy(l, play.ending.lost, 50, null, japanese()),
+    endedBy(l, play.ending.lost, 50, { table: japanese() }),
     "落ちた。 50 points, 99 seconds left.",
   );
   assert.equal(
-    endedBy(l, play.ending.time, 50, null, japanese()),
+    endedBy(l, play.ending.time, 50, { table: japanese() }),
     "タイムアウト。 50 points, 99 seconds left.",
   );
   assert.equal(endedBy(l, play.ending.lost, 50), "FELL OFF! 50 points, 99 seconds left.");
@@ -177,11 +177,11 @@ test("a room's word is closed with the Japanese full stop before the round's ver
 test("in a Simon room how the level ended is the room's word with the points and the seconds left, and a match won starts afresh", () => {
   const { exit, simon, won2 } = play.words;
   assert.equal(
-    endedBy(room(), play.ending.exit, 0, startSimon(ROOMS)),
+    endedBy(room(), play.ending.exit, 0, { game: startSimon(ROOMS) }),
     `${exit} The round is done. 0 points, 99 seconds left.`,
   );
   assert.equal(
-    endedBy(room(), play.ending.simon, 0, startSimon(ROOMS)),
+    endedBy(room(), play.ending.simon, 0, { game: startSimon(ROOMS) }),
     `${simon} The round is lost, a point to Player 2. 0 points, 99 seconds left.`,
   );
   assert.equal(
@@ -193,7 +193,7 @@ test("in a Simon room how the level ended is the room's word with the points and
   const first = { ...room(), index: 0 };
   const game = { ...startSimon(ROOMS), points: [0, ROOMS.points] };
   assert.equal(
-    endedBy(first, play.ending.simon, 0, game),
+    endedBy(first, play.ending.simon, 0, { game }),
     `${won2} The round is lost, a point to Player 2. 0 points, 99 seconds left. The match starts afresh.`,
   );
 });
