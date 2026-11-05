@@ -47,14 +47,12 @@ class Platform(unittest.TestCase):
         self.assertEqual(c.divisor(AT, row[4], AT + 4, row[6], AT + 8, row[8]), 60)
 
     def test_the_speed_is_the_levels_where_the_scale_or_the_divisor_is_absent_and_scaled_where_both_read(self):
-        r = {**GAME, "platform.scale": 50, "platform.dwell": 48}
-        self.assertEqual(platform(r, 30), {"speed": 25, "dwell": 48})
-        self.assertEqual(platform({**r, "platform.over": 50}, 30), {"speed": 30, "dwell": 48})
+        self.assertEqual(platform(GAME, 30), {"speed": 25, "dwell": 48})
+        self.assertEqual(platform({**GAME, "platform.over": 50}, 30), {"speed": 30, "dwell": 48})
         for absent in ({"platform.scale": None}, {"platform.over": None}, {"platform.scale": None, "platform.over": None}):
-            self.assertEqual(platform(Readings({**r, **absent}), 30), {"speed": 30, "dwell": 48})
-        self.assertEqual(platform(Readings({**GAME_EU, "platform.dwell": 40}), 30), {"speed": 30, "dwell": 40})
-        self.assertEqual(platform(Readings({**GAME_JP, "platform.scale": 50, "platform.dwell": 48}), 30),
-                         {"speed": 25, "dwell": 48})
+            self.assertEqual(platform(Readings({**GAME, **absent}), 30), {"speed": 30, "dwell": 48})
+        self.assertEqual(platform(Readings(GAME_EU), 30), {"speed": 30, "dwell": 40})
+        self.assertEqual(platform(Readings(GAME_JP), 30), {"speed": 25, "dwell": 48})
 
 
 class Standing(unittest.TestCase):

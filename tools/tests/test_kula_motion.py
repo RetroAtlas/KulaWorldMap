@@ -448,7 +448,6 @@ def tabled(game):
     r.update({"ball.light.down": 2, "ball.light.into": 1, "ball.light.background": 2048,
               "ball.light.colour": 4000, "ball.light.base": 178})
     r["button.reach"] = 700
-    r["platform.scale"] = 50
     r["captivator.standoff"] = 456
     r["corkscrew.drop"] = 150
     r.update({"dice.seed": 1, "dice.times": 0x41C64E6D, "dice.plus": 12345})
@@ -465,7 +464,7 @@ class Table(unittest.TestCase):
         r = tabled(GAME)
         t = table(r, 30, 60)
         self.assertEqual(t["hz"], 60)
-        self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 1,
+        self.assertEqual(t["kinds"]["5"], {"speed": 25, "dwell": 48,
                                            "ride": {"bias": 512, "rumble": 70,
                                                     "body": {"off": 100, "ends": 256}, "end": {"tolerance": 100}},
                                            "standing": 95})
