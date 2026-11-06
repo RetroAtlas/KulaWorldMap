@@ -36,7 +36,7 @@ What holds the readers to an executable is each tool's own run against its disc,
 
 The same file holds the hiding sets the PAL and the Japanese readings give to the base's, the Japanese paths folding kinds the base tests one by one into ranges.
 
-`test_kula_release.py` holds the release reader the same way, to a fixture of each release's executable's words, every stretch the readings match at its own address in a blob of that executable's size, and to a changed word at any reading stopping it.
+`test_kula_release.py` holds the release reader the same way, to a fixture of each release's executable's words, every stretch the readings match at its own address in a blob of that executable's size, with the release's committed map beside it where it has one for the word the end screen letters a perfect level with, and to a changed word at any reading stopping it.
 
 `test_kula_motion_maps.py` holds the readers to every committed map the same way, over an executable of that release's size laid from the map's own words at the map's places: every row's word decodes to its text, every keyed row's value reads through `Code` by the row's US address alone, every registered instruction with a pattern is read by the map's pattern at its place whatever row stands there too, one the map keeps no pattern for by the pattern the reader gives whatever row stands there, an absent row reads None through every reader asked for it once the instruction it names stands there, a changed word at a keyed row's or an absent row's place stops the reader naming the place, every registered constant has its value in the map in the registry's shape, and a map with a pending row is refused, what it has pending read off its file without building it.
 

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """What a release's executable changes about a level, read off its code: the
 frame rate, the clock's fill, default and swap, the seconds the HUD shows it
-in and what it adds to them, the hourglass's count and points, and the pause
-screen's numbering.
+in and what it adds to them, the hourglass's count and points, the pause
+screen's numbering and what the end screen calls a perfect level, where it
+has a word for one.
 
     python3 tools/kula_release.py --release eu            # every reading, with its address
     python3 tools/kula_release.py --release jp --table    # the rules the build ships
@@ -13,9 +14,12 @@ matched by the instruction it lives in at the release's own address, so a
 build that lays the code out differently stops this with a message rather
 than yielding a number that looks like a reading. Where a release has no
 instruction for a reading, the one that stands in its place is matched and
-the reading is null. The image comes from --disc or the release's own
-variable, and one whose boot line names another release's executable is
-refused.
+the reading is null. A table's words are read at the address a lui and an
+addiu build, as many as the worlds times a reading's count of a world's
+levels, and the word the end screen letters a pair with comes from the
+release's map, never off the sprites. The image comes from --disc or the
+release's own variable, and one whose boot line names another release's
+executable is refused.
 """
 import argparse
 import json
@@ -23,9 +27,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from kula_disc import RELEASES, open_release
+from kula_disc import RELEASES, THEMES, open_release
 from kula_level import TRAILER_KIND
-from kula_motion_code import Code
+from kula_motion_code import Code, Map
 
 # The frame rate the video mode's argument stands for.
 RATES = {0: 60, 1: 50}
@@ -53,6 +57,23 @@ CHECKS = [
     ("and counts from 1", "addiu $a2, $a0, 1", {"us": 0x800478fc, "eu": 0x80048068, "jp": 0x80046cf8}),
     ("or shifts the world for the finals", "sll $v0, $v0, {}", {"us": 0x80047910, "eu": 0x8004807c, "jp": 0x80046d0c}),
     ("and adds the slot", "addu $v1, $v1, $v0", {"us": 0x80047914, "eu": 0x80048080, "jp": 0x80046d10}),
+    ("the end screen picks the way out's pair", "addiu $s2, $zero, 20",
+     {"us": 0x80015730, "eu": 0x80016544, "jp": 0x80015c50}),
+    ("and reads the perfect word", "lw $v1, 7944($v1)", {"jp": 0x80015c58}),
+    ("against one", "bne $v1, $v0, 0x80015c6c", {"jp": 0x80015c60}),
+    ("the loop clears the word as a level starts", "sw $zero, 11940($gp)", {"jp": 0x80040544}),
+    ("asks the perfect routine on an ending's first frame", "jal 0x80042e84", {"jp": 0x80041aa4}),
+    ("and keeps its answer", "sw $v0, 11940($gp)", {"jp": 0x80041aac}),
+    ("the routine reads the lesson flag", "lw $v0, 1180($gp)", {"jp": 0x80042e84}),
+    ("the world", "lw $a1, 1196($gp)", {"jp": 0x80042e98}),
+    ("and the slot", "lw $a0, 1192($gp)", {"jp": 0x80042e9c}),
+    ("takes the world sixteen times", "sll $v0, $a1, 4", {"jp": 0x80042ea0}),
+    ("less once", "subu $v0, $v0, $a1", {"jp": 0x80042ea4}),
+    ("a word each", "sll $v0, $v0, 2", {"jp": 0x80042eac}),
+    ("reads the score", "lw $v1, 11868($gp)", {"jp": 0x80042eb4}),
+    ("and tests it below the table's word", "slt $v1, $v1, $v0", {"jp": 0x80042ec0}),
+    ("the level's mode word", "lw $v0, 5248($v0)", {"jp": 0x80042ed0}),
+    ("and the finals flag", "lw $v1, 1272($gp)", {"jp": 0x80042ee0}),
 ]
 
 # A number that is the immediate of one instruction: the pattern is the
@@ -68,6 +89,10 @@ IMMEDIATES = [
      {"us": 0x80039070, "eu": 0x800398f4, "jp": 0x800396bc}),
     ("the pause screen", "pause.firstFinal", "the pause screen numbers the finals from this", "addiu $a2, $v1, {}",
      {"us": 0x80047918, "eu": 0x80048084, "jp": 0x80046d14}),
+    ("the end screen", "perfect.pair", "the end screen picks this pair for a perfect way out", "addiu $s2, $zero, {}",
+     {"jp": 0x80015c68}),
+    ("the end screen", "perfect.lesson", "and calls the lesson perfect from this score", "slti $v0, $v0, {}",
+     {"jp": 0x80042f00}),
 ]
 
 # A number that is the multiplier a run of shifts and adds applies to what a
@@ -100,6 +125,15 @@ DIVISORS = [
       "eu": (0x800398e4, 0x800398e8, 0x80039924, "sra $v1, $t3, {}")}),
 ]
 
+# A table of words at the address a lui and the addiu after it build, both
+# matched by text, as many as the worlds times the count the reading named
+# gives a world's levels, by which the routine that reads the table indexes it.
+TABLES = [
+    ("the end screen", "perfect.best",
+     "words, one a level, of the score the end screen asks of a level to call it perfect, in a table at",
+     "lui $v1, {}", "addiu $v1, $v1, {}", "pause.levels", {"jp": (0x80042e90, 0x80042e94)}),
+]
+
 # A reading a release has no instruction for, read as the instruction that
 # stands where it would: the keys it leaves null, and that instruction's text
 # at each such release's address.
@@ -109,6 +143,9 @@ ABSENT = [
      {"us": (0x80035fb4, "jal 0x80035580"), "eu": (0x8003680c, "jal 0x80035ddc")}),
     ("the hourglass", ("hourglass.second", "hourglass.points"),
      "the hourglass goes on from the clock's store to its call, scoring nothing", {"jp": (0x800396cc, "jal 0x80011780")}),
+    ("the end screen", ("perfect.pair", "perfect.lesson", "perfect.best"),
+     "the end screen goes on from the way out's pair into the trial's path, asking nothing of the level's score",
+     {"us": (0x80015734, "lui $v1, 0x000a"), "eu": (0x80016548, "lui $a0, 0x000a")}),
 ]
 
 # Where the clock word is reached, each a lui and the load or store after it
@@ -123,7 +160,7 @@ CLOCK_WORD = {
            "swap": (0x80036300, 0x80036304, 0x80036314, 0x80036318)},
 }
 
-GROUPS = ("the frame", "the clock", "the hourglass", "the pause screen")
+GROUPS = ("the frame", "the clock", "the hourglass", "the pause screen", "the end screen")
 
 
 def loaded(code, addr, reg):
@@ -136,6 +173,30 @@ def loaded(code, addr, reg):
 def reaches(code, hi, lo, hp, lp):
     """The word a lui and the load or store after it reach, in RAM's mirror."""
     return (0x80000000 | (code.immediate(hi, hp) << 16)) + code.immediate(lo, lp)
+
+
+def table(code, hi, lo, hp, lp, count):
+    """The `count` words at the address the lui at `hi` and the addiu at `lo` build, each matched against its pattern,
+    or the tool's exit where the words would run past the executable."""
+    code.immediate(hi, hp)
+    code.immediate(lo, lp)
+    at = code.address(hi, lo)
+    if not code.holds(at, 4 * count):
+        sys.exit(f"0x{hi:08x} and 0x{lo:08x} build 0x{at:08x}, where {count} words run past the executable")
+    return [code.word(at + 4 * i) for i in range(count)]
+
+
+def lettered(code, release, pair):
+    """The word the release's map letters the end screen's pair with, or the tool's exit where the release has no map
+    or its map no words block, since the reader takes the lettering through the map and not off the sprites."""
+    if code.map is None:
+        sys.exit(f"the {release} end screen picks pair {pair} for a perfect level, which only a map letters; write one first")
+    if code.map.words is None:
+        sys.exit(f"the {release} map has no words block to letter pair {pair}; regenerate it")
+    pairs = code.map.words[1]
+    if pair not in pairs:
+        sys.exit(f"the {release} map letters no pair {pair}, which the end screen picks for a perfect level")
+    return pairs[pair][0]
 
 
 def clock_word(code, release):
@@ -176,6 +237,9 @@ def readings(code, release):
         if release in where:
             hi, lo, sa, sp = where[release]
             out[key] = code.divisor(hi, hp, lo, lp, sa, sp)
+    for _, key, _, hp, lp, per, where in TABLES:
+        if release in where:
+            out[key] = table(code, *where[release], hp, lp, len(THEMES) * out[per])
     for _, keys, _, where in ABSENT:
         if release in where:
             code.immediate(*where[release])
@@ -189,18 +253,27 @@ def rules(code, release):
     """The release's rules: frames a second, the clock's fill of ticks a second of the trailer's time, its default,
     the swap of one clock for another where the start makes one, the ticks the HUD shows a second and what it adds
     to the whole seconds, the ticks the hourglass takes the clock from and the seconds and points it scores by where
-    it scores, and the pause screen's levels a world, finals a world and the first final's number."""
+    it scores, the pause screen's levels a world, finals a world and the first final's number, and what the end screen
+    calls a perfect level where it has a pair for one, the pair's word by the map's lettering, the score it asks of each
+    level and of the lesson, null elsewhere."""
     r = readings(code, release)
     swap = None if r["clock.swap.from"] is None else [r["clock.swap.from"], r["clock.swap.to"]]
+    perfect = None if r["perfect.pair"] is None else \
+        {"word": lettered(code, release, r["perfect.pair"]), "best": r["perfect.best"], "lesson": r["perfect.lesson"]}
     return {"hz": r["hz"],
             "clock": {"fill": r["clock.fill"], "default": r["clock.default"], "swap": swap, "shown": r["clock.shown"],
                       "plus": r["clock.plus"]},
             "hourglass": {"from": r["hourglass.from"], "second": r["hourglass.second"], "points": r["hourglass.points"]},
-            "pause": {"levels": r["pause.levels"], "finals": r["pause.finals"], "firstFinal": r["pause.firstFinal"]}}
+            "pause": {"levels": r["pause.levels"], "finals": r["pause.finals"], "firstFinal": r["pause.firstFinal"]},
+            "perfect": perfect}
 
 
 def read(release, disc=None):
-    return Code.of(release, open_release(release, disc).read_file(RELEASES[release]["exe"]))
+    """The release's executable at its own addresses, with its map beside it where it has one with nothing pending,
+    which letters the end screen's pairs."""
+    blob = open_release(release, disc).read_file(RELEASES[release]["exe"])
+    mapped = Map.exists(release) and not Map.pending(release)
+    return Code.of(release, blob, Map.load(release) if mapped else None)
 
 
 def show_readings(code, release):
@@ -221,6 +294,9 @@ def show_readings(code, release):
     for group, key, what, _, _, where in MULTIPLIERS + DIVISORS:
         if release in where:
             rows.append((group, what, where[release][0], run[key]))
+    for group, key, what, _, _, _, where in TABLES:
+        if release in where:
+            rows.append((group, f"{what} 0x{code.address(*where[release]):08x}", where[release][0], len(run[key])))
     rows.append(("the clock", f"the clock the start fills, the HUD shows and the hourglass turns lies at "
                  f"0x{run['clock.word']:08x}, this far past gp", CLOCK_WORD[release]["hud"],
                  run["clock.word"] - code.gp))

@@ -730,11 +730,33 @@ On the Japanese disc the other modes' pairs read 大変良くできました and
 
 The Japanese table's pair at 38, which the other discs lack, letters 大変良くできました Perfect!, and the loader picks it in place of the way out's pair in the normal mode, the game's mode word at `0x8009f4ac` at nothing, where a word at `0x800a1f08` is 1 (`SCPS_100.64`, `0x80015c4c` to `0x80015c68`).
 
+The loop clears that word as a level starts (`0x80040544`) and writes it once, on the first frame of an ending, from the answer of a routine it calls there (`0x80041aa4`, `0x80041aac`).
+
+The routine (`0x80042e84` to `0x80042f34`) answers 1 where the level's score at `0x800a1ec0` is not below the level's word in a table of 150 at `0x80075758`, read at the world word times fifteen plus the slot (`0x8009f510`, `0x8009f50c`), the level's mode word at `0x800a1480` is nothing and the finals flag at `0x8009f55c` is nothing; it asks nothing of the outcome or the game's mode.
+
+In the lesson, the flag at `0x8009f500` set, the routine answers 1 where the score is at least 14875 under the same two tests (`0x80042ef8` to `0x80042f30`).
+
+The table holds each level's best collectable score, the disc's total on 146 levels and 100, 150, 50 and 50 under it on LEVEL 40, 83, 94 and 150, where the disc holds points that cannot be collected, and 14875 is the lesson level's total, LESSON, /HIRO/HIRO.PAK#19.
+
+The US and PAL executables hold no such table.
+
+So the Japanese disc shows Perfect! at a way out by the exit or the hidden exit, in the normal mode, on a level with a key that is not hidden, outside the finals, with every collectable point taken, and in the lesson with 14875 or more; never on a bonus level, a hidden level, a Simon room, a trial level or a final.
+
+The same first frame plays sound 119 through the sound call (`0x80050d30`; here `0x8004ddbc`) where the word is 1 and the game's mode is nothing, 118 on any other way out and 121 on the clock's death (`0x80041ad8` to `0x80041b9c`), calls this disc's loop and the PAL's loop do not make; the trial plays 119 by a time test of its own.
+
+The Japanese end screen's tally in the normal mode draws the score as a share of the table's word for the level, 100 at most, or of 14875 in the lesson (`0x80049400` to `0x800494f8`), so a Perfect! run reads 100.
+
+The lesson flag at `0x8009f500` is set by a main-menu handler (`0x80047698`) that also puts the game's mode at nothing and the slot at the loaded pack's count less one (`0x800476a4`, `0x800476d0` to `0x800476e8`) and has no counterpart in the US executable.
+
+While the flag is set the pause screen draws neither its level label nor its number (`0x80046ca4`, `0x80046d44`).
+
 The last final's completion picks the acid's pair for one pass: the next-level routine, which the loop calls on an ending's first pass alone, before the end screen's draw (`0x80041b08` to `0x80041b10`, `0x80041b98`, `0x80041c30`), counts the world word at `0x800a340c` on as the pack's levels run out (`0x800428d0` to `0x800428d4`, `0x8004296c`, `0x80042970`), the loader in the arcade reads that word at 10 with the finals flag at `0x800a3454` set and a way out as the index 12 (`0x80015880` to `0x800158cc`), and the pass's tail puts the world back to nothing and the total below it (`0x80041d48` to `0x80041d4c`, `0x80041e44` to `0x80041e48`).
 
 What the screen shows of that pass is not read.
 
 The table ships the word each of the eleven codes picks as `play`'s `words`, "Well Done!" for the three ways out, the word the game's end shows as their `over` and the three the Copycat mode's end names a winner or a draw with as `won1`, `won2` and `equal`, each pair held to the disc by a digest of its two images.
+
+The Japanese release's rules carry the pair's word, the table of 150 and the lesson's 14875 as `perfect`'s `word`, `best` and `lesson`, the word the map's lettering of the pair and the table read off the executable ([tools.md](tools.md)), and the US and PAL rules carry `perfect` as null.
 
 **A bonus level marks the block under the ball on every frame it stands on one, 50 for the first time, and ends with the last.** With the bonus flag, which the start sets where a level has no key outside the Simon rooms (`0x80035fe0`), the hazards routine takes the cell 356 under the ball's centre along the normal, the block it stands on, and where it lies at 1 to 33 on every axis hands it to `0x8002dc30` (`0x8003ad8c` to `0x8003ae78`), as the move step does for the floor block ahead, under the wall, as the ball climbs it (`0x80030468`, `0x80030490`).
 
@@ -807,6 +829,8 @@ Every case runs for the frames one swing of the arcade's eye takes, the standing
 **A run banks its points and its fruit as each level ends, and the next-level routine picks the slot the game loads next.** On the first pass of an ending the loop calls the points routine (`0x80041b90`, `0x80041f30`) and then the next-level routine (`0x80041b98`, `0x8004245c`).
 
 Each takes the arcade's branch where the game's mode word at `0x800a33b0` is nothing (`0x80041f34`, `0x80041f3c`, `0x800424c8`, `0x800424d0`); the first skips the banking below while either of two words is set, at `0x800a33f4`, which a routine the loop calls sets (`0x80042afc`), and at `0x800a3414`, which the next-level routine itself sets as a world ends (`0x80041f44` to `0x80041f5c`, `0x80042974`, `0x80042978`), and the second returns at once on the first of the two, the word at `0x800a33f4`, and asks nothing of the second (`0x800424b4`, `0x800424bc`).
+
+The word at `0x800a33f4` is set to 1 only in that routine (`0x80042af8`, `0x80042afc`), which the loop calls where a word at `0x800a3888` is 1 (`0x800411f4`, `0x800411fc`), on a path that reads bytes through a port opened at 9600 (`0x80047708`), so it never reads 1 in ordinary play; the Japanese disc tests its counterpart at `0x8009f4f4` the same way (`0x800421b0`, `0x8004275c`) and only ever clears it.
 
 The fruit are kept in two words: the one the pickups write at `0x800a5664`, where a fruit of type 43 to 47 sets the bit 1, 2, 4, 8 or 16 (`0x80038ca4`, `0x80038cb0`, `0x80038d58`, `0x80038e00`, `0x80038ea8`, `0x80038f4c`, `0x80038f58`) and the never-reached case for type 27 all five (`0x8003902c`), and a bank at `0x800a53ec`.
 
@@ -1354,8 +1378,6 @@ Of the Japanese Simon rooms, what the word at `0x8009f530` holds as the menu sta
 
 The view's scale down, 3840 of 4096 on this disc and the Japanese and 4096 on the PAL ([camera.md](camera.md)), ships in the table as `play.screen.scale`, which the map reads nowhere: its view in play stands the same height on every disc, and the start camera it draws sees as high as this disc's on each.
 
-What sets the word at `0x800a1f08` the Japanese end screen picks its Perfect! pair on ("The level's clock and its end" above) is not read, so the pair's word is held in the map by its digest and ships in no table.
-
 The laser's beam was not looked at for a pulse.
 
 On a crumbling block, h is scaled by a table before the shadow's strength is taken from it (`0x8003237c`), which the map does not draw.
@@ -1386,7 +1408,13 @@ What the fruit takes 200 off, a word by the world at `0x800a5584` that the level
 
 The third of the three words the loop runs the ending's routine on, at `0x800a57f8`, is not read for what it means ("The level's clock and its end" above).
 
-How the finals are reached, by the flag at `0x800a3454`, which one routine writes from a table and another sets to 1 (`0x800462c8`, `0x8004910c`), and what the word at `0x800a33f4` marks, on which the points routine skips its banking and the next-level routine returns, are not read.
+How the finals are reached, by the flag at `0x800a3454`, which one routine writes from a table and another sets to 1 (`0x800462c8`, `0x8004910c`), is not read.
+
+What the path that sets the word at `0x800a33f4` receives through its port is not read.
+
+The routines that path opens the port by, with 9600, and reads it by (`0x8006f2f8`, `0x8006f690`) were not looked at.
+
+Which level the Japanese lesson plays at a fresh boot, after a Simon room or after a final, where its handler takes the loaded pack's last slot (`0x800476d0`), is not read.
 
 The hourglass's rule as read, 1190 less 10 a whole second left, differs from the one play had put at 1200 less 12 a second, and a count in play has not been taken against the code's rule.
 

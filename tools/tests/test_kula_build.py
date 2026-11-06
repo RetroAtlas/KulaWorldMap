@@ -337,7 +337,8 @@ MOTION = {"hz": 60, "turn": 4096, "play": {"clock": {"tick": 1, "second": 50}, "
           "kinds": {"5": {"speed": 25, "dwell": 48}, "7": {"cycle": [[1, 2]]}}}
 SKINS = {"textures": 56, "shade": {"A": [1, 0]}, "turn": {"A": 2}, "light": {"A": [[1, 2, 3]]},
          "tint": {"A": [1, 2, 3], "B": [4, 5, 6]}, "hides": {"other": [1]}, "cycles": {"fire": [1, 2]}}
-RULES = {"hz": 60, "clock": {"fill": 50}, "hourglass": {"from": 5999, "second": 50, "points": 10}}
+RULES = {"hz": 60, "clock": {"fill": 50}, "hourglass": {"from": 5999, "second": 50, "points": 10}, "perfect": None}
+PERFECT = {"word": "Perfect!", "best": [0] * 150, "lesson": 14875}
 
 
 def changed(table, *changes):
@@ -394,11 +395,19 @@ class TheTables(unittest.TestCase):
         hold_to_rules(MOTION, RULES)
         nulls = changed(MOTION, ("types.35.take.points", None), ("types.35.take.clock.second", None))
         hold_to_rules(nulls, changed(RULES, ("hourglass.second", None), ("hourglass.points", None)))
+        held = changed(MOTION, ("play.words", {"exit": "Well Done!"}), ("play.next", {"worlds": 10, "slots": 15}))
+        hold_to_rules(held, changed(RULES, ("perfect", PERFECT)))
         for table, rules, what in ((changed(MOTION, ("hz", 50)), RULES, "frames a second as 50, where the rules read 60"),
                                    (MOTION, changed(RULES, ("clock.fill", 60)), "the clock's ticks a second"),
                                    (changed(MOTION, ("types.35.take.clock.from", 4999)), RULES, "the hourglass's count"),
                                    (nulls, RULES, "the hourglass's seconds as null"),
-                                   (MOTION, changed(RULES, ("hourglass.points", None)), "the hourglass's points as 10")):
+                                   (MOTION, changed(RULES, ("hourglass.points", None)), "the hourglass's points as 10"),
+                                   (held, changed(RULES, ("perfect", {**PERFECT, "word": "Well Done!"})),
+                                    "perfect word, Well Done!, is one play's words letter"),
+                                   (held, changed(RULES, ("perfect", {**PERFECT, "best": [0] * 149})),
+                                    "149 words, where the motion table's next counts 150"),
+                                   (held, changed(RULES, ("perfect", {**PERFECT, "best": [0] * 151})),
+                                    "151 words, where the motion table's next counts 150")):
             with self.subTest(what=what):
                 with self.assertRaises(SystemExit) as stop:
                     hold_to_rules(table, rules)

@@ -46,6 +46,7 @@ import {
   worldTint,
   motionTableOf,
 } from "../../public/js/viewer/data.js";
+import { levelPoints } from "../../public/js/viewer/draw/points.js";
 
 const [us, eu, jp] = releases;
 const FACES = 6;
@@ -350,6 +351,17 @@ test("the rules are what each release's executable sets", () => {
     each((x) => most(x.hourglass)),
     [1190, 990, 0],
   );
+  assert.deepEqual(
+    each(
+      (x) =>
+        x.perfect && {
+          word: x.perfect.word,
+          best: x.perfect.best.length,
+          lesson: x.perfect.lesson,
+        },
+    ),
+    [null, null, { word: "大変良くできました Perfect!", best: 150, lesson: 14875 }],
+  );
 });
 
 test("the README's sentence on the slots that differ is what the files hold", () => {
@@ -597,6 +609,40 @@ test("the hourglass's points under each release are what its rules make of the c
     setCurrent(r.id);
     assert.equal(markerPoints(hourglass), most(r.rules.hourglass), r.id);
   }
+});
+
+test("the Japanese rules' table of best scores is the map's best score for each of the 150 numbered levels under that release, world by world and slot by slot, the curated score on the four whose disc holds points nothing can collect and the total on the rest, and its lesson figure is the LESSON's total", (t) => {
+  t.after(() => {
+    setObjects({});
+    setCurrent("us");
+  });
+  setReleases(releases);
+  setObjects(objects);
+  setAnnotations(annotations);
+  setCurrent("jp");
+  const { best, lesson } = jp.rules.perfect;
+  const { slots } = objects.motion.play.next;
+  const at = (theme, i) =>
+    levelsOf("jp").find((l) => l.pack === `/${theme}/${theme}.PAK` && l.index === i);
+  const numbered = mapData.themes.flatMap((w) =>
+    Array.from({ length: slots }, (_, i) => at(w.id, i)),
+  );
+  assert.equal(numbered.length, 150);
+  assert.deepEqual(
+    best,
+    numbered.map((l) => levelScore(l) ?? levelPoints(l)),
+  );
+  assert.deepEqual(
+    numbered.filter((l, i) => best[i] !== levelPoints(l)).map((l) => [l.shown, levelScore(l)]),
+    [
+      ["LEVEL 40", 8675],
+      ["LEVEL 83", 4650],
+      ["LEVEL 94", 9975],
+      ["LEVEL 150", 21250],
+    ],
+  );
+  assert.equal(lesson, levelPoints(at("HIRO", 19)));
+  assert.equal(lesson, 14875);
 });
 
 test("the statistics count the release shown's levels, so a type the Japanese disc removes is placed fewer times under it", (t) => {

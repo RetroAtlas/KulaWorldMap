@@ -313,7 +313,9 @@ def skins_overlay(skins, base, tinted=()):
 def hold_to_rules(motion, rules):
     """The motion table held to the rules where the two readers read the same
     instructions: the frames of a second, the clock's ticks a second and the
-    hourglass's count, its seconds and its points, a null agreeing with a null."""
+    hourglass's count, its seconds and its points, a null agreeing with a null,
+    and, where the rules carry what the end screen calls a perfect level, its
+    word none of play's words and its table a word for every numbered level."""
     take = motion["types"][str(HOURGLASS)]["take"]
     read = (("frames a second", motion["hz"], rules["hz"]),
             ("the clock's ticks a second", motion["play"]["clock"]["second"], rules["clock"]["fill"]),
@@ -323,6 +325,15 @@ def hold_to_rules(motion, rules):
     for what, theirs, ours in read:
         if theirs != ours:
             sys.exit(f"the motion table reads {what} as {json.dumps(theirs)}, where the rules read {json.dumps(ours)}")
+    perfect = rules["perfect"]
+    if perfect is None:
+        return
+    if perfect["word"] in motion["play"]["words"].values():
+        sys.exit(f"the end screen's perfect word, {perfect['word']}, is one play's words letter an ending with already")
+    count = motion["play"]["next"]["worlds"] * motion["play"]["next"]["slots"]
+    if len(perfect["best"]) != count:
+        sys.exit(f"the end screen's table holds {len(perfect['best'])} words, where the motion table's next counts "
+                 f"{count} numbered levels")
 
 
 def rooms_of(code, base, copycat):

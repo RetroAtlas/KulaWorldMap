@@ -411,9 +411,13 @@ The teleporter is left with nothing to reach because the ice on 15,18,12 and 17,
 
 The best score in play. The disc holds 100 more, two crumbling blocks that cannot be reached.
 
+The Japanese executable's table of the score its end screen asks of each level to call it perfect holds the same figure, 8675, at the level's index (`SCPS_100.64`, `0x80075758`, word 39).
+
 ### /FIELD/FIELD.PAK#7: LEVEL 83
 
 The best score in play. The disc holds 150 more, three crumbling blocks on the top level that cannot be broken by any means.
+
+The Japanese executable's table of the score its end screen asks of each level to call it perfect holds the same figure, 4650, at the level's index (`SCPS_100.64`, `0x80075758`, word 82).
 
 ### /FIELD/FIELD.PAK#15: BONUS 16
 
@@ -438,6 +442,8 @@ What the platforms are for: once the exit is open the boost button lands the bal
 ### /ATLANT/ATLANT.PAK#3: LEVEL 94
 
 The best score in play. The disc holds 50 more, a crumbling block that is out of reach.
+
+The Japanese executable's table of the score its end screen asks of each level to call it perfect holds the same figure, 9975, at the level's index (`SCPS_100.64`, `0x80075758`, word 93).
 
 The hourglass and two gold coins on the crumbling blocks are left out because the game never walks what stands on a crumbling block ([level-format.md](level-format.md)).
 
@@ -518,6 +524,8 @@ The best score in play. The disc holds 50 more, the one crumbling block it leave
 On the PAL disc it holds 50 more, the same crumbling block, the score moving with the hourglass's points there (type 35).
 
 On the Japanese disc it holds 50 more, the same crumbling block, the score moving with the hourglass's points there (type 35).
+
+The Japanese executable's table of the score its end screen asks of each level to call it perfect holds that disc's figure, 21250, at the level's index (`SCPS_100.64`, `0x80075758`, word 149).
 
 ### /HELL/HELL.PAK#15: BONUS 28
 
