@@ -37,12 +37,18 @@ const forms = () => ({
   hidden: level(row(10, 18), [start(), settings(objects.skins.hidden.type)]),
 });
 
-/** A run of `l` scoring `score`, ended by `code` over `game`: how it ended, in `table`'s words. */
-function endedBy(l, code, score, { game = null, table = play } = {}) {
-  const live = begin(l, null, game);
+/** A run of `l` under a release's `rules` scoring `score`, ended by `code` over `game`: how it
+    ended, in `table`'s words, the ending perfect where `perfect`. */
+function endedBy(
+  l,
+  code,
+  score,
+  { game = null, table = play, rules = null, perfect = false } = {},
+) {
+  const live = startRun(l, index(l), { ...TABLES, rules }, circuits(), null, game);
   live.words.score = score;
   end(live, code, []);
-  return howEnded(code, live.words, conclude(live), table);
+  return howEnded(code, live.words, conclude(live), table, rules, perfect);
 }
 
 /** The US table with the Japanese disc's words, which end in no mark. */
@@ -139,6 +145,52 @@ test("how the level ended closes the Japanese disc's word for a death with the J
     "タイムアウト。 50 points, 99 seconds left.",
   );
   assert.equal(endedBy(l, play.ending.lost, 50), "FELL OFF! 50 points, 99 seconds left.");
+});
+
+test("how the level ended adds the Japanese disc's Perfect! after the map's sentence for each way out where the ending is perfect, before the points and what a run banked, closed as a word is where it ends in a letter, and never for a death or a room", () => {
+  const jp = releases.find((r) => r.id === "jp").rules;
+  const { word } = jp.perfect;
+  assert.equal(word, "大変良くできました Perfect!");
+  const ways = {
+    exit: "Out by the exit: the level is done.",
+    bonus: "Every block is marked: the level is done.",
+    hidden: "Out by the hidden exit: the level is done.",
+  };
+  const levels = forms();
+  const under = { table: japanese(), rules: jp, perfect: true };
+  for (const [name, l] of Object.entries(levels))
+    assert.equal(
+      endedBy(l, play.ending[name], 4000, under),
+      `${ways[name]} ${word} 4000 points, 119 seconds left.`,
+      name,
+    );
+  assert.equal(
+    endedBy(counted(levels.exit, 0, 0), play.ending.exit, 4000, { ...under, game: startGame() }),
+    `${ways.exit} ${word} 4000 points, 119 seconds left. 4000 points banked, 4000 points in all.`,
+  );
+  assert.equal(
+    endedBy(levels.exit, play.ending.exit, 4000, { table: japanese(), rules: jp }),
+    `${ways.exit} 4000 points, 119 seconds left.`,
+    "not perfect",
+  );
+  assert.equal(
+    endedBy(levels.exit, play.ending.exit, 4000, {
+      ...under,
+      rules: { ...jp, perfect: { ...jp.perfect, word: "Perfect" } },
+    }),
+    `${ways.exit} Perfect. 4000 points, 119 seconds left.`,
+    "a word ending in a letter",
+  );
+  assert.equal(
+    endedBy(levels.exit, play.ending.lost, 4000, under),
+    "落ちた。 4000 points, 119 seconds left.",
+    "a death",
+  );
+  assert.equal(
+    endedBy(room(), play.ending.exit, 4000, under),
+    "良くできました。 The round is done. 4000 points, 119 seconds left.",
+    "a room",
+  );
 });
 
 test("a room's word says the round is done, or lost, with whose point it is where a match is on, and names the winner where the match is won", () => {

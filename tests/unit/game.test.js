@@ -1,12 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapData, objects } from "./fixtures.js";
-import { end, restart } from "../../public/js/play/rules.js";
+import { mapData, objects, releases } from "./fixtures.js";
+import { index } from "../../public/js/viewer/data.js";
+import { end, restart, startRun } from "../../public/js/play/rules.js";
 import {
   FORM,
   conclude,
   nextOf,
   numberOf,
+  perfectOf,
   settle,
   startGame,
   stationOf,
@@ -15,6 +17,7 @@ import {
   COUNT,
   TABLES,
   begin,
+  circuits,
   counted,
   level,
   picked,
@@ -304,4 +307,63 @@ test("the last world's fifteenth level ends the game, and a final, a draft and a
   assert.equal(nextOf(startGame(), draft, COUNT), null);
   const broke = { total: -1, bank: 0, fruit: 0, count: 0, kept: 0 };
   assert.equal(picked(broke, 0, 3, play.ending.exit), null);
+});
+
+/** A run of `l` under a release's `rules`, ended by `code` at `score`. */
+const endedUnder = (l, rules, code, score) => {
+  const live = startRun(l, index(l), { ...TABLES, rules }, circuits());
+  live.words.score = score;
+  end(live, code, []);
+  return live;
+};
+
+test("the end screen calls a way out perfect where the disc's rules hold its table, on a numbered level with the score at the table's word for its world and slot and not one below, or from the lesson, the first world's last slot, at 14875 and not one below, and never with the US rules or none, after a death, in a bonus or hidden form, in a final, in a Simon room, for a draft or for a bonus, hidden or other world's last slot at any score", () => {
+  const [us, , jp] = releases.map((r) => r.rules);
+  const { best, lesson } = jp.perfect;
+  const { slots } = play.next;
+  const keyed = (place, slot, final = false) =>
+    counted(level(row(10, 18), [start()]), place, slot, final);
+  const perfect = (l, rules, code, score) => perfectOf(endedUnder(l, rules, code, score), COUNT);
+  // LEVEL 15, the first world's last numbered slot
+  const fifteen = keyed(0, slots - 1);
+  assert.equal(best[slots - 1], 11975);
+  assert.equal(perfect(fifteen, jp, play.ending.exit, 11975), true);
+  assert.equal(perfect(fifteen, jp, play.ending.hidden, 11975), true);
+  assert.equal(perfect(fifteen, jp, play.ending.exit, 11974), false);
+  assert.equal(perfect(fifteen, jp, play.ending.exit, 20000), true);
+  assert.equal(perfect(fifteen, us, play.ending.exit, 20000), false, "the US rules");
+  const none = begin(fifteen);
+  none.words.score = 20000;
+  end(none, play.ending.exit, []);
+  assert.equal(perfectOf(none, COUNT), false, "no rules");
+  // the table is read at the world's place times the slots plus the slot
+  const word = best[3 * slots + 7];
+  assert.equal(perfect(keyed(3, 7), jp, play.ending.exit, word), true);
+  assert.equal(perfect(keyed(3, 7), jp, play.ending.exit, word - 1), false);
+  for (const code of Object.values(play.ending).filter((c) => c < 0))
+    assert.equal(perfect(fifteen, jp, code, 20000), false, `${code}`);
+  const bonus = counted(level(row(10, 18), [start()], 99, false), 0, 3);
+  assert.equal(perfect(bonus, jp, play.ending.bonus, 20000), false, "a level with no key");
+  const hidden = counted(level(row(10, 18), [start(), settings(objects.skins.hidden.type)]), 0, 3);
+  assert.equal(perfect(hidden, jp, play.ending.exit, 20000), false, "a hidden level");
+  assert.equal(perfect(keyed(0, 1, true), jp, play.ending.exit, 20000), false, "a final");
+  // a level marked a room with no key plays in the Simon rooms' mode, in the arcade's form
+  const room = counted({ ...level(row(10, 18), [start()], 99, false), simon: true }, 0, 3);
+  const played = endedUnder(room, jp, play.ending.exit, 20000);
+  assert.equal(played.words.form, FORM.arcade);
+  assert.equal(perfectOf(played, COUNT), false, "a Simon room");
+  const draft = {
+    ...level(row(10, 18), [start()]),
+    theme: "HIRO",
+    pack: "/DRAFT/DRAFT.PAK",
+    index: 0,
+  };
+  assert.equal(perfect(draft, jp, play.ending.exit, 20000), false, "a draft");
+  for (const slot of [play.next.bonus[0], play.next.hidden])
+    assert.equal(perfect(keyed(0, slot), jp, play.ending.exit, 1e6), false, `slot ${slot}`);
+  assert.equal(perfect(keyed(1, COUNT - 1), jp, play.ending.exit, 1e6), false, "another world's");
+  // the lesson
+  assert.equal(lesson, 14875);
+  assert.equal(perfect(keyed(0, COUNT - 1), jp, play.ending.exit, 14875), true);
+  assert.equal(perfect(keyed(0, COUNT - 1), jp, play.ending.exit, 14874), false);
 });

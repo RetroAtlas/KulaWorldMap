@@ -1,7 +1,8 @@
 // The game's words over a run: the mode a level is played in and where it stands in the game's
-// count, the points settled as a level ends and the slot the game loads next, and the Simon rooms'
-// match, its rounds, its two players' turns and points, the room it goes on to and the moves the
-// rooms read from the pad, pack and hold to the sequence.
+// count, the points settled as a level ends, whether the end screen calls the ending perfect and
+// the slot the game loads next, and the Simon rooms' match, its rounds, its two players' turns and
+// points, the room it goes on to and the moves the rooms read from the pad, pack and hold to the
+// sequence.
 import { LEFT, PAD, REST, RIGHT, turning } from "./ball.js";
 import { simonRoom } from "../viewer/skins.js";
 
@@ -143,6 +144,23 @@ export function settle(game, live) {
   }
   game.fruit = w.fruit;
   return { penalty, banked, total: game.total, over: game.total < 0 };
+}
+
+/** Whether the disc's end screen calls the ending perfect, as the Japanese one does where the
+    rules carry its table: a way out, outside the Simon rooms' mode, of a level in the arcade's
+    mode that the game counts and that is not a final, with the score not below the table's word
+    for its world and slot, or, from the lesson, the first world's last slot of `count`, the
+    pack's levels, with the score not below the lesson's figure; any other slot is never perfect. */
+export function perfectOf(live, count) {
+  const perfect = live.tables.rules?.perfect;
+  const w = live.words;
+  if (!perfect || w.outcome <= 0 || w.mode === SIMON || w.form !== FORM.arcade) return false;
+  const station = stationOf(live.level, live.tables);
+  if (!station || station.final) return false;
+  const { slots } = live.tables.motion.play.next;
+  const { place, slot } = station;
+  if (slot < slots) return w.score >= perfect.best[place * slots + slot];
+  return place === 0 && slot === count - 1 && w.score >= perfect.lesson;
 }
 
 /** The slot the game loads after the level's ending, over `game`, the run's words, as the pack and

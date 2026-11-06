@@ -139,16 +139,22 @@ export function banked({ penalty, banked: points, total, over }, words) {
   return over ? `${sum} ${closed(words.over)} ${AFRESH}` : sum;
 }
 
-/** How the level ended: the end screen's word for the ending, or the map's for a way out, a
-    room's with whether the round is done or lost, the points and the time left, and what the
-    ending did to the run's total or, where the match is won, that it starts afresh. */
-export function howEnded(code, w, settled, play, rules = null) {
+/** How the level ended: the end screen's word for the ending, or the map's for a way out, with
+    the disc's word for a perfect one after it where `perfect`, a room's with whether the round is
+    done or lost, the points and the time left, and what the ending did to the run's total or,
+    where the match is won, that it starts afresh. */
+export function howEnded(code, w, settled, play, rules = null, perfect = false) {
   const { words } = play;
   const name = endingName(code);
   const seconds = secondsOf(w.clock, play, rules);
   const room = w.mode === MODE.simon;
   const word = words[name] ?? `${ENDED}.`;
-  const told = room ? roomTold(code, word, settled) : (VERDICT[name] ?? closed(word));
+  const praised = (way) => (perfect ? `${way} ${closed(rules.perfect.word)}` : way);
+  const told = room
+    ? roomTold(code, word, settled)
+    : VERDICT[name]
+      ? praised(VERDICT[name])
+      : closed(word);
   const how = `${told} ${counted(w.score, "point")}, ${counted(seconds, "second")} left.`;
   const did = settled && (room ? settled.won && MATCH_AFRESH : banked(settled, words));
   return did ? `${how} ${did}` : how;
