@@ -2,18 +2,22 @@ import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { frozen, settle, still, textured, trackErrors } from "./helpers.js";
 import {
+  EVERY_POINT,
   betweenFrames,
   clockLine,
   jumped,
   line,
+  opened,
   pixelAt,
   route,
+  say,
   startPlay,
   station,
   status,
   stepTo,
   stopOn,
   top,
+  wentOut,
 } from "./playhelpers.js";
 
 const LOCKED = "Leave play to change the release";
@@ -354,6 +358,24 @@ test("with JP pressed a fall off LEVEL 1 ends in the word the Japanese disc's en
       `^${lost}。 0 points, \\d+ seconds left\\. Space or Enter starts the level again\\.$`,
     ),
   );
+  expect(errors).toEqual([]);
+});
+
+test("with JP pressed a way out of LEVEL 1 with every point taken ends in the map's sentence with the Japanese disc's Perfect! after it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page, { hash: "/#HIRO/0/45,35/fit/33/d-jp" });
+  await expect(pressed(page)).toHaveText("JP");
+  await startPlay(page);
+  await expect(line(page)).toHaveText("Playing · on the top of 17,18,17, facing -y");
+  await frozen(page);
+  const { word } = jp.rules.perfect;
+  const perfect = new RegExp(
+    `^Out by the exit: the level is done\\. ${word} 4000 points, \\d+ seconds left\\. Space or Enter starts the level again\\.$`,
+  );
+  expect(await wentOut(page, EVERY_POINT)).toMatch(perfect);
+  await expect(say(page)).toHaveText(perfect);
   expect(errors).toEqual([]);
 });
 

@@ -318,6 +318,34 @@ export const WAY_OUT = [
   ["ArrowUp", "17,12,17"],
 ];
 
+// the way from LEVEL 1's start to its exit over its two coins, its key and its fruit, every point
+// the level holds: the fruit stands at the far corner, so its side is rolled up and back down
+export const EVERY_POINT = [
+  ["ArrowUp", "17,17,17"],
+  ["ArrowUp", "17,16,17"],
+  ["ArrowUp", "17,15,17"],
+  ["ArrowRight", "+x"],
+  ["ArrowUp", "18,15,17"],
+  ["ArrowUp", "19,15,17"],
+  ["ArrowUp", "20,15,17"],
+  ["ArrowRight", "+y"],
+  ["ArrowUp", "20,16,17"],
+  ["ArrowUp", "20,17,17"],
+  ["ArrowUp", "20,18,17"],
+  ["ArrowLeft", "+x"],
+  ["ArrowLeft", "-y"],
+  ["ArrowUp", "20,17,17"],
+  ["ArrowUp", "20,16,17"],
+  ["ArrowUp", "20,15,17"],
+  ["ArrowUp", "20,14,17"],
+  ["ArrowUp", "20,13,17"],
+  ["ArrowUp", "20,12,17"],
+  ["ArrowLeft", "-x"],
+  ["ArrowUp", "19,12,17"],
+  ["ArrowUp", "18,12,17"],
+  ["ArrowUp", "17,12,17"],
+];
+
 // the held clock's drivers
 /** The motion table as the page reads it, for the frame counts a stepped test asks of it. */
 export const table = (page) =>
@@ -371,3 +399,32 @@ export async function jumped(page) {
   await onward(page, 1);
   await page.keyboard.up("ArrowUp");
 }
+
+/** Drive the frozen level along `way`, each tap run to its rest, and on through the exit's wait to
+    the ending: the strip's verdict. */
+export const wentOut = (page, way) =>
+  page.evaluate(async (way) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ draw }, { motionTable }, P] = await Promise.all(
+      ["viewer/draw/render.js", "viewer/data.js", "play/play.js"].map(at),
+    );
+    const tap = (k) => {
+      for (const type of ["keydown", "keyup"])
+        document.body.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+    };
+    const run = () => {
+      window.__step(1000 / motionTable().hz);
+      draw();
+    };
+    for (const [key, to] of way) {
+      tap(key);
+      for (let f = 0; f < 200; f++) {
+        run();
+        const s = P.station();
+        if (!s.moving && (s.block.join() === to || s.heading === to)) break;
+      }
+    }
+    const status = document.getElementById("playStatus");
+    for (let f = 0; f < 60 && !status.textContent; f++) run();
+    return status.textContent;
+  }, way);

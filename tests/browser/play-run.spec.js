@@ -16,6 +16,7 @@ import {
   status,
   stepTo,
   toggled,
+  wentOut,
 } from "./playhelpers.js";
 import { ENDED } from "../../public/js/play/phrases.js";
 
@@ -71,35 +72,6 @@ const fruitPixels = (page, shown = null) =>
     },
     [FRUIT, FRUIT_TYPE, shown],
   );
-
-/** Drive the frozen level along `way`, each tap run to its rest, and on through the exit's wait to
-    the ending: the strip's verdict. */
-const wentOut = (page, way) =>
-  page.evaluate(async (way) => {
-    const at = (p) => import(new URL(`js/${p}`, location.href).href);
-    const [{ draw }, { motionTable }, P] = await Promise.all(
-      ["viewer/draw/render.js", "viewer/data.js", "play/play.js"].map(at),
-    );
-    const tap = (k) => {
-      for (const type of ["keydown", "keyup"])
-        document.body.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
-    };
-    const run = () => {
-      window.__step(1000 / motionTable().hz);
-      draw();
-    };
-    for (const [key, to] of way) {
-      tap(key);
-      for (let f = 0; f < 200; f++) {
-        run();
-        const s = P.station();
-        if (!s.moving && (s.block.join() === to || s.heading === to)) break;
-      }
-    }
-    const status = document.getElementById("playStatus");
-    for (let f = 0; f < 60 && !status.textContent; f++) run();
-    return status.textContent;
-  }, way);
 
 test("with Play on through the levels on a level's fruit is the first the run has not banked, drawn as the map draws LEVEL 1's whatever the level's number, and off it is the one the map draws for the level", async ({
   page,
