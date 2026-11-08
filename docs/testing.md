@@ -12,7 +12,7 @@ The unit tests also hold the repo to its conventions: `imports.test.js` the laye
 
 `npm run test:browser` runs the browser tests under `tests/browser` with Playwright in Chromium, at 1280 by 720, against the site served from `public/` on port 8480; every test opens its own page, so the tests of one file run spread over the workers as the files do.
 
-The site is served over HTTP/1.1 so that a page keeps its connections open: at one connection a request, the server's default, a run leaves more connections closing than the machine has ports to open new ones from, and the tests late in it fail to reach the page.
+The site is served over HTTP/1.1, by `tests/browser/serve.py`, so that a page keeps its connections open: at one connection a request, the server's default, a run leaves more connections closing than the machine has ports to open new ones from, and the tests late in it fail to reach the page.
 
 One spec runs with its name after the command, `npm run test:browser -- play-hud`, and one test with `-g` and a piece of its title.
 
