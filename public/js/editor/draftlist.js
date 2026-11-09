@@ -19,6 +19,7 @@ import { say, describeLevel } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";
 import { COLOURS, facesOf, levelKey, writeKwl } from "../format/kwl.js";
 import {
+  TEXT_MOST,
   UNTITLED,
   blank,
   fromLevel,
@@ -39,6 +40,7 @@ import { TYPE } from "../format/lattice.js";
 const CONFIRM_MS = 4000;
 const NOTE_MS = 2000;
 const TITLE_LENGTH = 80;
+const AUTHOR = "kula.author";
 const TIME_RANGE = `The time is from 1 to ${TIME_LIMIT}.`;
 const GAME_FILE = "application/octet-stream";
 const NO_KEY = "How the game plays the level while it has no key";
@@ -59,6 +61,32 @@ const keyed = (doc) => doc.blocks.some((b) => facesOf(b).some(([, o]) => o.type 
 const NO_MEMBERS = "nothing of this colour";
 const startsOff = (doc, colour) => doc.circuits?.[String(colour)] === "off";
 const some = (n, word, words = `${word}s`) => `${n} ${n === 1 ? word : words}`;
+const cut = (text) => [...text].slice(0, TITLE_LENGTH).join("");
+
+/** The name typed last into an Author field in this browser, or nothing. */
+function rememberedAuthor() {
+  try {
+    const v = localStorage.getItem(AUTHOR);
+    return typeof v === "string" ? cut(v) : "";
+  } catch {
+    return "";
+  }
+}
+
+function rememberAuthor(name) {
+  try {
+    if (name) localStorage.setItem(AUTHOR, cut(name));
+    else localStorage.removeItem(AUTHOR);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** `doc` with the remembered name as its author where it names none. */
+function signed(doc) {
+  const author = rememberedAuthor();
+  return doc.author || !author ? doc : setMeta(doc, { author });
+}
 
 // The disc's level shown last, which deleting the shown draft returns to.
 let lastDisc = 0;
@@ -84,7 +112,7 @@ export function wireDrafts() {
   shownBefore = state.lvl !== null;
   if (state.li >= 0) lastDisc = state.li;
   $("draftNew").onclick = () => {
-    const id = drafts.create(blank(state.lvl.theme));
+    const id = drafts.create(signed(blank(state.lvl.theme)));
     open(id, "Made a new level");
     if (id !== null) emit("edit-wanted");
   };
@@ -130,7 +158,9 @@ export function copyShown() {
 function shipped(l) {
   const template = fromLevel(l);
   const disc = releaseOf(l.release);
-  return disc ? setMeta(template, { title: `${template.title} (${disc.label})` }) : template;
+  return signed(
+    disc ? setMeta(template, { title: `${template.title} (${disc.label})` }) : template,
+  );
 }
 
 function open(id, verb) {
@@ -317,6 +347,13 @@ function buildForm(id, box) {
     if (d) quietly(id, setMeta(d.doc, meta), label, { merge });
   };
   const field = (text, control) => el("label", {}, el("span", { textContent: text }), control);
+  /** Typing into `control` writes `key`, the letters of a moment as one step. */
+  const typed = (control, key, label, then = () => {}) => {
+    control.oninput = () => {
+      edit({ [key]: control.value }, label, true);
+      then(control.value);
+    };
+  };
 
   const title = el("input", {
     id: "draftTitle",
@@ -327,8 +364,24 @@ function buildForm(id, box) {
     spellcheck: false,
     title: "The level's title",
   });
-  title.oninput = () => edit({ title: title.value }, "changed the title", true);
+  typed(title, "title", "changed the title");
   const source = el("p", { id: "draftFrom", className: "sub", hidden: true });
+  const author = el("input", {
+    id: "draftAuthor",
+    type: "text",
+    maxLength: TITLE_LENGTH,
+    autocomplete: "off",
+    spellcheck: false,
+    title: "Your name, shown with the level wherever it goes",
+  });
+  typed(author, "author", "changed the author", rememberAuthor);
+  const notes = el("textarea", {
+    id: "draftNotes",
+    rows: 3,
+    maxLength: TEXT_MOST,
+    title: "A few words about the level, shown with it wherever it goes",
+  });
+  typed(notes, "notes", "changed the notes");
 
   const world = el("select", {
     id: "draftWorld",
@@ -441,6 +494,8 @@ function buildForm(id, box) {
     el("h3", { textContent: "Level" }),
     field("Title", title),
     source,
+    field("Author", author),
+    field("Notes", notes),
     field("World", world),
     field("Time", time),
     clock,
@@ -463,6 +518,8 @@ function buildForm(id, box) {
       set(title, d.doc.title);
       source.textContent = copiedFrom(d.doc);
       source.hidden = !source.textContent;
+      set(author, d.doc.author ?? "");
+      set(notes, d.doc.notes ?? "");
       set(world, d.doc.world);
       set(time, String(d.doc.time));
       const at = starts(d.doc);

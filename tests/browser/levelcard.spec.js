@@ -29,6 +29,11 @@ test("the Level card edits the draft as the game would load it, keeping the view
   await title.pressSequentially(" II");
   await expect(title).toHaveValue("Spiral II");
   await expect(page.locator("#chipLine b")).toHaveText("Spiral II");
+  const author = page.locator("#draftAuthor");
+  await expect(author).toHaveAttribute("maxlength", "80");
+  await author.fill("Mario");
+  await page.locator("#draftNotes").fill("A spiral up the wall.");
+  expect(await docOf(page, id)).toMatchObject({ author: "Mario", notes: "A spiral up the wall." });
 
   const icons = () =>
     page.evaluate(async () => {
@@ -111,12 +116,24 @@ test("the Level card edits the draft as the game would load it, keeping the view
   );
   await written(page, (s) => s?.drafts[id]?.doc).toMatchObject({
     title: "Spiral II",
+    author: "Mario",
+    notes: "A spiral up the wall.",
     world: "INCA",
     time: 45,
     hidden: true,
     invisibleFromAfar: true,
   });
   expect((await stored(page)).drafts[id].edits).toBeGreaterThanOrEqual(5);
+
+  // the name typed last is remembered in this browser and signs the next level made here
+  expect(await page.evaluate(() => localStorage.getItem("kula.author"))).toBe("Mario");
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(2);
+  expect(await docOf(page, (await shown(page)).draft)).toMatchObject({
+    author: "Mario",
+    notes: "",
+  });
+  await expect(author).toHaveValue("Mario");
   expect(errors).toEqual([]);
 });
 

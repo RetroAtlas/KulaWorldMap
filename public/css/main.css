@@ -687,9 +687,13 @@ button.kind:hover {
   flex: 0 0 52px;
   color: var(--dim);
 }
+.yours .card label:not(.check):has(textarea) {
+  align-items: flex-start;
+}
 .yours .card input[type="text"],
 .yours .card input[type="number"],
-.yours .card select {
+.yours .card select,
+.yours .card textarea {
   flex: 1;
   min-width: 0;
   background: #0e1320;
@@ -703,11 +707,15 @@ button.kind:hover {
 .yours .card input[type="number"] {
   flex: 0 0 68px;
 }
+.yours .card textarea {
+  resize: vertical;
+}
 .yours .card select:disabled {
   opacity: 0.4;
 }
 .yours .card input:focus-visible,
-.yours .card select:focus-visible {
+.yours .card select:focus-visible,
+.yours .card textarea:focus-visible {
   outline: 2px solid var(--accent-dim);
   outline-offset: -1px;
 }
