@@ -941,6 +941,15 @@ body:not(.sidebar-open) .menu-btn .cross {
   text-underline-offset: 2px;
   cursor: pointer;
 }
+/* a shared level's note: who made it, their words and the way to copy it */
+.chip .shared p {
+  margin: 0;
+}
+.chip .shared .notes {
+  white-space: pre-line;
+  max-height: 30vh;
+  overflow: auto;
+}
 
 .readout {
   position: absolute;

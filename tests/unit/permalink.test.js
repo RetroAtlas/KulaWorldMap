@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mapData, PINNED_LINK, PINNED_CELLS } from "./fixtures.js";
 import { PITCH_MAX, ZOOM_MIN, ZOOM_MAX, state, screen } from "../../public/js/viewer/state.js";
 import { SIDE } from "../../public/js/format/lattice.js";
-import { slotOf, formatHash, parseHash } from "../../public/js/viewer/permalink.js";
+import { slotOf, formatHash, parseHash, carriesLevel } from "../../public/js/viewer/permalink.js";
 
 const cam = { yaw: 45, pitch: 35, zoom: 0.9, panX: 0, panY: 0 };
 
@@ -242,4 +242,33 @@ test("a yaw is written as the reader brings it round", () => {
     assert.match(written, new RegExp(`^#HIRO/0/${round},`));
     assert.deepEqual(parseHash(written).turn, [round, cam.pitch]);
   }
+});
+
+test("a link carries a level where its slot is under the shared pack and a segment lettered for one rides at its tail", () => {
+  const segment = "seNpVUMtqwzAQvPsrhM5O";
+  for (const hash of [
+    `#SHARED/L3K9ZQ2/45,35/fit/33/${segment}`,
+    `#shared/l3k9zq2/45,35/fit/33/${segment}`,
+    `#SHARED/L3K9ZQ2/45,35/0.90/17,17,17/0,0/33/${segment}`,
+    `#SHARED/L3K9ZQ2/45,35/fit/33/17,12,17/${segment}`,
+    `#SHARED/L3K9ZQ2/45,35/fit/33/d-eu/${segment}/rAbc-_9`,
+  ])
+    assert.ok(carriesLevel(hash), hash);
+  // a disc's slot, whatever rides at its tail, the shared slot with no segment or with the
+  // segment where the head should be, and no link at all carry nothing
+  for (const hash of [
+    "",
+    "#",
+    "#HIRO/0/45,35/fit/33",
+    "#HELL/17/45,35/fit/33/d-eu",
+    "#HIRO/11/45,35/fit/33/rAbc-_9",
+    `#HIRO/0/45,35/fit/33/${segment}`,
+    "#SHARED/L3K9ZQ2",
+    "#SHARED/L3K9ZQ2/45,35/fit/33",
+    "#SHARED/L3K9ZQ2/45,35/fit/33/d-eu",
+    "#SHARED/L1/sAbc",
+    `#SHARED/L1/${segment}`,
+    `#SHARED/L3K9ZQ2/45,35/fit/33/${segment.toUpperCase()}`,
+  ])
+    assert.ok(!carriesLevel(hash), hash);
 });

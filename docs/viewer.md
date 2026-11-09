@@ -215,7 +215,7 @@ The sidebar's "Your levels", after the worlds, lists the levels of your own this
 
 The editor loads only when it is wanted, when a level of your own is made, opened or linked to, or, once the map has drawn its first level, when this browser already holds one, so a plain visit loads none of its code, though the strip's and the palette's markup and the editor's styles are in every page, hidden until they are wanted.
 
-`new` makes a level of one plain block and a start in the world on screen and opens it editing, and `copy this level` makes one out of the level on screen, a shipped level as the game loads it or a copy of a draft, and opens it as it is; either is a draft at once, marked "Draft" on the level line and shown on the map as the game would load it.
+`new` makes a level of one plain block and a start in the world on screen and opens it editing, and `copy this level` makes one out of the level on screen, a shipped level as the game loads it, a level that came by its link as its own document with its author and notes kept, or a copy of a draft, and opens it as it is; either is a draft at once, marked "Draft" on the level line and shown on the map as the game would load it.
 
 Where the disc shown is the PAL or the Japanese one and the level is that disc's own, the copy carries the disc's tag after the level's title, `BONUS 30 (EU)`, so copies of one slot from two discs are told apart in the rows.
 
@@ -610,6 +610,10 @@ The URL is a permalink: `#INCA/11/45,35/0.90/17,17,17/0,0/33` is the level by it
 
 The disc rides at the tail too, as `d-eu` or `d-jp`, the US release writing none, so a link with no disc opens the US level for everyone, whatever disc the browser kept, and a code the map does not know opens the US level as a link with no disc does.
 
+A level can travel whole in its link: a segment lettered `s` at the tail carries it, under a slot of its own, `#SHARED/L3K9ZQ2/...`, whose index stands for the level's text, and the link opens the level on any device, marked "Shared" on the level line, with the author and the notes it carries under the line and `copy this level` there, which makes a level of your own out of it; nothing of it is kept in the browser until it is copied. [editor.md](editor.md) has the segment's codec.
+
+A link whose segment will not read, or one to that slot that carries no segment, cut short on its way, gives way to the view on screen and says so once, whether it opens the page or arrives while the page is up.
+
 While the level is framed to fit the window, the link says `fit` in place of the zoom, the cell and the pan (`#INCA/11/45,35/fit/33`), so it opens framed to whatever window it is opened in, as one that stops at the turn does; a link that names the zoom, the cell or the pan holds the view there, and one that names the zoom alone opens at that zoom centred on the blocks, as a fit is.
 
 While the ball is being rolled the link keeps the view the ball was first put down from, so a link copied then opens the level as it looked before, or, once a run has gone on to another level, opens that level in the same view, and playing itself is never in a link.
@@ -632,6 +636,7 @@ The modules lie in layers, and a module imports only its own layer and those ben
 - `js/format/` reads and writes the level, the project, the pack, the disc image, the patch, the store and the link that carries a level, touches no DOM and nothing of the viewer, and holds the lattice, its side, the key of a cell, the six faces in the game's order, the game's numbers for the kinds of block and the types of thing and the sets of them the layers share, which every layer imports.
 - `js/editor/` is what loads when a level of your own is wanted.
 - `js/play/` is what loads when the ball is wanted.
+- `js/community/` is what loads when a level comes by its link, decoding the segment and standing the level beside the map, and reaches nothing of the editor.
 
 ### What the page fetches
 
@@ -647,13 +652,15 @@ A disc that draws a world otherwise names sheets of the atlas's size, transparen
 
 Beside the worlds' atlases under `tex/` the build lays the sheet of the seven sprites the game's effects draw, for play alone, which the page does not preload.
 
+A link that carries a level fetches the community module and what it imports beside the data, since the level comes whole in the link; the page cannot read the world off the segment before the decode, so that world's textures are fetched once the level is decoded, as a draft's textures are.
+
 ### How a level reaches the screen
 
 Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.js`, the disc's levels by their place in the data, the release shown choosing the level installed at that place, and any other through `showLevel`, and a module may provide levels for a link to name beyond the disc's slots through `provideLevels`, or keep a segment of its own at the link's tail through `tailWith`, written with the view and handed back to it when a link opens; a level from elsewhere installed again is an update, as is a level installed again at its own slot where the module asks, which keeps the hidden kinds, the slice and the selection where the level still has its cell.
 
 A draft reaches the screen as `toLevel` in `js/format/project.js` makes it, the level the reader in `js/format/kwl.js` makes of the bytes the writer there writes for the draft, so what the frame draws is what the game would load of it, drawn as a disc level is.
 
-A level `toLevel` makes carries a tag naming its origin, `Draft` for a level of your own, which the level line shows as a pill after the title and the level as it is spoken says before the title.
+A level `toLevel` makes carries a tag naming its origin, `Draft` for a level of your own and `Shared` for one that came by its link, which the level line shows as a pill after the title and the level as it is spoken says before the title.
 
 A level under the drafts' pack carries its store id as `draft` beside the tag, the mark the editor reads, and a level drawn under another pack carries no `draft` at all.
 
@@ -703,7 +710,7 @@ What listens to the pointer registers with `js/viewer/chrome/interaction.js` for
 
 A module may add lines of its own to the tip through `tipWith` in `js/viewer/chrome/interaction.js`, under what the tip says of the cell, which is how the editor and the planner say what a click there would do and play says what the ball has taken from it.
 
-A module may fill the panel through `onShow` in `js/viewer/chrome/detail.js` and stand a note of its own under the level line through `noteWith` in `js/viewer/chrome/navigate.js`, which asks what is registered before it falls back to the level's own note, and those two seams are how the editor's form and a draft's overview come in.
+A module may fill the panel through `onShow` in `js/viewer/chrome/detail.js` and stand a note of its own under the level line through `noteWith` in `js/viewer/chrome/navigate.js`, which asks what is registered before it falls back to the level's own note, and those two seams are how the editor's form, a draft's overview and the note under a level that came by its link come in.
 
 A module may take the panel down through `clearDetail` and build it again for the cell it shows through `refreshDetail`, both in `js/viewer/chrome/detail.js`, which is how play keeps what the panel says true as the level runs.
 
@@ -741,6 +748,8 @@ The viewer tells the editor, the planner and play what has changed through the `
 `js/editor/editor.js` and what it imports, pako included, load when a level of your own is first made, opened or linked to, or when this browser already holds one, after the map's first frame unless the link names one of them, which waits for the editor, and never on a plain visit, which carries the editor's markup and styles alone.
 
 Play mode loads the same way, under `js/play/`, when the ball is first asked for by its key, the corner's button or a block's panel, and never on a plain visit.
+
+The community layer's `js/community/community.js` loads when a link carries a level, with the data where the page opens on such a link, so the level is decoded before the first link is read, and on the hashchange that brings one, after which the link is read again once the level is decoded, the last link asked for winning where another arrives within one decode; it never loads on a plain visit, nor for a link to the shared slot that carries no segment.
 
 ### The ball's motion
 

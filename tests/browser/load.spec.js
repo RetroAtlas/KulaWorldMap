@@ -34,6 +34,7 @@ test("a plain visit shows the section and fetches none of the editor, which w th
   expect(out.chip).toContain("LEVEL 1");
   expect(fetched()).toContain("/js/editor/editor.js");
   expect(fetched()).toContain("/js/format/project.js");
+  expect(requested.filter((p) => p.includes("/js/community/"))).toEqual([]);
   expect(errors).toEqual([]);
 });
 

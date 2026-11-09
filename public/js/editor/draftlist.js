@@ -116,17 +116,21 @@ function show(id, doc, opts) {
   showLevel(toLevel(doc, id), opts);
 }
 
-/** Open a copy of the level on screen, a shipped level as the game loads it or a draft as it is; a copy of another disc's own level carries that disc's label in its title. */
+/** Open a copy of the level on screen: a draft as it is, a level that came with its document as that document, author and notes kept, or a shipped level as the game loads it, a copy of another disc's own level carrying that disc's label in its title. */
 export function copyShown() {
   const l = state.lvl;
   if (l.draft !== undefined) {
     open(drafts.duplicate(l.draft), "Copied the level");
     return;
   }
+  const doc = l.project ? structuredClone(l.project) : shipped(l);
+  open(drafts.create(doc), `Copied ${nameOf(doc)}`);
+}
+
+function shipped(l) {
   const template = fromLevel(l);
   const disc = releaseOf(l.release);
-  const doc = disc ? setMeta(template, { title: `${template.title} (${disc.label})` }) : template;
-  open(drafts.create(doc), `Copied ${doc.title}`);
+  return disc ? setMeta(template, { title: `${template.title} (${disc.label})` }) : template;
 }
 
 function open(id, verb) {

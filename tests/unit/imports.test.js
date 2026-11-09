@@ -77,10 +77,10 @@ test("no module imports itself through its imports", () => {
 
 // The folders are layers: what each may import is its own layer and those
 // beneath it, so nothing of the screen reaches the model, the readers and
-// writers reach nothing of the viewer, and nothing of the editor or of play
-// reaches the viewer. The lattice every layer lays a level in is the one file
-// all may import, and the boot at the root reaches the editor and play through
-// a dynamic import alone.
+// writers reach nothing of the viewer, and nothing of the editor, of play or
+// of the community layer reaches the viewer. The lattice every layer lays a
+// level in is the one file all may import, and the boot at the root reaches
+// the editor, play and the community layer through a dynamic import alone.
 const LATTICE = "format/lattice.js";
 const LAYERS = {
   viewer: ["viewer", LATTICE],
@@ -90,6 +90,7 @@ const LAYERS = {
   format: ["format", "vendor"],
   editor: ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", "format", "editor"],
   play: ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", "play", LATTICE],
+  community: ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", "format", "community"],
   ".": ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", "format"],
 };
 

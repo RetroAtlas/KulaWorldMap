@@ -1,5 +1,39 @@
 import { expect, test } from "@playwright/test";
 import { frame, settle, still, textured, trackErrors } from "./helpers.js";
+import { docOf, shown, toasts } from "./drafthelpers.js";
+import { writeProject } from "../../public/js/format/project.js";
+import { digestOf } from "../../public/js/format/share.js";
+import { encodeLevel } from "../../public/js/format/sharewrite.js";
+
+const UNREAD =
+  "The level in that link could not be read. Ask for the link again, or for the level file.";
+const CUT_SHORT = "That link was cut short on its way and carries no level. Ask for it again.";
+
+/** A level as its link carries it: the document, the segment and the slot it opens under. */
+const carried = (title, more = {}) => {
+  const doc = {
+    format: "kula-world-level",
+    version: 1,
+    title,
+    author: "Ada",
+    notes: "Mind the gap.",
+    world: "INCA",
+    time: 60,
+    simon: true,
+    blocks: [{ cell: [17, 17, 17], kind: 0, faces: { 0: { type: 30, facing: 3 } } }],
+    ...more,
+  };
+  return { doc, segment: encodeLevel(doc), slot: `SHARED/${digestOf(writeProject(doc))}` };
+};
+const CARRIED = carried("Carried");
+const OTHER = carried("Helix", { author: "", notes: "", simon: false, world: "MARS" });
+const linkTo = ({ slot, segment }, turn = "45,35", slice = 33) =>
+  `#${slot}/${turn}/fit/${slice}/${segment}`;
+const go = (page, hash) =>
+  page.evaluate((hash) => {
+    location.hash = hash;
+  }, hash);
+const bar = (page) => page.evaluate(() => location.hash);
 
 test("a permalink opens on the level and the camera it names, and drops the parts it cannot read", async ({
   page,
@@ -517,4 +551,132 @@ test("the view turns about a find only while it stays selected", async ({ page }
   expect(Math.abs(moved.dy)).toBeLessThan(1e-6);
   await drag();
   expect((await probe()).target).toEqual(cleared.centre);
+});
+
+test("a link that carries a level opens on it at the start, tagged Shared, and the bar keeps the segment as the view moves", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(`/${linkTo(CARRIED)}`);
+  await settle(page);
+  await expect(page.locator("#chipLine b")).toHaveText("Carried");
+  await expect(page.locator("#chipLine .tag")).toHaveText("Shared");
+  await expect(page.locator("#say")).toHaveText(/^Shared, Carried, /);
+  const out = await shown(page);
+  expect(out).toMatchObject({ li: -1, theme: "INCA", time: 60 });
+  expect(out.draft).toBeUndefined();
+  const note = page.locator("#chipNote");
+  await expect(note).toContainText("By Ada.");
+  await expect(note).toContainText("Mind the gap.");
+  await expect(note.getByRole("button", { name: "copy this level" })).toBeVisible();
+  await page.evaluate(async () => {
+    const { setSlice } = await import(new URL("js/viewer/chrome/navigate.js", location.href).href);
+    setSlice(20);
+  });
+  await expect.poll(() => bar(page)).toBe(linkTo(CARRIED, "45,35", 20));
+  expect(errors).toEqual([]);
+});
+
+test("a link that carries a level arriving after the start shows it over the level on screen, in the view it names", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/45,35/fit/33");
+  await settle(page);
+  await go(page, linkTo(CARRIED, "30,20"));
+  await expect(page.locator("#chipLine b")).toHaveText("Carried");
+  const out = await shown(page);
+  expect(out).toMatchObject({ li: -1, theme: "INCA" });
+  expect(out.draft).toBeUndefined();
+  await expect.poll(() => bar(page)).toBe(linkTo(CARRIED, "30,20"));
+  const yaw = await page.evaluate(async () => {
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    return state.cam.yaw;
+  });
+  expect(yaw).toBe(30);
+  expect(errors).toEqual([]);
+});
+
+test("a second link that carries a level, pasted over the first, shows the second and keeps its link", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(`/${linkTo(CARRIED)}`);
+  await settle(page);
+  await expect(page.locator("#chipLine b")).toHaveText("Carried");
+  await go(page, linkTo(OTHER));
+  await expect(page.locator("#chipLine b")).toHaveText("Helix");
+  expect(await shown(page)).toMatchObject({ li: -1, theme: "MARS" });
+  await expect.poll(() => bar(page)).toBe(linkTo(OTHER));
+  expect(errors).toEqual([]);
+});
+
+test("a link whose segment will not read gives way to the view on screen and says so once", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const { segment, slot } = CARRIED;
+  const damaged = { slot, segment: `${segment.slice(0, 12)}AAAAAAAA${segment.slice(20)}` };
+  await page.clock.install();
+  await page.goto(`/${linkTo(damaged)}`);
+  await settle(page);
+  expect((await shown(page)).li).toBe(0);
+  expect(await toasts(page)).toEqual([UNREAD]);
+  await expect.poll(() => bar(page)).toMatch(/^#HIRO\/0\//);
+  await page.clock.runFor(3000 + 150);
+  await expect(page.locator("#toastStack .toast")).toHaveCount(0);
+  await go(page, linkTo(damaged, "30,20"));
+  await expect(page.locator("#toastStack .toast")).toHaveText([UNREAD]);
+  await expect.poll(() => bar(page)).toMatch(/^#HIRO\/0\//);
+  expect((await shown(page)).li).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test("a link to the shared pack that carries no level says it was cut short, and gives way", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const requested = [];
+  page.on("request", (r) => requested.push(new URL(r.url()).pathname));
+  await page.clock.install();
+  await page.goto(`/#${CARRIED.slot}/45,35/fit/33`);
+  await settle(page);
+  expect((await shown(page)).li).toBe(0);
+  expect(await toasts(page)).toEqual([CUT_SHORT]);
+  await expect.poll(() => bar(page)).toMatch(/^#HIRO\/0\//);
+  expect(requested.filter((p) => p.includes("/js/community/"))).toEqual([]);
+  await page.clock.runFor(3000 + 150);
+  await expect(page.locator("#toastStack .toast")).toHaveCount(0);
+  await go(page, `#${CARRIED.slot}/30,20/fit/33`);
+  await expect(page.locator("#toastStack .toast")).toHaveText([CUT_SHORT]);
+  await expect.poll(() => bar(page)).toMatch(/^#HIRO\/0\//);
+  expect(requested.filter((p) => p.includes("/js/community/"))).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("copy this level under the line of a level that came by its link makes a draft of its document, author and notes kept", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(`/${linkTo(CARRIED)}`);
+  await settle(page);
+  await page.locator("#chipNote").getByRole("button", { name: "copy this level" }).click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await expect(page.locator("#chipLine .tag")).toHaveText("Draft");
+  await expect(page.locator("#say")).toContainText("Copied Carried. Draft, Carried, ");
+  const copy = await shown(page);
+  expect(copy).toMatchObject({ li: -1, draft: 1, theme: "INCA" });
+  expect(copy.chip).toContain("Carried");
+  const doc = await docOf(page, copy.draft);
+  expect(doc).toMatchObject({
+    title: "Carried",
+    author: "Ada",
+    notes: "Mind the gap.",
+    world: "INCA",
+    simon: true,
+  });
+  expect(doc).not.toHaveProperty("from");
+  await expect(page.locator("#draftRows button .name")).toHaveText("Carried");
+  await expect.poll(() => bar(page)).toMatch(/^#DRAFT\/1\//);
+  expect(errors).toEqual([]);
 });

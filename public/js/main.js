@@ -12,6 +12,7 @@ import {
   setSidebar,
 } from "./viewer/chrome/sidebar.js";
 import { applyHash, selectLevel, writeHash } from "./viewer/chrome/navigate.js";
+import { carriesLevel, parseHash, slotOf } from "./viewer/permalink.js";
 import { wireRelease } from "./viewer/chrome/release.js";
 import { onShow, refreshDetail } from "./viewer/chrome/detail.js";
 import { probeOf } from "./viewer/walk.js";
@@ -316,6 +317,35 @@ function wirePlay() {
   );
 }
 
+// A level carried whole in its link is decoded by the community layer, which loads only for
+// such a link: with the data where the page opens on one, and on the hashchange that brings
+// one.
+const UNSHARED =
+  "The level in that link could not be loaded; open the link again to try once more.";
+const CUT_SHORT = "That link was cut short on its way and carries no level. Ask for it again.";
+let communityLoading = null;
+
+// A fetch that failed is tried again by the next link.
+const bootCommunity = () =>
+  (communityLoading ??= import("./community/community.js").catch(() => {
+    communityLoading = null;
+    toast(UNSHARED);
+    return null;
+  }));
+
+/** Decode the level `link` carries, saying once where it will not read; whether it did. */
+const prepared = (m, link) =>
+  m.prepare(link).then(
+    () => true,
+    (e) => {
+      toast(e.message);
+      return false;
+    },
+  );
+
+/** Whether a link names the shared pack's slot yet carries no level: cut short on its way. */
+const cutShort = (hash) => parseHash(hash).slot.startsWith("SHARED/") && !carriesLevel(hash);
+
 // A link to a draft arriving after the boot is shown once the editor is up.
 function followDraftLink() {
   const id = linkedDraft(location.hash);
@@ -335,11 +365,34 @@ function followDraftLink() {
   });
 }
 
+// A link that carries a level arriving after the boot is shown once its level is decoded,
+// the last link asked for winning where another arrives within one decode.
+let asked = 0;
+function followCommunityLink() {
+  const link = location.hash;
+  if (!carriesLevel(link)) {
+    if (cutShort(link)) toast(CUT_SHORT);
+    return;
+  }
+  const shown = state.lvl;
+  if (shown && parseHash(link).slot === slotOf(shown)) return;
+  const turn = ++asked;
+  bootCommunity().then(async (m) => {
+    if (!m || !(await prepared(m, link))) return;
+    if (turn !== asked || state.lvl !== shown) return;
+    if (location.hash !== link) history.replaceState(history.state, "", link);
+    if (!applyHash()) writeHash();
+  });
+}
+
 const kept = held();
 const linked = linkedDraft(location.hash);
+const carried = carriesLevel(location.hash);
+const cut = cutShort(location.hash);
 const wanted = kept.shaped.length > 0;
-// A link to a draft held here has nothing to show before the editor is up, so
-// the boot waits for it; otherwise the editor comes once the map has drawn.
+// A link to a draft held here, or one that carries a level, has nothing to show
+// before its module is up, so the boot waits for it; otherwise the editor comes
+// once the map has drawn.
 const awaited = linked !== null && kept.shaped.includes(linked);
 
 Promise.all([
@@ -350,7 +403,8 @@ Promise.all([
   loadJson("releases/eu.json", null),
   loadJson("releases/jp.json", null),
   awaited ? import("./editor/editor.js").catch(() => null) : null,
-]).then(([data, ann, objects, us, eu, jp, module]) => {
+  carried ? import("./community/community.js").catch(() => null) : null,
+]).then(async ([data, ann, objects, us, eu, jp, module, community]) => {
   if (!data) {
     $("chipLine").textContent = "The map's data could not be loaded.";
     return;
@@ -359,6 +413,7 @@ Promise.all([
   setObjects(objects);
   setReleases([us, eu, jp]);
   state.data = data;
+  const decoded = community && prepared(community, location.hash);
   $("about").innerHTML =
     `All ${data.levels.length} levels across ${data.themes.length} worlds. ` +
     `Press <kbd style="margin:0">?</kbd> for the keys.`;
@@ -369,6 +424,8 @@ Promise.all([
   const up = module && ready(module);
   if (up) loading = Promise.resolve(up);
   else if (awaited && !module) toast(UNLOADED);
+  if (community) communityLoading = Promise.resolve(community);
+  else if (carried) toast(UNSHARED);
   wireEntry();
   wirePlay();
   onResize(() => {
@@ -377,10 +434,13 @@ Promise.all([
     writeHash();
   });
   resize();
+  if (decoded) await decoded;
   if (!applyHash()) selectLevel(0);
   if (linked !== null && state.lvl?.draft !== linked && !kept.named.includes(linked))
     toast(ELSEWHERE);
+  if (cut) toast(CUT_SHORT);
   addEventListener("hashchange", followDraftLink);
+  addEventListener("hashchange", followCommunityLink);
   buildKinds();
   if (wanted && !awaited) bootEditor();
   warmOthers();

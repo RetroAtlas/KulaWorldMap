@@ -70,3 +70,10 @@ export function parseHash(hash) {
     tails: tail.filter((segment) => TAIL.test(segment)),
   };
 }
+
+/** Whether a link carries a level whole: the shared pack's slot, with a segment lettered for
+    a level at its tail. */
+export function carriesLevel(hash) {
+  const link = parseHash(hash);
+  return link.slot.startsWith("SHARED/") && link.tails.some((segment) => segment[0] === "s");
+}

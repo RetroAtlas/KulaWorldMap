@@ -391,6 +391,10 @@ The reader refuses a segment over 200,000 characters before decoding anything of
 
 A carried level opens under the pack `/SHARED/SHARED.PAK` at the index `digestOf` gives its canonical text, the letter `L` and FNV-1a 32 over the text's UTF-16 code units in base36 upper case, so the index survives the hash reader's upper-casing and is never all digits.
 
+The segment and not the digest is what the level is: the module answers any slot under the shared pack with the level of the segment the link carries, so a head that was hand-edited still opens and the bar is rewritten with the digest the level has, and two texts that differ are two levels even under one digest.
+
+The boot opens such a link as it opens a `#DRAFT` link to a draft this browser holds: the community module under `public/js/community/` is fetched with the data and decodes the segment before the first link is read, a hashchange to one is followed once its level is decoded, and the module keeps the level last decoded beside the one that was on screen as it was decoded and no other, nothing of it reaching the store until it is copied.
+
 What reads a carried level holds it to the game's caps as well as to the file's rules: `overCaps` in `public/js/format/checks.js` gives the checks' own sentence for the first of the caps the level is over, in the order the caps stand and counted as the overview counts them, or null where every cap it counts holds, so a reader of a carried level can refuse a link of tens of thousands of blocks before it reaches the renderer or the store.
 
 Every shipped level's segment is under 1,200 characters, a bound the codec's unit test holds over every template.
