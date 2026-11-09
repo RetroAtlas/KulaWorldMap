@@ -1,6 +1,6 @@
 # What the curated names rest on
 
-[`public/annotations.json`](../public/annotations.json) is what the map says about the things the game leaves numbered: a name, the points a pickup scores, whether a thing is a hazard, what a raw field holds, a level's best score where the disc holds more than can be collected, and a note for whoever is looking at the map.
+[`public/annotations.json`](../public/annotations.json) is what the map says about the things the game leaves numbered: a name, the points a pickup scores, whether a thing is a hazard, what a raw field holds, a level's best score where the disc holds more than can be collected, a world's name where the disc cuts its directory short, and a note for whoever is looking at the map.
 
 This file is why each of those is believed, one section per entry under the entry's key, and a unit test fails when an entry has no section here or a section names no entry. The note says what a thing is and does; the reasons stay here. A type the file does not name shows on the map as its number, and `python3 tools/kula_kinds.py` writes the per-type contact sheets the naming started from.
 
@@ -19,6 +19,16 @@ The things that travel share one routine for it: the loader puts every type 50 t
 The notes call that capturing the ball, a word taken from the captivators' name, and use it for all of them and for type 42's brown form, since all set the same cause.
 
 No hazard harms the ball while the invincibility pill lasts (type 34).
+
+## Worlds
+
+A world is named by its directory on the disc, which is all the game has for it ([level-format.md](level-format.md)), and an entry here gives the one directory the disc cuts short its full name, in the capitals the ids are shown in, so the sidebar's list keeps one form.
+
+### world ATLANT: ATLANTIS
+
+Every world's finals pack is its directory's name with FI added, `ATLANTFI.PAK`, and the disc's ISO 9660 names run to eight characters, so a directory's name runs to six: the other nine worlds' names fit, and Atlantis, the one name of the ten that does not, is cut to ATLANT.
+
+The world's artwork is blue water and riveted metal with portholes, and the archives of the game's textures and music and the players' guides all name the world Atlantis, where the executable, the box and the manual name no world at all.
 
 ## Block kinds
 

@@ -31,6 +31,13 @@ test("a final answers to its number counted on from 150", () => {
   assert.deepEqual(names(find("final 7")), ["FINAL 7"]);
 });
 
+test("a world the annotations name answers to that name and to its id, and is listed by the name", () => {
+  const named = find("atlantis");
+  assert.equal(named[0].world?.id, "ATLANT");
+  assert.equal(named[0].name, "ATLANTIS");
+  assert.equal(find("atlant")[0].world?.id, "ATLANT");
+});
+
 test("a world's name finds the world and its levels, the level in hand first among them", () => {
   const hits = find("hiro", 3);
   assert.ok(hits[0].world, "the world ranks first by its name");

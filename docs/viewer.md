@@ -133,6 +133,8 @@ It is brought up to date at every change, a link that holds the focus keeping it
 
 The sidebar lists a world's levels in the order of its pack, then its two finals, then the Simon room the game's Simon mode plays in it on its first round, and `[` and `]` step to the previous and next level in that order, on from a world's last level to the next world's first level and back, and stop at the first level of the first world and the last of the last.
 
+The sidebar heads each world with its id on the disc, the directory its pack lies in, except ATLANT, which it heads ATLANTIS, the name `public/annotations.json` gives the one directory the disc cuts short ([annotations.md](annotations.md)); the level line, the search, the live region and play's strip name a world the same way, and the search answers to the id too.
+
 The Japanese disc's Simon rooms, the US rooms byte for byte, are listed under the worlds the US release plays them in on its first round, since that disc's game fixes no world for a room.
 
 A level button carries a dot after its title where its slot holds another level on one of the other discs, as The three discs below says.
