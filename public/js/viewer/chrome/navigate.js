@@ -130,7 +130,7 @@ function noteOf(l) {
 }
 
 function tags(l) {
-  const out = l.draft === undefined ? [] : ['<span class="tag">Draft</span>'];
+  const out = l.tag === undefined ? [] : [`<span class="tag">${escaped(l.tag)}</span>`];
   if (current() !== BASE) {
     const r = releaseOf(current());
     const title = escaped(`${r.name}, the ${discWord(r.id)} release`);
@@ -144,7 +144,7 @@ export function chip() {
   if (!l) return;
   const parts = [
     `<b>${escaped(levelTitle(l))}</b>${tags(l)}`,
-    `<span class="sep">·</span>${worldName(l.theme)}`,
+    `<span class="sep">·</span>${escaped(worldName(l.theme))}`,
     `<span class="sep">·</span>${counted(blockCount(l), "block")}`,
   ];
   const n = objectCount(l);

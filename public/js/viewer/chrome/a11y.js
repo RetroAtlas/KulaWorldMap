@@ -15,7 +15,7 @@ import { levelPoints } from "../draw/points.js";
 
 export function describeLevel(l) {
   const parts = [levelTitle(l), worldName(l.theme), counted(blockCount(l), "block")];
-  if (l.draft !== undefined) parts.unshift("Draft");
+  if (l.tag !== undefined) parts.unshift(l.tag);
   if (current() !== BASE) parts.unshift(releaseOf(current()).name);
   const n = objectCount(l);
   if (n) parts.push(counted(n, "object"));

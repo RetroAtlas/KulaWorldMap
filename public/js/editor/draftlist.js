@@ -14,6 +14,7 @@ import {
 } from "../viewer/data.js";
 import { BASE, discWord, levelOn, releaseOf, releases, rulesOf } from "../viewer/release.js";
 import { selectLevel, showLevel } from "../viewer/chrome/navigate.js";
+import { yoursClosed } from "../viewer/chrome/sidebar.js";
 import { say, describeLevel } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";
 import { COLOURS, facesOf, levelKey, writeKwl } from "../format/kwl.js";
@@ -61,6 +62,8 @@ const some = (n, word, words = `${word}s`) => `${n} ${n === 1 ? word : words}`;
 
 // The disc's level shown last, which deleting the shown draft returns to.
 let lastDisc = 0;
+// Whether a level was shown before this one; a page's first draft leaves a fold closed on purpose.
+let shownBefore = false;
 // The document the level on screen was drawn from, where it is a draft.
 let drawn = null;
 let form = null;
@@ -78,6 +81,7 @@ export function levelFor(slot) {
 
 export function wireDrafts() {
   $("yours").hidden = false;
+  shownBefore = state.lvl !== null;
   if (state.li >= 0) lastDisc = state.li;
   $("draftNew").onclick = () => {
     const id = drafts.create(blank(state.lvl.theme));
@@ -98,6 +102,9 @@ export function wireDrafts() {
   on("drafts-written", () => form?.wrote());
   on("level-changed", (i) => {
     if (i >= 0) lastDisc = i;
+    else if (state.lvl.draft !== undefined && (shownBefore || !yoursClosed()))
+      $("yoursFold").open = true;
+    shownBefore = true;
     sync();
   });
   on("level-updated", sync);

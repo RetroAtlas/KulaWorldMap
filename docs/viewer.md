@@ -653,6 +653,10 @@ Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.
 
 A draft reaches the screen as `toLevel` in `js/format/project.js` makes it, the level the reader in `js/format/kwl.js` makes of the bytes the writer there writes for the draft, so what the frame draws is what the game would load of it, drawn as a disc level is.
 
+A level `toLevel` makes carries a tag naming its origin, `Draft` for a level of your own, which the level line shows as a pill after the title and the level as it is spoken says before the title.
+
+A level under the drafts' pack carries its store id as `draft` beside the tag, the mark the editor reads, and a level drawn under another pack carries no `draft` at all.
+
 ### Drawing the frame
 
 `js/viewer/draw/render.js` draws the frame: it puts the cells in the painter's order, keeps the pick canvas that turns a point on the screen into a cell, lays what shows through the blocks over the map, and draws again while anything moves.

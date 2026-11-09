@@ -458,14 +458,16 @@ export function writeProject(project) {
   return `{\n${lines.join("\n")}\n}\n`;
 }
 
-/** The level the viewer draws for a draft: what the game would load of it, and whether it is a
-    Simon room. */
-export const toLevel = (project, id) =>
+/** The level the viewer draws for a project, under `pack` at the index `id` and tagged with its
+    origin: what the game would load of it, and whether it is a Simon room. A level under the
+    drafts' pack carries its id as `draft` too, the mark the editor reads. */
+export const toLevel = (project, id, { pack = DRAFT_PACK, tag = "Draft" } = {}) =>
   levelOf(writeKwl(project), {
     name: project.title || UNTITLED,
     theme: project.world,
-    pack: DRAFT_PACK,
+    pack,
     index: id,
-    draft: id,
+    draft: pack === DRAFT_PACK ? id : undefined,
+    tag,
     simon: !!project.simon,
   });

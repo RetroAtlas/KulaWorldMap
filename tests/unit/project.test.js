@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { levelKey, mapData, objects, releases } from "./fixtures.js";
 import { NAMES, index, platformCells } from "../../public/js/viewer/data.js";
+import { slotOf } from "../../public/js/viewer/permalink.js";
 import { SIDE, KIND } from "../../public/js/format/lattice.js";
 import { FORMAT, writeKwl } from "../../public/js/format/kwl.js";
 import {
@@ -852,8 +853,8 @@ test("a draft is drawn as the level the game would load", () => {
   const p = setBlock(blank("MARS"), [17, 18, 17], { kind: 0, faces: { 0: { type: KEY } } });
   const l = toLevel(p, 7);
   assert.deepEqual(
-    [l.name, l.theme, l.pack, l.index, l.draft],
-    [UNTITLED, "MARS", DRAFT_PACK, 7, 7],
+    [l.name, l.theme, l.pack, l.index, l.draft, l.tag],
+    [UNTITLED, "MARS", DRAFT_PACK, 7, 7, "Draft"],
   );
   assert.deepEqual([l.placed, l.header, l.time, l.records.length], [2, 2, 99, 2]);
   assert.ok(!("shown" in l));
@@ -867,6 +868,22 @@ test("a draft is drawn as the level the game would load", () => {
   assert.equal(levelKey(l), `${DRAFT_PACK}#7`);
   assert.equal(toLevel({ ...p, title: "" }, 7).name, UNTITLED);
   assert.equal(toLevel({ ...p, title: "Spiral" }, 7).name, "Spiral");
+});
+
+test("a level from elsewhere is drawn under its own pack and index, tagged with its origin, and is no draft", () => {
+  const p = setBlock(blank("MARS"), [17, 18, 17], { kind: 0, faces: { 0: { type: KEY } } });
+  for (const [id, pack, tag, slot] of [
+    ["L3K9ZQ2", "/SHARED/SHARED.PAK", "Shared", "SHARED/L3K9ZQ2"],
+    [17, "/COMMUNITY/COMMUNITY.PAK", "Community", "COMMUNITY/17"],
+  ]) {
+    const l = toLevel(p, id, { pack, tag });
+    assert.deepEqual([l.name, l.theme, l.pack, l.index, l.tag], [UNTITLED, "MARS", pack, id, tag]);
+    assert.ok(!("draft" in l));
+    assert.equal(slotOf(l), slot);
+    assert.deepEqual([l.placed, l.records.length, fromLevel(l).blocks], [2, 2, p.blocks]);
+  }
+  const d = toLevel(p, 7, {});
+  assert.deepEqual([d.pack, d.index, d.draft, d.tag], [DRAFT_PACK, 7, 7, "Draft"]);
 });
 
 test("a draft marked a Simon room carries the mark onto the level drawn, and any other carries it false", () => {

@@ -17,7 +17,13 @@ test("a link names a level a source provides, and installing it again keeps the 
     const [{ state }, { provideLevels }] = await Promise.all(
       ["viewer/state.js", "viewer/chrome/navigate.js"].map(at),
     );
-    const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
+    const copy = {
+      ...state.data.levels[0],
+      pack: "/DRAFT/DRAFT.PAK",
+      index: 7,
+      draft: 7,
+      tag: "Draft",
+    };
     copy.name = "Spiral";
     delete copy.shown;
     window.copy = copy;
@@ -106,7 +112,13 @@ test("an update that keeps the selected cell keeps its face too", async ({ page 
         "format/lattice.js",
       ].map(at),
     );
-    const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
+    const copy = {
+      ...state.data.levels[0],
+      pack: "/DRAFT/DRAFT.PAK",
+      index: 7,
+      draft: 7,
+      tag: "Draft",
+    };
     showLevel(copy);
     const key = cellKey(17, 12, 17);
     showCell({ ...state.idx.cells.get(key), face: 2 });
@@ -142,7 +154,13 @@ test("the keys that step through the levels leave a level from elsewhere alone",
     const [{ state }, { showLevel, stepLevel }] = await Promise.all(
       ["viewer/state.js", "viewer/chrome/navigate.js"].map(at),
     );
-    const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
+    const copy = {
+      ...state.data.levels[0],
+      pack: "/DRAFT/DRAFT.PAK",
+      index: 7,
+      draft: 7,
+      tag: "Draft",
+    };
     showLevel(copy);
     stepLevel(1);
     stepLevel(-1);
@@ -163,7 +181,13 @@ test("an update refreshes the map's name and the search's scope without announci
     const [{ state }, { showLevel }] = await Promise.all(
       ["viewer/state.js", "viewer/chrome/navigate.js"].map(at),
     );
-    const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
+    const copy = {
+      ...state.data.levels[0],
+      pack: "/DRAFT/DRAFT.PAK",
+      index: 7,
+      draft: 7,
+      tag: "Draft",
+    };
     copy.name = "Spiral";
     delete copy.shown;
     window.copy = copy;
@@ -296,7 +320,13 @@ test("the same level installed again keeps its clock and its presses, and anothe
       );
     while (!motionTable()) await new Promise(requestAnimationFrame);
     state.show.motion = true;
-    const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
+    const copy = {
+      ...state.data.levels[0],
+      pack: "/DRAFT/DRAFT.PAK",
+      index: 7,
+      draft: 7,
+      tag: "Draft",
+    };
     showLevel(copy);
     await new Promise((r) => setTimeout(r, 400));
     draw();
@@ -344,7 +374,13 @@ test("the same level installed again keeps what travels while its records are un
         return dice;
       },
     });
-    const copy = { ...state.data.levels[0], pack: "/DRAFT/DRAFT.PAK", index: 7, draft: 7 };
+    const copy = {
+      ...state.data.levels[0],
+      pack: "/DRAFT/DRAFT.PAK",
+      index: 7,
+      draft: 7,
+      tag: "Draft",
+    };
     showLevel(copy);
     draw();
     const laid = rolled;

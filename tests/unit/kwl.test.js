@@ -1237,8 +1237,8 @@ test("a level file's name, world, pack, index and room mark come from the caller
   const bytes = writeKwl(PLAYGROUND);
   const bare = levelOf(bytes);
   assert.deepEqual(
-    [bare.name, bare.theme, "pack" in bare, "draft" in bare, "simon" in bare],
-    ["", "", false, false, false],
+    [bare.name, bare.theme, "pack" in bare, "draft" in bare, "tag" in bare, "simon" in bare],
+    ["", "", false, false, false, false],
   );
   const draft = levelOf(bytes, {
     name: "Spiral",
@@ -1246,11 +1246,12 @@ test("a level file's name, world, pack, index and room mark come from the caller
     pack: "/DRAFT/DRAFT.PAK",
     index: 7,
     draft: 7,
+    tag: "Draft",
     simon: true,
   });
   assert.deepEqual(
-    [draft.name, draft.theme, draft.pack, draft.index, draft.draft, draft.simon],
-    ["Spiral", "HAZE", "/DRAFT/DRAFT.PAK", 7, 7, true],
+    [draft.name, draft.theme, draft.pack, draft.index, draft.draft, draft.tag, draft.simon],
+    ["Spiral", "HAZE", "/DRAFT/DRAFT.PAK", 7, 7, "Draft", true],
   );
   assert.deepEqual([draft.placed, draft.header, draft.time], [9, 9, 45]);
   assert.deepEqual(

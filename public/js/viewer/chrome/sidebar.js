@@ -347,10 +347,8 @@ on("atlas-loaded", (world) => {
 });
 
 // "Your levels" folds under its heading, closed until opened, and keeps the way
-// it was left; a level of your own coming on screen opens it, except at a page's
-// first level where it was closed on purpose, so a reload leaves it as it was.
+// it was left from one visit to the next.
 const YOURS = "kula.yours";
-let levelsShown = 0;
 function yoursKept() {
   try {
     return localStorage.getItem(YOURS);
@@ -361,14 +359,14 @@ function yoursKept() {
 function restoreYours() {
   if (yoursKept() === "open") $("yoursFold").open = true;
 }
+/** Whether "Your levels" was folded away by a press, rather than never opened. */
+export const yoursClosed = () => yoursKept() === "closed";
 
-on("level-changed", (i) => {
+on("level-changed", () => {
   markLevel();
   state.hiddenKinds.clear();
   buildKinds();
   syncSlice();
-  if (i < 0 && !(levelsShown === 0 && yoursKept() === "closed")) $("yoursFold").open = true;
-  levelsShown++;
 });
 
 $("yoursFold").addEventListener("toggle", () => {
