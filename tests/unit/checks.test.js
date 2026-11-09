@@ -14,9 +14,24 @@ import {
 } from "../../public/js/viewer/data.js";
 import { hasFace } from "../../public/js/viewer/draw/blocks.js";
 import { FACE_NORMAL, SIDE, cellKey, KIND } from "../../public/js/format/lattice.js";
-import { CAPS, DISC_MAX, FORMAT, inner, writeKwl } from "../../public/js/format/kwl.js";
+import {
+  CAPS,
+  DISC_MAX,
+  FORMAT,
+  LINK_RECORDS,
+  inner,
+  writeKwl,
+} from "../../public/js/format/kwl.js";
 import { DRAFT_PACK, fromLevel, setBlock, toLevel } from "../../public/js/format/project.js";
-import { COUNTERS, counts, describe, playsAs, validate } from "../../public/js/format/checks.js";
+import {
+  COUNTERS,
+  counts,
+  describe,
+  overCaps,
+  playsAs,
+  recordOverflow,
+  validate,
+} from "../../public/js/format/checks.js";
 import {
   COIN,
   HIDES,
@@ -531,6 +546,33 @@ test("the face cap, with the level that sits under it", () => {
   assert.ok(
     texts(validate(over, HIDES, NAMES), "error").includes("772 faces: over the cap of 768"),
   );
+});
+
+test("the first cap a project is over is said in the words validate gives it, and null within the caps", () => {
+  for (const l of mapData.levels) assert.equal(overCaps(fromLevel(l), HIDES), null, l.name);
+  const slab = [];
+  for (let x = 1; x <= 16; x++) for (let y = 1; y <= 16; y++) slab.push(plain([x, y, 17]));
+  slab[0].faces = { 0: start() };
+  assert.equal(overCaps(project(slab), HIDES), null);
+  slab.push(plain([17, 1, 17]));
+  assert.equal(overCaps(project(slab), HIDES), "257 blocks: over the cap of 256");
+  assert.deepEqual(errors(slab), [overCaps(project(slab), HIDES)]);
+  assert.equal(overCaps(project(slab), null), null);
+  const h10 = level("HIDDEN 10");
+  const over = setBlock(fromLevel(h10), [h10.min[0] - 2, h10.min[1], h10.min[2]], { kind: 0 });
+  assert.equal(overCaps(over, HIDES), "772 faces: over the cap of 768");
+  assert.deepEqual(texts(validate(over, HIDES, NAMES), "error"), [overCaps(over, HIDES)]);
+  const crowd = Array.from({ length: LINK_RECORDS + 1 }, (_, i) =>
+    plain([1 + (i % 32), 1 + (Math.floor(i / 32) % 32), 1 + 2 * Math.floor(i / 1024)], 0, {
+      0: coin,
+    }),
+  );
+  crowd[0].faces = { 0: start() };
+  const crowded = `${LINK_RECORDS + 1} records: over the cap of ${CAPS.records}`;
+  assert.equal(overCaps(project(crowd), HIDES), crowded);
+  assert.equal(overCaps(project(crowd), null), crowded);
+  assert.equal(recordOverflow(project(crowd)), crowded);
+  assert.equal(errors(crowd)[0], crowded);
 });
 
 test("the object cap counts what the loader numbers", () => {

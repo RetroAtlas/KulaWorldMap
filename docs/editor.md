@@ -377,6 +377,28 @@ The read and the draft are one rule in `public/js/editor/intake.js`, which the s
 
 `readLevel` takes the image the disc box holds read, `heldImage` of `public/js/editor/patchdialog.js`, the file and the disc it is, and hands it to the reader, so a patch reads over it without asking for an image.
 
+## The link that carries a level
+
+A level travels whole in the map's own link as a segment at the permalink's tail, lettered `s` and read by shape as every tail segment is, so a version of the map that does not know the letter passes over it and a letter once taken means the same forever.
+
+The segment carries the project file's canonical text, what `writeProject` writes, so a link holds every field of the document's head, from the title to the disc slot a copy came from, with the circuits and the blocks, nothing of any browser's store, and two links of one level hold one segment.
+
+The text is deflated at level 9 as a zlib stream through the vendored deflate and written as base64url without padding, an alphabet of letters, digits, hyphen and underscore that no part of the hash's grammar reads as its own.
+
+`encodeLevel` in `public/js/format/sharewrite.js` writes the segment, and that module is the one of the two that needs the vendored deflate; `decodeSegment` in `public/js/format/share.js` reads one with the browser's own decompressor, so opening a link loads no compressor.
+
+The reader refuses a segment over 200,000 characters before decoding anything of it, refuses a character outside the alphabet, inflates under the 1 MiB ceiling every inflate of the page has, reads the bytes as UTF-8 and JSON and through `readProject` as a file is read, refuses a document whose world is not one of the disc's ten worlds, and says each refusal in one sentence a toast can show.
+
+A carried level opens under the pack `/SHARED/SHARED.PAK` at the index `digestOf` gives its canonical text, the letter `L` and FNV-1a 32 over the text's UTF-16 code units in base36 upper case, so the index survives the hash reader's upper-casing and is never all digits.
+
+What reads a carried level holds it to the game's caps as well as to the file's rules: `overCaps` in `public/js/format/checks.js` gives the checks' own sentence for the first of the caps the level is over, in the order the caps stand and counted as the overview counts them, or null where every cap it counts holds, so a reader of a carried level can refuse a link of tens of thousands of blocks before it reaches the renderer or the store.
+
+Every shipped level's segment is under 1,200 characters, a bound the codec's unit test holds over every template.
+
+A dense hand-made level grows with its block count, and its author and notes may run to 2,000 characters each, which is why the reader caps the segment and the caps gate what it reads.
+
+A codec over the game's bytes, which packs a dense level several times smaller, would ride under a letter of its own, since a segment never changes what it means.
+
 ## Onto the disc
 
 A draft is exported to the disc by `public/js/editor/patchdialog.js`, which takes a list of drafts, a row each, and places them as one patch: opened from a draft's card it lists that draft, a select under the rows adds any other draft this browser holds or, by its last entry, a level from a file, read as the sidebar's `open a file…` reads one through `public/js/editor/intake.js` and made a draft marked saved, a pack's or an image's question asked in the box's place and the box opened again once it is answered or declined, and a row's `take out` drops it, as `take all out` drops every row.

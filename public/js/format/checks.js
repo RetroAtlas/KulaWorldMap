@@ -348,6 +348,15 @@ export function recordOverflow(project) {
   return carried > LINK_RECORDS ? overCap("records", counts(project).records) : null;
 }
 
+/** The checks' sentence for the first of the game's caps a project is over, in the order the caps
+    stand and counted as `counts` counts them; null where every counted cap holds. */
+export function overCaps(project, hides) {
+  const n = counts(project, hides);
+  for (const [what, cap] of Object.entries(CAPS))
+    if (n[what] !== null && n[what] > cap) return overCap(what, n[what]);
+  return null;
+}
+
 export const TIME_LIMIT = 2 ** 15 - 1;
 
 /** The nearest whole number a time yields, or null where it is not from 1 to the limit. */
