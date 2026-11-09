@@ -75,5 +75,19 @@ export const docOf = (page, id) =>
     return get(id)?.doc ?? null;
   }, id);
 
+/** Put `object` on `face` of the shown draft's first block, or take it off, through the model. */
+export const faced = (page, face, object) =>
+  page.evaluate(
+    async ([face, object]) => {
+      const at = (p) => import(new URL(`js/${p}`, location.href).href);
+      const [{ state }, { get, update }, { setFace }] = await Promise.all(
+        ["viewer/state.js", "editor/drafts.js", "format/project.js"].map(at),
+      );
+      const id = state.lvl.draft;
+      update(id, setFace(get(id).doc, [17, 17, 17], face, object));
+    },
+    [face, object],
+  );
+
 export const EDITOR_FILES =
   /\/js\/(editor\/(editor|drafts|draftlist|palette|trail)|format\/(project|kwl)|vendor\/pako_deflate\.min|play\/(play|ball|dust))\.js$/;
