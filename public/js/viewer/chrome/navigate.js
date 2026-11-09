@@ -300,7 +300,7 @@ export function applyHash() {
       tails.forEach(({ before }, k) => before?.(held[k]));
       return false;
     }
-    if (state.lvl?.draft !== l.draft) showLevel(l, { keepView: true });
+    if (shown !== link.slot) showLevel(l, { keepView: true });
   } else if (i !== state.li) selectLevel(i, { keepView: true });
   else if (shownRelease !== current()) reinstall(link.picked ? cellKey(...link.picked) : null);
   emit("link-opening");

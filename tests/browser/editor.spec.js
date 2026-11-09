@@ -98,6 +98,74 @@ test("a link names a level a source provides, and installing it again keeps the 
   expect(errors).toEqual([]);
 });
 
+// Two levels a source provides under slots of their own, neither a draft, switch by
+// the slot a link names, the first installed over a disc level.
+test("a link to another slot a source answers switches to its level, and Your levels stays closed", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#HIRO/0/45,35/fit/33");
+  await settle(page);
+  const first = await page.evaluate(async () => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { provideLevels }, { on }] = await Promise.all(
+      ["viewer/state.js", "viewer/chrome/navigate.js", "viewer/ui/dom.js"].map(at),
+    );
+    document.getElementById("yoursFold").open = false;
+    const shared = (index, name) => {
+      const copy = { ...state.data.levels[0], pack: "/SHARED/SHARED.PAK", index, tag: "Shared" };
+      copy.name = name;
+      delete copy.shown;
+      return copy;
+    };
+    const levels = new Map([
+      ["SHARED/LAAA", shared("LAAA", "Spiral")],
+      ["SHARED/LBBB", shared("LBBB", "Helix")],
+    ]);
+    provideLevels((slot) => levels.get(slot) ?? null);
+    window.changes = 0;
+    on("level-changed", () => window.changes++);
+    const changed = new Promise((r) => addEventListener("hashchange", r, { once: true }));
+    location.hash = "#SHARED/LAAA/45,35/fit/33";
+    await changed;
+    return {
+      li: state.li,
+      draft: state.lvl.draft,
+      tag: document.querySelector("#chipLine .tag")?.textContent ?? null,
+      chip: document.getElementById("chipLine").textContent,
+      say: document.getElementById("say").textContent,
+      changes: window.changes,
+      hash: location.hash,
+      fold: document.getElementById("yoursFold").open,
+    };
+  });
+  expect(first).toMatchObject({ li: -1, tag: "Shared", changes: 1, fold: false });
+  expect(first.draft).toBeUndefined();
+  expect(first.chip).toContain("Spiral");
+  expect(first.say).toMatch(/^Shared, Spiral, /);
+  expect(first.hash).toMatch(/^#SHARED\/LAAA\//);
+
+  const second = await page.evaluate(async () => {
+    const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+    const changed = new Promise((r) => addEventListener("hashchange", r, { once: true }));
+    location.hash = "#SHARED/LBBB/45,35/fit/33";
+    await changed;
+    return {
+      li: state.li,
+      draft: state.lvl.draft,
+      chip: document.getElementById("chipLine").textContent,
+      changes: window.changes,
+      hash: location.hash,
+      fold: document.getElementById("yoursFold").open,
+    };
+  });
+  expect(second).toMatchObject({ li: -1, changes: 2, fold: false });
+  expect(second.draft).toBeUndefined();
+  expect(second.chip).toContain("Helix");
+  expect(second.hash).toMatch(/^#SHARED\/LBBB\//);
+  expect(errors).toEqual([]);
+});
+
 test("an update that keeps the selected cell keeps its face too", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/#HIRO/0/45,35/fit/33");

@@ -709,6 +709,8 @@ A module may take the panel down through `clearDetail` and build it again for th
 
 A module may reinstall the slot shown in place through `reshow` in `js/viewer/chrome/navigate.js`, which keeps the selection where its cell stands and frames the level afresh where it was fitted, and may register a segment of the link's tail with `before` beside `read`, told the segment before the slot is resolved, so that what it names is installed once.
 
+A module may answer a link's slot with a level of its own through `provideLevels` in `js/viewer/chrome/navigate.js`, each source asked with the slot the link names, in upper case, and answering with a level or nothing; a link to a slot a source answers installs the level where that slot is not the one shown, whatever level is on screen, which is a change of level, or an update where the level's own slot is the one shown, while a link to the slot shown installs nothing and lays its view on the level there.
+
 The route planner is built on the same seams and loads with the boot, since a linked route must draw on the first frame:
 
 - `js/viewer/walk.js` is the model, pure and testable without a page, the ball's three moves and the side rule over a probe of the lattice, the shortest walk between two faces, the course's codec and its pieces.
