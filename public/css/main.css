@@ -2332,6 +2332,11 @@ body.padded .detail {
 #share .row {
   flex-wrap: wrap;
 }
+#share section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
 #paste .row button,
 #share .row button,
 #bundle .row button {

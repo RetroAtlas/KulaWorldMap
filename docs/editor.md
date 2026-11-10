@@ -440,6 +440,8 @@ A dense hand-made level grows with its block count, and its author and notes may
 
 The share box of the Level card writes the link through `shareLink` in `public/js/editor/sharelink.js`, in the permalink's full form, since a tail segment is recognised only after a full head: the shared slot at the digest of the level's canonical text, the yaw and pitch the map stands at, `fit` in the view's place, the slice, no selected cell, and the segment as the one tail, so the level opens framed to any window and turned as its author had it.
 
+The box's second part sends the level in to the community levels by the addresses `mailtoFor` and `issueFor` in `public/js/editor/sendlink.js` compose, with no DOM, as [community.md](community.md) says under "Sending a level in".
+
 The box offers the link only for a draft the checks find no error in.
 
 The box leads with the file where the link would pass 8,000 characters, the bound `LINK_MOST`, which no shipped level's link reaches.

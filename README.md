@@ -24,6 +24,8 @@ Drafts stay in the browser until they are saved, as the map's own file or as the
 
 A draft can also be shared by a link that carries the level whole, so it opens on any device.
 
+From the same box a draft can be sent in to the community levels, by email or as an issue on the repository; [docs/community.md](docs/community.md) says what a sender grants and how a level is added.
+
 ## What the disc stores
 
 Every level is one compressed record inside a pack: a fixed 34 x 34 x 34 lattice of cells, each empty, one of five kinds of block, or a block carrying a record, and a table of records, a block's record being its kind and six slots that are its six faces, with an object standing on any face whose slot is filled.

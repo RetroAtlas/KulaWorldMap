@@ -5,6 +5,8 @@ import { EDIT, docOf, faced, shown, toasts } from "./drafthelpers.js";
 import { carriesLevel, parseHash } from "../../public/js/viewer/permalink.js";
 import { decodeSegment } from "../../public/js/format/share.js";
 import { readProject, writeProject } from "../../public/js/format/project.js";
+import { address } from "../../public/js/viewer/ui/address.js";
+import { ISSUE_FORM } from "../../public/js/editor/sendlink.js";
 
 const NOTE =
   "This link carries the whole level, so anyone who opens it sees it on the map and can copy it to make it their own. The link holds the level as it is now. Share it again after you change it.";
@@ -12,21 +14,43 @@ const HAS_ERRORS =
   "A level with errors has no link until they are fixed. The level line's note lists them.";
 const TOO_LONG = "This level is too large for a link. Save it as a file instead.";
 const UNCOPIED = "The link could not be copied. Select it in the field and copy it yourself.";
+const SEND_NOTE =
+  "A level sent in is shared under CC BY 4.0 with credit to its author, and a person looks at every level before it appears.";
+const GATE = "Give the level an author first, so it can be credited.";
+const PASTE =
+  "This link is too long to fill the form in by itself, so copy it and paste it into the form's Link field.";
 
-/** Open the page at `hash`, make a new level titled `title` and open its share box. */
-async function sharing(page, { hash = EDIT, title = "Shared one" } = {}) {
+/** Open the page at `hash`, make a new level titled `title`, by `author` where one is given, and open its share box. */
+async function sharing(page, { hash = EDIT, title = "Shared one", author = "" } = {}) {
   await page.goto(hash);
   await settle(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   await page.locator("#draftTitle").fill(title);
+  if (author) await page.locator("#draftAuthor").fill(author);
   const id = (await shown(page)).draft;
   await page.locator("#draftShare").click();
   const box = page.locator("#share");
   await expect(box).toBeVisible();
   return { id, box, link: await box.locator("#shareLink").inputValue() };
 }
-const ways = (box) => box.locator(".row button:visible");
+/** The link's own row of ways, the second row of the box left out. */
+const ways = (box) => box.locator(".box > .row button:visible");
+/** Have the page record what `window.open` is handed in place of opening anything. */
+const opened = (page) =>
+  page.addInitScript(() => {
+    window.__opened = [];
+    window.open = (...args) => {
+      window.__opened.push(args);
+      return null;
+    };
+  });
+const seeded = (seed) => () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 2 ** 32;
+/** `n` characters from the planes above the first, which deflate shortens little, drawn by a fixed rule so a length holds. */
+const wide = (n, next) =>
+  Array.from({ length: n }, () =>
+    String.fromCodePoint(0x10000 + Math.floor(next() * 0x100000)),
+  ).join("");
 /** Give the shown draft the texts of `meta` through the model. */
 const texted = (page, meta) =>
   page.evaluate(async (meta) => {
@@ -132,13 +156,7 @@ test("email it to someone opens a new message with the title as its subject and 
   page,
 }) => {
   const errors = trackErrors(page);
-  await page.addInitScript(() => {
-    window.__opened = [];
-    window.open = (...args) => {
-      window.__opened.push(args);
-      return null;
-    };
-  });
+  await opened(page);
   const { box, link } = await sharing(page, { title: "Spiral & Co" });
   await box.locator("#shareMail").click();
   expect(await page.evaluate(() => window.__opened)).toEqual([
@@ -240,16 +258,9 @@ test("a level too large for a link leads with the file and says so", async ({ pa
   await settle(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(1);
-  // an author and notes of two thousand characters each from the planes above the first, which
-  // deflate shortens little, drawn by a fixed rule so the length holds
-  let seed = 7;
-  const next = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 2 ** 32;
-  const wide = () =>
-    Array.from({ length: 2000 }, () =>
-      String.fromCodePoint(0x10000 + Math.floor(next() * 0x100000)),
-    ).join("");
-  const notes = wide();
-  await texted(page, { author: wide(), notes });
+  const next = seeded(7);
+  const notes = wide(2000, next);
+  await texted(page, { author: wide(2000, next), notes });
   await expect(page.locator("#draftNotes")).toHaveValue(notes);
   await page.locator("#draftShare").click();
   const box = page.locator("#share");
@@ -264,5 +275,136 @@ test("a level too large for a link leads with the file and says so", async ({ pa
     "email it to someone",
     "cancel",
   ]);
+  expect(errors).toEqual([]);
+});
+
+test("send it in by email opens a message to the map's makers carrying the title, the link and the grant, and closes the box", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page);
+  const { box, link } = await sharing(page, { title: "Spiral & Co", author: "Ada" });
+  await expect(box.locator("#shareSend h4")).toHaveText("Send it to the community levels");
+  await expect(box.locator("#shareSendNote")).toBeVisible();
+  await expect(box.locator("#shareSendNote")).toHaveText(SEND_NOTE);
+  await expect(box.locator("#shareGate")).toBeHidden();
+  await expect(box.locator("#shareSendPaste")).toBeHidden();
+  await expect(box.locator("#shareSend .row button:visible")).toHaveText([
+    "send it in by email",
+    "send it in as a GitHub issue (needs an account)",
+  ]);
+  await box.locator("#shareSendMail").click();
+  const calls = await page.evaluate(() => window.__opened);
+  expect(calls).toHaveLength(1);
+  const [url, target, features] = calls[0];
+  expect([target, features]).toEqual(["_blank", "noopener"]);
+  const at = new URL(url);
+  expect(at.protocol).toBe("mailto:");
+  expect(at.pathname).toBe(address());
+  expect([...at.searchParams.keys()]).toEqual(["subject", "body"]);
+  expect(at.searchParams.get("subject")).toBe("A level for the community levels: Spiral & Co");
+  const body = at.searchParams.get("body");
+  expect(body).toContain(link);
+  expect(body).toContain("Spiral & Co, by Ada.");
+  expect(body).toContain("I made this level and share it under CC BY 4.0, credited to Ada.");
+  await expect(box).toBeHidden();
+  expect(await toasts(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("send it in as a GitHub issue opens the repository's form with the title and the link filled in, and closes the box", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page);
+  const { box, link } = await sharing(page, { title: "Spiral & Co", author: "Ada" });
+  await box.locator("#shareSendIssue").click();
+  const calls = await page.evaluate(() => window.__opened);
+  expect(calls).toHaveLength(1);
+  const [url, target, features] = calls[0];
+  expect([target, features]).toEqual(["_blank", "noopener"]);
+  const at = new URL(url);
+  expect(at.origin).toBe("https://github.com");
+  expect(at.pathname).toBe("/RetroAtlas/KulaWorldMap/issues/new");
+  expect([...at.searchParams.keys()]).toEqual(["template", "title", "link"]);
+  expect(at.searchParams.get("template")).toBe("level.yml");
+  expect(at.searchParams.get("title")).toBe("A level for the community levels: Spiral & Co");
+  expect(at.searchParams.get("link")).toBe(link);
+  await expect(box).toBeHidden();
+  expect(await toasts(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("a level with no author is asked for one in place of the ways to send it in, which stand once it has one", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const { box } = await sharing(page);
+  await expect(box.locator("#shareSend h4")).toHaveText("Send it to the community levels");
+  await expect(box.locator("#shareGate")).toHaveText(GATE);
+  await expect(box.locator("#shareSendNote")).toBeHidden();
+  await expect(box.locator("#shareSendMail")).toBeHidden();
+  await expect(box.locator("#shareSendIssue")).toBeHidden();
+  await expect(box.locator("#shareSendPaste")).toBeHidden();
+  await box.locator("#shareCancel").click();
+  await expect(box).toBeHidden();
+  await page.locator("#draftAuthor").fill("   ");
+  await page.locator("#draftShare").click();
+  await expect(box).toBeVisible();
+  await expect(box.locator("#shareGate")).toBeVisible();
+  await expect(box.locator("#shareSendMail")).toBeHidden();
+  await box.locator("#shareCancel").click();
+  await page.locator("#draftAuthor").fill("Ada");
+  await page.locator("#draftShare").click();
+  await expect(box).toBeVisible();
+  await expect(box.locator("#shareGate")).toBeHidden();
+  await expect(box.locator("#shareSendNote")).toBeVisible();
+  await expect(box.locator("#shareSendNote")).toHaveText(SEND_NOTE);
+  await expect(box.locator("#shareSendMail")).toBeVisible();
+  await expect(box.locator("#shareSendIssue")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("a link past the form's room and short of the link's own bound opens the form bare, says to paste the link in and keeps the box up for the copy", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await opened(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  const notes = wide(1000, seeded(7));
+  await texted(page, { author: "Ada", notes });
+  await expect(page.locator("#draftNotes")).toHaveValue(notes);
+  await page.locator("#draftShare").click();
+  const box = page.locator("#share");
+  await expect(box).toBeVisible();
+  await expect(box.locator("#shareSays")).toBeEmpty();
+  await expect(box.locator("#shareSendPaste")).toBeVisible();
+  await expect(box.locator("#shareSendPaste")).toHaveText(PASTE);
+  await box.locator("#shareSendIssue").click();
+  expect(await page.evaluate(() => window.__opened)).toEqual([[ISSUE_FORM, "_blank", "noopener"]]);
+  await expect(box).toBeVisible();
+  await expect(box.locator("#shareLink")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("a level with errors has no second part, since there is no link to send in", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await page.locator("#draftAuthor").fill("Ada");
+  await faced(page, 0, null);
+  await expect(page.locator("#draftErrors")).toHaveText("1 error, listed under the level line");
+  await page.locator("#draftShare").click();
+  const box = page.locator("#share");
+  await expect(box).toBeVisible();
+  await expect(box.locator("#shareSays")).toHaveText(HAS_ERRORS);
+  await expect(box.locator("#shareSend")).toBeHidden();
   expect(errors).toEqual([]);
 });

@@ -2,7 +2,7 @@
 
 The community levels are levels players made and sent in, each its author's work shared under CC BY 4.0 with credit to the name in its Author field, published in one catalogue the page reads rather than in any browser's store.
 
-This document specifies the catalogue: the index that carries the levels, the shape of its entries, the gates their documents pass, the rule it grows by, the slots its levels open under, the panel that shows it and how a level is added to it by hand; `public/js/format/catalogue.js` is its one reader and writer, `public/js/community/panel.js` shows it and `tools/community.js` joins the records into it.
+This document specifies the catalogue: the index that carries the levels, the shape of its entries, the gates their documents pass, the rule it grows by, the slots its levels open under, the panel that shows it, how a level is sent in and how it is added to it by hand; `public/js/format/catalogue.js` is its one reader and writer, `public/js/community/panel.js` shows it, `public/js/editor/sendlink.js` composes the addresses a level is sent in by and `tools/community.js` joins the records into it.
 
 ## The catalogue
 
@@ -167,6 +167,34 @@ The panel answers a link's slot through `provideLevels`: `COMMUNITY/<id>` with a
 Before the first link is read, and on a hashchange that brings such a link, the boot awaits `prepare`, which fetches the index where none is held and builds the level, and throws the toast's sentence where it cannot: "The community's levels could not be loaded, so that link could not be followed." where the index did not arrive, "That level was taken down." for an id under `retired`, and "The community levels hold no such level." for any other slot the catalogue does not answer.
 
 The fold keeps whether it is open under `localStorage["kula.community"]`, as Your levels keeps its own under `kula.yours`, and opens itself when a level of the community's pack comes on screen.
+
+## Sending a level in
+
+A level is sent in from the share box of its card, whose second part, "Send it to the community levels", offers two roads once the level names an author, both carrying the link that holds the level whole, so what is sent is the link and nothing else, and the author's name travels inside it.
+
+The name the level is credited to is the name in its Author field, so where that field is empty, or holds spaces alone, the part reads "Give the level an author first, so it can be credited." in place of the offer.
+
+A box that opens refusing, for a level the checks find errors in, has no second part, since there is no link to send.
+
+The part says in one sentence that a level sent in is shared under CC BY 4.0 with credit to its author and that a person looks at every level before it appears, the look "Adding a level by hand" describes.
+
+`send it in by email` opens a new message to the contact address, its subject "A level for the community levels: <title>" and its body the title and the author, the link, the statement "I made this level and share it under CC BY 4.0, credited to <author>." and the line "Anything else goes here.", so the grant stands in the message the level arrives in and the sender has only to send it.
+
+`send it in as a GitHub issue (needs an account)` opens the repository's form for a level, `.github/ISSUE_TEMPLATE/level.yml`, with the title and the link filled in through the query keys `title` and `link`, the link's text area rendered as text so the form keeps the link as it is.
+
+The form asks for notes and for a tick on "I made this level and share it under CC BY 4.0, credited to the name in its Author field", which it needs before it is sent, and takes no author, since the link carries the name.
+
+The form is filled only while its address stays within 3,500 characters, `ISSUE_MOST` of `public/js/editor/sendlink.js`, the room a signed-in visitor's request headers leave a URL; past it the form opens bare, the part says to copy the link and paste it into the form's Link field, and the box stays up for the copy.
+
+Every shipped level's link fills the form, a bound the module's unit test holds over every template.
+
+The module composes both addresses with no DOM, `mailtoFor` with the contact address joined from its parts at the call and `issueFor` with the repository's address.
+
+Every text of either address, the subject, the body, the title and the link, goes through `encodeURIComponent`, so the link's `#` and `&` survive, a lone surrogate in a text replaced first, since the encoding throws on one and a title read from a file can carry one.
+
+The box opens each address through `window.open` with `noopener`.
+
+What a sender states, by either road, is that the level is their own work and that they share it under CC BY 4.0 with credit to the name in its Author field; the statement is what the commit that adds the record points at, as "Adding a level by hand" says.
 
 ## Adding a level by hand
 

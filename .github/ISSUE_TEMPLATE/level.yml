@@ -1,0 +1,27 @@
+name: A level for the community levels
+description: Send in a level you made on the map, by the link that carries it.
+title: "A level for the community levels: "
+body:
+  - type: markdown
+    attributes:
+      value: The link from the share box of the level's card carries the level whole, the name in its Author field included, which is the name the level is credited to. A person looks at every level before it appears.
+  - type: textarea
+    id: link
+    attributes:
+      label: Link
+      description: The link the share box gives, pasted as it is.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything else about the level, or about how it should be listed.
+  - type: checkboxes
+    id: licence
+    attributes:
+      label: Licence
+      options:
+        - label: I made this level and share it under CC BY 4.0, credited to the name in its Author field.
+          required: true

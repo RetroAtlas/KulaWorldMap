@@ -1,7 +1,9 @@
 // The box that shares a level of your own: the link that carries it whole, with the ways to send
-// it, or the file alone where the checks find errors.
+// it and the ways to send it in to the community levels, or the file alone where the checks find
+// errors.
 import { $, el } from "../viewer/ui/dom.js";
 import { NAMES, skinsTable } from "../viewer/data.js";
+import { address } from "../viewer/ui/address.js";
 import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { toast } from "../viewer/ui/toast.js";
 import { say } from "../viewer/chrome/a11y.js";
@@ -9,6 +11,7 @@ import { settle, viewParts } from "../viewer/chrome/navigate.js";
 import { ERROR, validate } from "../format/checks.js";
 import { UNTITLED } from "../format/project.js";
 import { LINK_MOST, shareLink } from "./sharelink.js";
+import { ISSUE_FORM, issueFor, mailtoFor } from "./sendlink.js";
 import * as drafts from "./drafts.js";
 
 const NOTE =
@@ -18,6 +21,11 @@ const HAS_ERRORS =
 const TOO_LONG = "This level is too large for a link. Save it as a file instead.";
 const COPIED = "Link copied.";
 const UNCOPIED = "The link could not be copied. Select it in the field and copy it yourself.";
+const SEND_NOTE =
+  "A level sent in is shared under CC BY 4.0 with credit to its author, and a person looks at every level before it appears.";
+const GATE = "Give the level an author first, so it can be credited.";
+const PASTE =
+  "This link is too long to fill the form in by itself, so copy it and paste it into the form's Link field.";
 
 let ui = null;
 
@@ -69,9 +77,28 @@ function build() {
     }),
     cancel: el("button", { id: "shareCancel", type: "button", textContent: "cancel" }),
     row: el("div", { className: "row" }),
+    sendNote: el("p", { id: "shareSendNote", textContent: SEND_NOTE }),
+    sendPaste: el("p", { id: "shareSendPaste", textContent: PASTE }),
+    sendMail: el("button", {
+      id: "shareSendMail",
+      type: "button",
+      textContent: "send it in by email",
+      title: "Write an email to the map's makers that carries the link and your grant",
+    }),
+    sendIssue: el("button", {
+      id: "shareSendIssue",
+      type: "button",
+      textContent: "send it in as a GitHub issue (needs an account)",
+      title: "Open the repository's form for sending a level in",
+    }),
+    gate: el("p", { id: "shareGate", textContent: GATE }),
+    sendRow: el("div", { className: "row" }),
+    send: null,
     field: null,
     url: "",
+    issue: "",
     title: "",
+    author: "",
     save: null,
   };
   u.field = el("label", { className: "field" }, el("span", { textContent: "Link" }), u.link);
@@ -85,6 +112,18 @@ function build() {
     u.save();
   };
   u.cancel.onclick = closeDialog;
+  u.sendMail.onclick = sendMail;
+  u.sendIssue.onclick = sendIssue;
+  u.sendRow.append(u.sendMail, u.sendIssue);
+  u.send = el(
+    "section",
+    { id: "shareSend" },
+    el("h4", { textContent: "Send it to the community levels" }),
+    u.sendNote,
+    u.sendPaste,
+    u.sendRow,
+    u.gate,
+  );
   const box = el(
     "div",
     { className: "box settings share" },
@@ -94,6 +133,7 @@ function build() {
     u.field,
     u.says,
     u.row,
+    u.send,
   );
   u.overlay = el("div", { id: "share", className: "modal", hidden: true }, box);
   u.overlay.setAttribute("role", "dialog");
@@ -133,10 +173,23 @@ function mail() {
   closeDialog();
 }
 
+function sendMail() {
+  const { title, author, url: link } = ui;
+  window.open(mailtoFor({ title, author, link, address: address() }), "_blank", "noopener");
+  closeDialog();
+}
+
+// A form opened bare leaves the box up, since the link is still to be copied into it.
+function sendIssue() {
+  window.open(ui.issue, "_blank", "noopener");
+  if (ui.issue !== ISSUE_FORM) closeDialog();
+}
+
 /**
  * Open the box for the draft `id`: its link, with the ways to send it, where the checks find no
  * error, the file leading where the link would run past the bound; the file alone, with the
  * sentence that says why, where they find one. `save` writes the draft as the card's save does.
+ * Under the link, the ways to send the level in stand once it names an author.
  */
 export function shareLevel(id, save) {
   const d = drafts.get(id);
@@ -145,10 +198,12 @@ export function shareLevel(id, save) {
   const u = ui;
   u.save = save;
   u.title = d.doc.title || UNTITLED;
+  u.author = (d.doc.author ?? "").trim();
   u.says.textContent = "";
   const refused = validate(d.doc, skinsTable()?.hides, NAMES).some((f) => f.level === ERROR);
   if (refused) {
     u.url = "";
+    u.issue = "";
     u.link.value = "";
     u.says.textContent = HAS_ERRORS;
     u.row.replaceChildren(u.file, u.cancel);
@@ -161,7 +216,14 @@ export function shareLevel(id, save) {
     if (long) u.says.textContent = TOO_LONG;
     const ways = long ? [u.file, u.app, u.copy, u.mail] : [u.app, u.copy, u.mail, u.file];
     u.row.replaceChildren(...ways, u.cancel);
+    u.issue = issueFor({ title: u.title, link: u.url });
+    const gated = !u.author;
+    u.sendNote.hidden = gated;
+    u.sendPaste.hidden = gated || u.issue !== ISSUE_FORM;
+    u.sendRow.hidden = gated;
+    u.gate.hidden = !gated;
   }
+  u.send.hidden = refused;
   u.note.hidden = refused;
   u.field.hidden = refused;
   openDialog(u.overlay, $("draftShare"));

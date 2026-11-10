@@ -265,7 +265,15 @@ The card's `share…` opens "Share this level", a box with the link that carries
 
 The box offers `copy the link`, which says "Link copied." and closes the box, or keeps it open and says the link could not be copied and is to be selected in the field instead; `send to an app…`, first in the row and only where the browser has a share sheet that takes a link, which hands the sheet the title and the link, a sheet dismissed saying nothing and one the browser cannot show saying, as a refused copy does, that the link is to be selected in the field; `email it to someone`, which opens a new message with the title as its subject and the link as its body; `save the file instead`, the card's `save as .json`; and `cancel`.
 
+Under the row the box's second part, "Send it to the community levels", says that a level sent in is shared under CC BY 4.0 with credit to its author and that a person looks at every level before it appears, and offers `send it in by email`, which opens a new message to the map's makers with the level's title in its subject and the title and the author, the link and the author's grant of the licence in its body, and `send it in as a GitHub issue (needs an account)`, which opens the repository's form for a level with the title and the link filled in; either closes the box, the issue excepted where the form opens bare, as below.
+
+Where the level names no author, or a name of spaces alone, the part reads "Give the level an author first, so it can be credited." in place of the offer, since the name in the Author field is the name the level is credited to.
+
+Where the link is too long to fill the form in, the part says to copy the link and paste it into the form's Link field, the issue opens the form empty and the box stays up for the copy.
+
 Where the checks find errors the box opens refusing: no link is made, one sentence says a level with errors has no link until they are fixed and that the level line's note lists them, and the row offers the file and `cancel`.
+
+A box that opens refusing has no second part, since there is no link to send in.
 
 Where the link would run past 8,000 characters the file leads the row and the box says the level is too large for a link.
 
