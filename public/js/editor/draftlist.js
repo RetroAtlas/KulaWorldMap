@@ -12,7 +12,7 @@ import { say, describeLevel } from "../viewer/chrome/a11y.js";
 import { blank, fromLevel, setMeta, toLevel } from "../format/project.js";
 import { readLevelText } from "./files.js";
 import { pasteLevelLink } from "./importdialog.js";
-import { draftsOf, readLevel } from "./intake.js";
+import { draftsOf, openedFrom, readLevel, readsOf } from "./intake.js";
 import { heldImage } from "./patchdialog.js";
 import { buildForm, nameOf, signed, twice } from "./levelcard.js";
 import { SORTS, matches, ordering } from "./draftsort.js";
@@ -109,17 +109,19 @@ async function openFile() {
   if (file) openRead(await readLevel(file, state.lvl.theme, heldImage()), file.name);
 }
 
-/** A level read from elsewhere becomes a draft marked saved, since the file is the record, shown with the reader's report on its card; the levels of one file become one each, the first shown. */
+/** A level read from elsewhere becomes a draft marked saved, since the file is the record, shown with the reader's report on its card; the levels of one file become one each, the first shown, with the bundle's report where the file was a bundle. */
 function openRead(read, name) {
   if (!read) return;
-  const reads = [read].flat();
+  const reads = readsOf(read);
   const ids = draftsOf(reads, name);
   if (!ids.length) return;
-  imported = { id: ids[0], lines: reads[0].report, repairs: reads[0].repairs };
+  const head = reads.bundle;
+  const { report, repairs } = head ?? reads[0];
+  imported = { id: ids[0], lines: report, repairs };
   open(
     ids[0],
-    ids.length > 1
-      ? `Opened ${ids.length} levels from ${name}`
+    head || ids.length > 1
+      ? openedFrom(ids.length, name, !!head)
       : `Opened ${nameOf(reads[0].project)}`,
   );
 }

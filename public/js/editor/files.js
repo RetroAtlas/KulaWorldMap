@@ -1,6 +1,6 @@
 // Files out of the page and into it: a download whose URL outlives the click,
-// a file name out of a title, and a level read out of whatever was picked or
-// pasted, by what it holds and never by its name.
+// a file name out of a title, and a level, or a bundle's levels, read out of
+// whatever was picked or pasted, by what it holds and never by its name.
 import {
   COPYCAT_PACK,
   FORMAT,
@@ -8,11 +8,13 @@ import {
   HEAD,
   RECORD,
   WORLDS,
+  collapse,
   levelKey,
   readKwl,
   writeKwl,
 } from "../format/kwl.js";
-import { readProject } from "../format/project.js";
+import { UNTITLED, readProject } from "../format/project.js";
+import { BUNDLE_FORMAT, readBundle } from "../format/bundle.js";
 import { overCaps, recordOverflow } from "../format/checks.js";
 import { readPak } from "../format/pak.js";
 import { openDisc } from "../format/iso.js";
@@ -44,6 +46,7 @@ const CUE_SHEET = "That file is a cue sheet; open the disc image it names, the .
 export const RAW_ONLY =
   "is a disc image of 2048-byte sectors; the map reads the raw image of 2352-byte sectors, the .bin a .cue names";
 const NO_WORLD = "That file names a world the disc has not.";
+const NO_LEVELS = "That bundle holds no level the map can open";
 const NO_PACKS = "That disc image holds no packs of levels.";
 const NOT_PACKED = "That slot does not hold a level the game could unpack.";
 const NOT_A_LEVEL = "That slot does not hold a level.";
@@ -79,13 +82,13 @@ export function download(name, data, type) {
 
 export const SLUG_MOST = 60;
 
-export const slug = (title) =>
+export const slug = (title, fallback = "level") =>
   title
     .normalize("NFC")
     .toLowerCase()
     .replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")
     .slice(0, SLUG_MOST)
-    .replace(/^-+|-+$/g, "") || "level";
+    .replace(/^-+|-+$/g, "") || fallback;
 
 const stem = (name) => name.replace(/\.[^.]*$/, "");
 
@@ -259,17 +262,63 @@ async function readFromPatch(bytes, kind, name, world, held) {
   return reads;
 }
 
-/** The read, once the writer has agreed it is a level; more records than a link word can name
-    are refused in the checks' words, before the writer names a block. */
-function writable(read) {
+/** Why the writer would refuse the read, more records than a link word can name in the checks'
+    words, before the writer names a block, or the writer's own reason; null where it is a level. */
+function unwritable(read) {
   const crowded = recordOverflow(read.project);
-  if (crowded) throw new Error(`That file cannot be read as a level: ${crowded}.`);
+  if (crowded) return crowded;
   try {
     writeKwl(read.project);
   } catch (e) {
-    throw new Error(`That file cannot be read as a level: ${e.message}.`);
+    return e.message;
   }
+  return null;
+}
+
+/** The read, once the writer has agreed it is a level, or a thrown sentence. */
+function writable(read) {
+  const why = unwritable(read);
+  if (why) throw new Error(`That file cannot be read as a level: ${why}.`);
   return read;
+}
+
+/** Why a bundle's level is left out, named by its place and its title, or null where it passes the gates a file's level passes. */
+function leftOut(read) {
+  const where = `level ${read.at} (${read.project.title || UNTITLED})`;
+  if (!WORLDS.includes(read.project.world)) return `${where} names a world the disc has not`;
+  const why = unwritable(read);
+  return why ? `${where} cannot be read as a level: ${why}` : null;
+}
+
+/** The refusal of a bundle none of whose levels passes: the first reason, with a count of the rest. */
+function noneOpen(left) {
+  if (!left.length) return `${NO_LEVELS}.`;
+  const more = left.length - 1;
+  const rest = more ? `, and ${more} more ${more === 1 ? "is" : "are"} left out` : "";
+  return `${NO_LEVELS}: ${left[0]}${rest}.`;
+}
+
+/** The reads of a bundle's levels that pass, in the file's order, with the bundle's title, author
+    and notes on the list as `bundle` and its report, the levels left out in it; a thrown sentence
+    where none passes. */
+function readFromBundle(json) {
+  const { bundle, report, repairs, levels } = readBundle(json);
+  const reads = [];
+  const left = [];
+  for (const read of levels) {
+    const why = leftOut(read);
+    if (why) left.push(why);
+    else reads.push(read);
+  }
+  if (!reads.length) throw new Error(noneOpen(left));
+  reads.bundle = {
+    title: bundle.title,
+    author: bundle.author,
+    notes: bundle.notes,
+    report: [...report, ...collapse(left.map((why) => `${why}; it is left out`))],
+    repairs: repairs + left.length,
+  };
+  return reads;
 }
 
 /**
@@ -277,9 +326,11 @@ function writable(read) {
  * the game's level, a level of the community's viewer, a pack or a disc image,
  * the last two asking which level to take; an array of them for a patch, one
  * for each level it puts on the disc, which asks for the image it was made for
- * unless `held` is the disc box's { file, release }; null where the visitor
- * declines; and a thrown sentence to show where the file holds no level. A
- * disc image handed over as a File is read a slice at a time.
+ * unless `held` is the disc box's { file, release }, and for a bundle, one for
+ * each level of it the map can open, the bundle's title, author and notes on
+ * the array as `bundle` with its report; null where the visitor declines; and a
+ * thrown sentence to show where the file holds no level. A disc image handed
+ * over as a File is read a slice at a time.
  */
 export async function readLevelFile(source, name, world, held = null) {
   const kind = patchKind(await headOf(source, PPF_MAGIC.length));
@@ -302,7 +353,8 @@ export async function readLevelFile(source, name, world, held = null) {
     if (json.format === FORMAT) {
       read = readProject(json);
       if (!WORLDS.includes(read.project.world)) throw new Error(NO_WORLD);
-    } else if (isOrbit(json)) {
+    } else if (json.format === BUNDLE_FORMAT) return readFromBundle(json);
+    else if (isOrbit(json)) {
       read = readOrbit(json, world);
       read.project.title = stem(name);
     } else throw new Error(NOT_MAP);

@@ -388,20 +388,29 @@ A draft saves as `<slug>.kula.json`, the project file `writeProject` writes, or 
 
 Either save flushes the store first and then marks the draft saved, `saved` the time and `edits` 0, so its line among your levels counts the changes since.
 
+`save as a bundle` on the card of a level in a bundle saves the bundle as `<slug>.kula-bundle.json`, the bundle file `writeBundle` writes of the bundle's title, author and notes and its levels' documents in the bundle's order, named by the slug of the bundle's title with `bundle` where nothing is left of it.
+
+The save flushes the store first and then marks every level of the bundle saved, and the button carries a dot while any of them has changes since its save.
+
 `public/js/editor/files.js` opens a file by what it holds, never by its name, in the order "Levels from elsewhere" below gives:
 
 - The map's own file is read by `readProject` and refused where its world is not one of the ten.
+- A bundle is read by `readBundle`, and each level it gives is gated as the map's own file is, its world one of the ten and the writer agreeing, a level that fails left out with a line naming its place, its title and the reason, and the file refused where no level passes, naming the first reason.
 - The game's level is read by `readKwl` in the world on screen and titled by the file's stem.
 - A pack, a disc image or a level of the community's viewer is read as that section says.
 - A patch the map made, a PPF or an xdelta, is read as that section says, and gives a read for each level it puts on the disc.
-- JSON that is neither the map's file nor the viewer's file is refused, as is anything the order places nowhere.
+- JSON that is none of the map's file, a bundle and the viewer's file is refused, as is anything the order places nowhere.
 - A project whose blocks carry more records than a link word can name is refused in the checks' words for the record cap, and a document the writer cannot write with the writer's reason.
 
 Every open makes a new draft marked saved, since the file is the record, and the reader's report shows as one toast, the line itself where there is one, the count of repairs where there are more, or that the level was read with notes where no line is a repair, and in full in a fold at the top of the Level card, under the same count or the same words, until another draft is shown.
 
 The read and the draft are one rule in `public/js/editor/intake.js`, which the sidebar's `open a file…` and `paste a link…` and the disc box's `a file…` share: `readLevel` reads a file through `readLevelFile` in the world on screen and says a refusal in one toast, and `draftOf` makes the draft marked saved and says the report, so a level from elsewhere becomes a draft the same way wherever it is opened from; the sidebar then shows the draft with the fold, and the box adds its row and leaves the map where it was.
 
-`draftsOf` makes a draft marked saved of each of several reads of one file, a patch's, and says how many opened from it in one toast in place of their reports; the sidebar shows the first, and the box adds a row for each.
+`draftsOf` makes a draft marked saved of each of several reads of one file, a patch or a bundle, and says how many opened from it in one toast in place of their reports; the sidebar shows the first, and the box adds a row for each.
+
+A bundle's reads carry the bundle's title, author and notes, which `draftsOf` reads to gather the drafts it makes into a bundle of them in the file's order, its count then saying "as a bundle", and the bundle's report, the head's lines, every level's lines under its place and the levels left out with their reasons, is said as a file's report is and shown in the fold on the first level's card.
+
+A bundle's drafts reach storage in the store's one deferred write as any draft does, and a browser that refuses them for want of room says so through the store's own toast.
 
 `readLevel` takes the image the disc box holds read, `heldImage` of `public/js/editor/patchdialog.js`, the file and the disc it is, and hands it to the reader, so a patch reads over it without asking for an image.
 
@@ -544,11 +553,17 @@ The patches are then the bytes of [disc.md](disc.md): the PPF with the descripti
 
 - A file whose head is the PPF 3.0 magic or the VCDIFF magic is a patch, sniffed first since a patch is small and unmistakable.
 - A file of whole 2352-byte sectors with the volume mark at sector 16 is a disc image, sniffed next so that one handed over as a file is read a slice at a time rather than whole.
-- Text that parses as JSON is the map's file where it carries the marker and the community viewer's level where it has `blocks` at `pos` and a `time`.
+- Text that parses as JSON is the map's file where it carries the marker, a bundle where it carries the bundle's marker, and the community viewer's level where it has `blocks` at `pos` and a `time`.
 - Bytes whose first word counts 1 to 32 slots whose table, records and NUL-ended names all lie within the file are a pack.
 - A length that is the lattice, the six header bytes and whole records is the game's level.
 
 Anything else is refused.
+
+A bundle is read by `readBundle` under the rules of "The bundle file" above, and each level it gives then passes the gates the map's own file passes, its world one of the ten and the writer agreeing to it, a level that fails either left out with a line naming its place in the file's list, its title and the reason, `level 3 (Spiral 2) names a world the disc has not; it is left out`, counted as a repair.
+
+The reads of a bundle's levels that pass carry the bundle's title, author and notes, so whoever opens them gathers the drafts they make into a bundle.
+
+A bundle none of whose levels passes is refused in one sentence naming the first reason and counting the rest.
 
 A pack asks which slot to open, each named as the pack names it, and the chosen record is inflated with the browser's `DecompressionStream` and read by `readKwl` in the world on screen, since a pack's bytes do not say which world they are from, titled by the slot's name or the file's stem; a browser that cannot inflate is told it needs a newer one.
 

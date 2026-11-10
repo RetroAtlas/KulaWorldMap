@@ -261,6 +261,12 @@ Where the link would run past 8,000 characters the file leads the row and the bo
 
 The card's `save as .json` writes the draft as the map's own file and `save as .kwl` as the file the game loads, each named after the title, after which the level's line among your levels reads "saved to a file" and counts the changes since, with a dot on the save button while there are any; `open a file…` in the row above takes either back, or a level file from elsewhere, read for what it holds rather than by its name, opens it as a new draft and says what it had to repair, or that it has notes on what it read where it repaired nothing.
 
+For a level in a bundle the card also offers `save as a bundle`, which writes the bundle, its title, author and notes and its levels in order, as one file named after the bundle's title, after which each of them reads "saved to a file", with a dot on the button while any of its levels has changes since its save.
+
+`open a file…` takes a bundle too, opening its levels as new levels of your own gathered into a bundle, a set of your levels in play order under the file's title, author and notes, the first shown and how many opened said.
+
+A level of the bundle that names a world the disc has not, or that the game could not load, is left out and said with its reason, and a bundle with no level the map can open is refused.
+
 `open a file…` also takes one of the game's packs, which asks which of its levels to open and opens it in the world on screen, since a pack does not say which world it is from, a disc image, which asks for the pack and the level and opens it in the world the map lists the level that lies there under, named as the pause screen names it, and in the pack's own world where none of the game's levels lies there, and a level saved by the community's level viewer, read in the world on screen; declining the question opens nothing.
 
 A disc image's levels are named as the disc the image is names them, told by its boot line, so an image of the PAL disc offers HIRO's slot 19 as OBJ LEVEL where an image of the US disc offers LESSON, and an image whose boot line names none of the three discs is named as the disc the map shows.
@@ -286,6 +292,8 @@ The levels: a row for each, the draft the box was opened for first, and under th
 `a file…` takes what the sidebar's `open a file…` takes, one of the map's level files or a level file of the game, a pack or a disc image, or a level saved by the community's level viewer, and opens it as a new level of your own, listed under Your levels as saved to a file, with what the reader had to repair said once, as the sidebar says it; a pack or a disc image asks which level to take as it does there, in the box's place, and the box comes back once the question is answered or declined.
 
 `a file…` takes a patch the box made too, which asks for the image it was made for as the sidebar's does, or reads over the image the box already holds without asking, and adds a row for each level the patch puts on the disc, each on the slot it holds there.
+
+`a file…` takes a bundle too, whose levels open as new levels of your own gathered into a bundle as the sidebar opens them, with a row added for each.
 
 The new level's row takes the slot its file names, else the slot its title names, else the slot its copy came from, else the first slot no other row takes, a Simon room's slot where the level plays as one, and the map stays on the level it showed.
 

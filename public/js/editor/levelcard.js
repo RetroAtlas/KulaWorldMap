@@ -18,6 +18,7 @@ import { toast } from "../viewer/ui/toast.js";
 import { COLOURS, facesOf, levelKey, writeKwl } from "../format/kwl.js";
 import { TEXT_MOST, UNTITLED, setCircuit, setMeta, writeProject } from "../format/project.js";
 import { ERROR, TIME_LIMIT, circuitMembers, playsAs, timeOf, validate } from "../format/checks.js";
+import { writeBundle } from "../format/bundle.js";
 import { download, slug } from "./files.js";
 import { shareLevel } from "./sharedialog.js";
 import { readWith } from "./intake.js";
@@ -118,6 +119,24 @@ function saveAs(id, game) {
   if (game) download(`${name}.kwl`, writeKwl(d.doc), GAME_FILE);
   else download(`${name}.kula.json`, writeProject(d.doc), "application/json");
   drafts.markSaved(id);
+}
+
+/** The bundle the draft is in, with its id, or null where it is in none. */
+const bundleOf = (id) => drafts.bundles().find((b) => b.levels.includes(id)) ?? null;
+
+/** Write the bundle the draft is in to a file, its levels' documents in its order, and mark each of them saved. */
+function saveBundleOf(id) {
+  drafts.flush();
+  const b = bundleOf(id);
+  if (!b) return;
+  const { title, author, notes } = b;
+  const levels = b.levels.map((l) => drafts.get(l).doc);
+  download(
+    `${slug(title, "bundle")}.kula-bundle.json`,
+    writeBundle({ title, author, notes, levels }),
+    "application/json",
+  );
+  for (const l of b.levels) drafts.markSaved(l);
 }
 
 /** What a copy's card says of its source: the level its slot holds on the disc it was read from. */
@@ -265,6 +284,14 @@ export function buildForm(id, box, { imported, open }) {
     title: "Save this level as the .kwl file the game loads",
   });
   saveKwl.onclick = () => saveAs(id, true);
+  const saveBundle = el("button", {
+    id: "draftSaveBundle",
+    type: "button",
+    textContent: "save as a bundle",
+    title: "Save the bundle this level is in, every level of it in order, as one file",
+    hidden: true,
+  });
+  saveBundle.onclick = () => saveBundleOf(id);
   const patch = el("button", {
     id: "draftPatch",
     type: "button",
@@ -317,7 +344,7 @@ export function buildForm(id, box, { imported, open }) {
     circuits.box,
     plays,
     errors,
-    el("div", { className: "row" }, saveJson, saveKwl, share, patch, note),
+    el("div", { className: "row" }, saveJson, saveKwl, saveBundle, share, patch, note),
     el("div", { className: "row" }, duplicate, del),
   );
 
@@ -347,6 +374,9 @@ export function buildForm(id, box, { imported, open }) {
       errors.hidden = n === 0;
       errors.textContent = n ? `${n} error${n === 1 ? "" : "s"}, listed under the level line` : "";
       saveJson.classList.toggle("unsaved", unsaved(d));
+      const b = bundleOf(id);
+      saveBundle.hidden = !b;
+      saveBundle.classList.toggle("unsaved", !!b && b.levels.some((l) => unsaved(drafts.get(l))));
     },
     wrote() {
       note.hidden = false;

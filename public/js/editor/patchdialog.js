@@ -15,7 +15,7 @@ import { deflate } from "../format/deflate.js";
 import { UNTITLED, setMeta } from "../format/project.js";
 import { ERROR, describe, playsAs, validate } from "../format/checks.js";
 import { RAW_ONLY, download, isIso, slug } from "./files.js";
-import { draftsOf, readLevel } from "./intake.js";
+import { draftsOf, readLevel, readsOf } from "./intake.js";
 import { CHOOSE, keyShaped, retarget, split } from "./patchslots.js";
 import { discBar, readAs, reflectDiscs } from "./discbar.js";
 import * as drafts from "./drafts.js";
@@ -348,7 +348,7 @@ function takeAllOut() {
 // with the new rows where there are any.
 async function fromFile(file) {
   const read = await readLevel(file, state.lvl.theme, heldImage());
-  const ids = read ? draftsOf([read].flat(), file.name) : [];
+  const ids = read ? draftsOf(readsOf(read), file.name) : [];
   const back = ui.overlay.hidden;
   if (back) openDialog(ui.overlay, $("draftPatch"));
   if (ids.length) for (const id of ids) add(id);

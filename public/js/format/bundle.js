@@ -25,7 +25,7 @@ export const BUNDLE_MOST = WORLDS.length * (WORLD_SLOTS + FINAL_SLOTS) + COPYCAT
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const isLevelDocument = (v) => isObject(v) && v.format === FORMAT;
 
-/** { bundle, report, repairs, levels } for a bundle file, as text or parsed; throws on another format's file. */
+/** { bundle, report, repairs, levels } for a bundle file, as text or parsed, each of `levels` a level's read with `at`, its place in the file's list; throws on another format's file. */
 export function readBundle(source) {
   const raw = typeof source === "string" ? JSON.parse(source) : source;
   if (!isObject(raw) || raw.format !== BUNDLE_FORMAT)
@@ -56,7 +56,12 @@ export function readBundle(source) {
       carried += read.report.length;
       theirs += read.repairs;
       bundle.levels.push(read.project);
-      levels.push({ project: read.project, report: collapse(read.report), repairs: read.repairs });
+      levels.push({
+        project: read.project,
+        report: collapse(read.report),
+        repairs: read.repairs,
+        at: i,
+      });
     }
     if (raw.levels.length > BUNDLE_MOST)
       report.push(
