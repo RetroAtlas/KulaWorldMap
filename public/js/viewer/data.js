@@ -109,7 +109,7 @@ export const levelNote = (l) =>
 export const levelScore = (l) => levelEntry(l)?.score ?? null;
 export const levelTitle = (l) => l.shown || l.name;
 /** The time the level line gives `l` under the release `id`, the disc shown's by default: the
-    figure that disc's HUD shows once the clock has ticked, one more than the whole seconds the
+    figure that disc's HUD counts once the clock has ticked, one more than the whole seconds the
     clock its start fills holds in the ticks that HUD counts a second; the level's own time where
     the disc's rules or the table are not to hand. */
 export function levelClock(l, id = current()) {
