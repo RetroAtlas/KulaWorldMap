@@ -28,7 +28,7 @@ export function packSize(names, sizes) {
 }
 
 /**
- * How a stream of the length given goes into a slot of a pack of packs.json:
+ * How a stream of the length given goes into a slot of a pack of a layout:
  * in place when it is no longer than the record it replaces; else the pack
  * rebuilt within its sectors, first with the other records as they are and
  * then with them recompressed; else moved into the free sectors. The size is
@@ -66,7 +66,7 @@ export function fit(pack, slot, size, title = null) {
 }
 
 /**
- * How several streams go into the slots of one pack of packs.json, the items
+ * How several streams go into the slots of one pack of a layout, the items
  * { slot, size, size9, title } fitted in order over a copy of the pack that
  * each fit leaves as the placement will: the slot's record at its stream's
  * length, and at size9 once a later rebuild recompresses the others; every

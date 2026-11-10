@@ -246,7 +246,7 @@ test("every placed cell lies within 1 to 32 on each axis", () => {
 
 // The packs' layout is read off the same disc as the levels, so it names every
 // pack they come from, once, with one slot a level.
-test("packs.json lists every pack the levels come from, once, one slot a level", () => {
+test("the US layout lists every pack the levels come from, once, one slot a level", () => {
   assert.deepEqual(
     packs.packs.map((p) => p.path).sort(),
     [...new Set(mapData.levels.map((l) => l.pack))].sort(),

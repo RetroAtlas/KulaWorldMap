@@ -1073,7 +1073,7 @@ test("the placements name the image for two emulators and the serial for two, an
 // --- the disc, where it is -----------------------------------------------------------
 
 test(
-  "on the disc, the walk finds every pack where packs.json puts it, and LEVEL 1's own stream goes back in place",
+  "on the disc, the walk finds every pack where the US layout puts it, and LEVEL 1's own stream goes back in place",
   { skip: !process.env.KULA_DISC && "needs the disc under $KULA_DISC" },
   async () => {
     const blob = await openAsBlob(process.env.KULA_DISC);

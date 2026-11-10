@@ -15,6 +15,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from kula_disc import BASE, RELEASE_FILES  # noqa: E402
 from kula_kwl import (  # noqa: E402
     BONUS_UNDRAWN_KINDS,
     BONUS_UNDRAWN_TYPES,
@@ -68,7 +69,6 @@ from kula_level import (  # noqa: E402
 from test_kula_level import block, level, slot  # noqa: E402
 
 TOOL = Path(__file__).resolve().parents[1] / "kula_kwl.py"
-PACKS = Path(__file__).resolve().parents[2] / "public" / "packs.json"
 HIDES = json.loads(OBJECTS.read_text())["skins"]["hides"]
 START, EXIT, HIDDEN_EXIT, KEY, COIN, GEM = 30, 7, 26, 31, 37, 36
 WORLD = "HIRO"
@@ -230,7 +230,7 @@ class RoundTrips(unittest.TestCase):
         self.assertNotIn("fromRelease", template(json.loads(DATA.read_text()), "/HELL/HELL.PAK#17"))
 
     def test_the_slot_counts_are_the_packs_as_the_layout_lists_them(self):
-        packs = {p["path"]: len(p["slots"]) for p in json.loads(PACKS.read_text())["packs"]}
+        packs = {p["path"]: len(p["slots"]) for p in json.loads(RELEASE_FILES[BASE].read_text())["packs"]["packs"]}
         for w in WORLDS:
             self.assertEqual((packs[f"/{w}/{w}.PAK"], packs[f"/{w}/{w}FI.PAK"]), (WORLD_SLOTS, FINAL_SLOTS), w)
         self.assertEqual(packs[COPYCAT_PACK], COPYCAT_SLOTS)

@@ -6,10 +6,10 @@ const at = (p) => fileURLToPath(new URL(`../../public/${p}`, import.meta.url));
 export const mapData = JSON.parse(readFileSync(at("map_data.json"), "utf8"));
 export const annotations = JSON.parse(readFileSync(at("annotations.json"), "utf8"));
 export const objects = JSON.parse(readFileSync(at("objects.json"), "utf8"));
-export const packs = JSON.parse(readFileSync(at("packs.json"), "utf8"));
 export const releases = ["us", "eu", "jp"].map((id) =>
   JSON.parse(readFileSync(at(`releases/${id}.json`), "utf8")),
 );
+export const packs = releases.find((r) => r.id === "us").packs;
 export const discs = releases.map(({ id, name, boot, sectors }) => ({ id, name, boot, sectors }));
 export const levelKey = (l) => `${l.pack}#${l.index}`;
 

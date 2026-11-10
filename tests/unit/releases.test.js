@@ -7,7 +7,6 @@ import {
   mapData,
   most,
   objects,
-  packs,
   releases,
   levelKey,
   TRAILER_KIND,
@@ -89,9 +88,8 @@ test("the three files are the US, PAL and Japanese releases, each its identity, 
   }
 });
 
-test("the US file has no variant, and its layout is packs.json", () => {
+test("the US file has no variant", () => {
   assert.deepEqual(us.levels, {});
-  assert.deepEqual(us.packs, packs);
 });
 
 test("every variant is a slot of the base whose level differs from it, named for its release", () => {
@@ -155,14 +153,14 @@ test("the PAL disc differs in five slots and the Japanese in thirteen, LEVEL 132
   for (const r of [eu, jp]) assert.ok("/MARS/MARS.PAK#11" in r.levels, r.id);
 });
 
-test("each layout names the packs of packs.json in order, with the room and one slot a level", () => {
+test("each layout names the US disc's packs in order, with the room and one slot a level", () => {
   for (const r of releases) {
     assert.deepEqual(Object.keys(r.packs), ["room", "packs"], r.id);
     assert.deepEqual(Object.keys(r.packs.room), ["path", "lba", "size"], r.id);
-    assert.equal(r.packs.room.path, packs.room.path, r.id);
+    assert.equal(r.packs.room.path, us.packs.room.path, r.id);
     assert.deepEqual(
       r.packs.packs.map((p) => p.path),
-      packs.packs.map((p) => p.path),
+      us.packs.packs.map((p) => p.path),
       r.id,
     );
     for (const p of r.packs.packs) {
@@ -170,7 +168,11 @@ test("each layout names the packs of packs.json in order, with the room and one 
       assert.deepEqual(Object.keys(p), ["path", "lba", "size", "capacity", "slots"], where);
       assert.ok(p.size > 0 && p.size <= p.capacity, where);
       assert.equal(p.capacity, Math.ceil(p.size / SECTOR) * SECTOR, where);
-      assert.equal(p.slots.length, packs.packs.find((q) => q.path === p.path).slots.length, where);
+      assert.equal(
+        p.slots.length,
+        us.packs.packs.find((q) => q.path === p.path).slots.length,
+        where,
+      );
       for (const s of p.slots) {
         assert.deepEqual(Object.keys(s), ["name", "size", "size9"], `${where} ${s.name}`);
         assert.ok(typeof s.name === "string" && s.name.length, where);

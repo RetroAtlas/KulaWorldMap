@@ -1,6 +1,6 @@
 """Unit tests for the build: python3 -m unittest discover -s tools/tests
 
-The packs file's class and the release files' classes need a disc, each skipped without its variable.
+The release files' classes need a disc, each skipped without its variable.
 """
 
 import io
@@ -21,7 +21,6 @@ from kula_build import (  # noqa: E402
     BASE,
     IDENTITY,
     NESTED,
-    PACKS,
     PUBLIC,
     Tables,
     base_art,
@@ -47,7 +46,7 @@ from kula_build import (  # noqa: E402
     tgis_of,
     variants,
 )
-from kula_disc import DISC_VARS, RELEASES, RELEASE_FILES, open_disc, open_release, packs  # noqa: E402
+from kula_disc import DISC_VARS, RELEASES, RELEASE_FILES, open_release, packs  # noqa: E402
 from kula_kwl import (  # noqa: E402
     CAPS,
     CAPTIVATORS,
@@ -108,46 +107,6 @@ class TheFigures(unittest.TestCase):
                          ["the cap on records is 123, not the executable's figure, 124",
                          "the key's type is 31, not the executable's figure, 32",
                          "the first captivator is 50, not the executable's figure, 51"])
-
-
-@unittest.skipUnless(os.environ.get("KULA_DISC"), "needs the disc under $KULA_DISC")
-class ThePacksFile(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.disc = open_disc()
-        cls.text = PACKS.read_text()
-        cls.data = json.loads(cls.text)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.disc.close()
-
-    def test_every_pack_of_the_disc_is_there_in_order_with_its_place_and_its_room(self):
-        self.assertEqual([p["path"] for p in self.data["packs"]], [path for _, path in packs(self.disc)])
-        for p in self.data["packs"]:
-            lba, size = self.disc.files[p["path"]]
-            self.assertEqual((p["lba"], p["size"], p["capacity"]),
-                             (lba, size, len(sectors_of(lba, size)) * USER), p["path"])
-            self.assertEqual(set(p), {"path", "lba", "size", "capacity", "slots"}, p["path"])
-
-    def test_every_slot_carries_its_name_and_the_length_of_its_record_as_stored_and_recompressed(self):
-        for p in self.data["packs"]:
-            pak = Pak(self.disc.read_file(p["path"]), p["path"])
-            self.assertEqual([s["name"] for s in p["slots"]], pak.names(), p["path"])
-            self.assertEqual([s["size"] for s in p["slots"]], [len(s) for s in pak.streams()], p["path"])
-            self.assertEqual([s["size"] for s in p["slots"]], [e["size"] for e in pak.entries], p["path"])
-            self.assertEqual([s["size9"] for s in p["slots"]],
-                             [len(zlib.compress(pak.level(i), RECOMPRESS)) for i in range(len(pak))], p["path"])
-            for s in p["slots"]:
-                self.assertEqual(set(s), {"name", "size", "size9"}, p["path"])
-
-    def test_the_room_is_the_free_file(self):
-        lba, size = self.disc.files[ROOM]
-        self.assertEqual(self.data["room"], {"path": ROOM, "lba": lba, "size": size})
-        self.assertEqual(set(self.data), {"room", "packs"})
-
-    def test_the_committed_file_is_what_the_build_writes(self):
-        self.assertEqual(self.text, json.dumps(packs_json(self.disc), indent=1))
 
 
 def level(pack, index, **more):
@@ -508,6 +467,31 @@ class ReleaseFile:
         self.assertEqual([self.data["id"], *(self.data[k] for k in IDENTITY)], [self.release, *(entry[k] for k in IDENTITY)])
         self.assertEqual(self.data["packs"], packs_json(self.disc))
 
+    def test_the_layout_has_every_pack_of_the_disc_in_order_with_its_place_and_its_room(self):
+        layout = self.data["packs"]
+        self.assertEqual([p["path"] for p in layout["packs"]], [path for _, path in packs(self.disc)])
+        for p in layout["packs"]:
+            lba, size = self.disc.files[p["path"]]
+            self.assertEqual((p["lba"], p["size"], p["capacity"]),
+                             (lba, size, len(sectors_of(lba, size)) * USER), p["path"])
+            self.assertEqual(set(p), {"path", "lba", "size", "capacity", "slots"}, p["path"])
+
+    def test_every_slot_of_the_layout_carries_its_name_and_the_length_of_its_record_as_stored_and_recompressed(self):
+        for p in self.data["packs"]["packs"]:
+            pak = Pak(self.disc.read_file(p["path"]), p["path"])
+            self.assertEqual([s["name"] for s in p["slots"]], pak.names(), p["path"])
+            self.assertEqual([s["size"] for s in p["slots"]], [len(s) for s in pak.streams()], p["path"])
+            self.assertEqual([s["size"] for s in p["slots"]], [e["size"] for e in pak.entries], p["path"])
+            self.assertEqual([s["size9"] for s in p["slots"]],
+                             [len(zlib.compress(pak.level(i), RECOMPRESS)) for i in range(len(pak))], p["path"])
+            for s in p["slots"]:
+                self.assertEqual(set(s), {"name", "size", "size9"}, p["path"])
+
+    def test_the_layouts_room_is_the_free_file(self):
+        lba, size = self.disc.files[ROOM]
+        self.assertEqual(self.data["packs"]["room"], {"path": ROOM, "lba": lba, "size": size})
+        self.assertEqual(set(self.data["packs"]), {"room", "packs"})
+
     def test_every_sheet_the_file_names_stands_at_the_atlass_size_and_nothing_else_lies_beside_it(self):
         sizes = {}
 
@@ -530,12 +514,11 @@ class ReleaseFile:
 class TheBaseFile(ReleaseFile, unittest.TestCase):
     release = "us"
 
-    def test_the_base_has_no_variant_no_sheet_no_tint_and_no_model_of_its_own_and_its_layout_is_the_packs_file(self):
+    def test_the_base_has_no_variant_no_sheet_no_tint_and_no_model_of_its_own(self):
         self.assertEqual(self.data["levels"], {})
         self.assertEqual((self.data["art"]["sheets"], self.data["art"]["tint"]), ({}, {}))
         self.assertEqual((self.data["objects"]["types"], self.data["objects"]["jump"]), ({}, {}))
         self.assertEqual((self.data["objects"]["motion"], self.data["objects"]["skins"]), ({}, {}))
-        self.assertEqual(json.dumps(self.data["packs"], indent=1), PACKS.read_text())
 
 
 @unittest.skipUnless(os.environ.get(DISC_VARS["eu"]), f"needs the PAL disc under ${DISC_VARS['eu']}")

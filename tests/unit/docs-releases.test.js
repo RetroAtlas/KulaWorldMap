@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { mapData, most, objects, packs, releases } from "./fixtures.js";
+import { mapData, most, objects, releases } from "./fixtures.js";
 
 const text = (path) =>
   readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
@@ -12,8 +12,7 @@ const readme = text("README.md");
 const reasons = text("docs/annotations.md");
 const number = (s) => Number(s.replace(/,/g, ""));
 const rows = (pattern) => [...disc.matchAll(pattern)].map((m) => m.slice(1));
-// The US layout is packs.json, which its release file repeats.
-const layouts = releases.map((r) => (r.id === "us" ? packs : r.packs));
+const layouts = releases.map((r) => r.packs);
 
 test("disc.md's image table names each release, counts its sectors and puts its room where its layout does", () => {
   const found = rows(

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Read every level off the disc and write public/map_data.json; every
 object's mesh, with how everything moves and what every face wears, and write
-public/objects.json; every pack's layout, from which a level is fitted to a
-slot without the image, and write public/packs.json; the sprites the
-game's effects draw, and write their sheet to public/tex/sparks.png; and for
-each release its file under public/releases/, its identity, the rules of its
-executable, its packs' layout, the levels of its disc that differ from the US
-data, its artwork against the US atlases, the sheets of the textures its
-disc draws otherwise, laid under public/tex/<id>/, and the tint of a world it
+public/objects.json; the sprites the game's effects draw, and write their
+sheet to public/tex/sparks.png; and for each release its file under
+public/releases/, its identity, the rules of its executable, its packs'
+layout, from which a level is fitted to a slot without the image, the levels
+of its disc that differ from the US data, its artwork against the US
+atlases, the sheets of the textures its disc draws otherwise, laid under
+public/tex/<id>/, and the tint of a world it
 colours otherwise, its objects against the US models, the model lists of the
 types its mesh file draws otherwise and the jump's arc where that differs,
 and, where the release has a map under maps/, what its executable's motion
@@ -55,7 +55,6 @@ from png import write_png
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "map_data.json"
 PUBLIC = OUT.parent
-PACKS = PUBLIC / "packs.json"
 WORLD_LEVELS = 15
 FINAL_LEVELS = 2
 IDENTITY = ("label", "name", "region", "serial", "boot", "sectors")
@@ -572,7 +571,6 @@ def build_base(disc):
     write_png(SPARKS, side * burst["count"], side, sheet)
     shapes = write_objects(g, OBJECTS, placed, motion, skins, cast, arc, burst)
     OUT.write_text(json.dumps(data, indent=1))
-    PACKS.write_text(json.dumps(layout, indent=1))
     own = write_release(BASE, release_json(BASE, rules, layout, base_art(tgis), base_objects(mesh), {}))
     report(read)
     print(f"{counted(levels)} -> {written(OUT)}")
@@ -584,9 +582,8 @@ def build_base(disc):
     print(f"{burst['count']} sprites of {side} a side -> {written(SPARKS)}")
     held = sum(p["size"] for p in layout["packs"])
     capacity = sum(p["capacity"] for p in layout["packs"])
-    print(f"{len(layout['packs'])} packs holding {held:,} bytes in {capacity // USER} sectors of "
-          f"{capacity:,} -> {written(PACKS)}")
-    print(f"the rules of {RELEASES[BASE]['boot']} beside the layout, a digest of each of the {len(tgis)} worlds' "
+    print(f"the rules of {RELEASES[BASE]['boot']} beside the layout of {len(layout['packs'])} packs holding "
+          f"{held:,} bytes in {capacity // USER} sectors of {capacity:,}, a digest of each of the {len(tgis)} worlds' "
           f"model table and quads, the {len(mesh)} readings the meshes are read with and no level differing from "
           f"the base's own -> {written(own)}")
 

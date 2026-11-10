@@ -461,7 +461,7 @@ test("each fit is over the pack as the earlier placements leave it", () => {
 });
 
 const inflate = async (bytes) => new Uint8Array(inflateSync(bytes));
-/** A pack's layout as packs.json gives it, from the pack read off the synthetic image. */
+/** A pack's layout as a release file gives it, from the pack read off the synthetic image. */
 const layoutOf = (pak) => ({
   size: pak.size,
   capacity: USER,

@@ -1225,7 +1225,7 @@ test("the page's descriptions count the levels and the worlds the data holds", (
 // has, then what its records leave a level.
 const rows = (pattern) => [...disc.matchAll(pattern)].map((m) => [m[1], ...m.slice(2).map(number)]);
 
-test("disc.md's pack table is where packs.json puts every pack, and the room it has", () => {
+test("disc.md's pack table is where the US layout puts every pack, and the room it has", () => {
   assert.deepEqual(
     rows(/^\| `([^`]+)` \| (\d+) \| ([\d,]+) \| (\d+) \| ([\d,]+) \| ([\d,]+) \|$/gm),
     packs.packs.map((p) => [

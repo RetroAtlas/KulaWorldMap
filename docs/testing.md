@@ -4,7 +4,7 @@ Every check of the repo lives where what it checks is computed: a unit test for 
 
 ## The suites
 
-`npm test` runs the unit tests under `tests/unit` with Node's own runner, every file in its own process, in a few seconds; they read the shipped data through `tests/unit/fixtures.js` (`map_data.json`, `objects.json`, `annotations.json`, `packs.json` and the release files under `releases/`), which also holds the few helpers the files share, and the synthetic disc image `tests/unit/synthetic.js` builds from the page's own writers.
+`npm test` runs the unit tests under `tests/unit` with Node's own runner, every file in its own process, in a few seconds; they read the shipped data through `tests/unit/fixtures.js` (`map_data.json`, `objects.json`, `annotations.json` and the release files under `releases/`, the US file's layout among them as `packs`), which also holds the few helpers the files share, and the synthetic disc image `tests/unit/synthetic.js` builds from the page's own writers.
 
 `patch.test.js` holds the placer and the patch writers to the digests of `tests/fixtures/patch-digests.json`, and `patchread.test.js` the patch readers to the same digests, applying each patch the writers make over the synthetic image, naming the slots it changes and refusing a damaged window or a block check of another image; a test of each runs over the disc where `KULA_DISC` names it and is skipped where it does not.
 
