@@ -7,7 +7,7 @@ import { levelKey, mapData, objects, releases } from "./fixtures.js";
 import { NAMES, index, platformCells } from "../../public/js/viewer/data.js";
 import { slotOf } from "../../public/js/viewer/permalink.js";
 import { SIDE, KIND } from "../../public/js/format/lattice.js";
-import { FORMAT, writeKwl } from "../../public/js/format/kwl.js";
+import { FORMAT, collapse, writeKwl } from "../../public/js/format/kwl.js";
 import {
   DRAFT_PACK,
   UNTITLED,
@@ -553,6 +553,17 @@ test("a platform's length that runs past the edge is cut on the way in, to a run
     walked,
     platforms.reduce((n, b) => n + b.length, 0),
   );
+});
+
+test("asked for its lines as collected, the reader gives every line in place of the few kept and their count, the rest of the read the same", () => {
+  const c = hostile.cases.find((c) => c.name === "two hundred platforms of length 32767");
+  const whole = readProject(structuredClone(c.input), { collapsed: false });
+  const few = readProject(structuredClone(c.input));
+  assert.equal(whole.report.length, 200);
+  assert.equal(few.report.length, 4);
+  assert.deepEqual(few.report, collapse(whole.report));
+  assert.deepEqual([whole.repairs, whole.project], [few.repairs, few.project]);
+  assert.deepEqual(readProject(writeProject(blank(WORLD)), { collapsed: false }).report, []);
 });
 
 test("a title, an author, notes, a world, a target or a source past their most are cut to it, counted in characters", () => {

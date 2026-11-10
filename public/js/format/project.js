@@ -358,10 +358,10 @@ function readBlock(raw, i, report, seen) {
   return b;
 }
 
-/** { project, report, repairs } for a project file, as text or parsed, the report collapsed and
-    the repairs the count of its lines before that, less the note on a newer file; throws on
-    another format's file. */
-export function readProject(source) {
+/** { project, report, repairs } for a project file, as text or parsed, the report collapsed
+    unless `collapsed` is false and the repairs the count of its lines before that, less the note
+    on a newer file; throws on another format's file. */
+export function readProject(source, { collapsed = true } = {}) {
   const raw = typeof source === "string" ? JSON.parse(source) : source;
   if (!isObject(raw) || raw.format !== FORMAT) throw new Error(`not a ${FORMAT} file`);
   const report = [];
@@ -413,7 +413,11 @@ export function readProject(source) {
       .filter(Boolean)
       .sort(byCell);
   }
-  return { project, report: collapse(report), repairs: report.length - notes };
+  return {
+    project,
+    report: collapsed ? collapse(report) : report,
+    repairs: report.length - notes,
+  };
 }
 
 function writeFace(o) {

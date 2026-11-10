@@ -413,6 +413,70 @@ The box leads with the file where the link would pass 8,000 characters, the boun
 
 A codec over the game's bytes, which packs a dense level several times smaller, would ride under a letter of its own, since a segment never changes what it means.
 
+## The bundle file
+
+A bundle is a set of levels in play order under a title, an author and notes, a JSON document in UTF-8 with the extension `.kula-bundle.json`, so a campaign of several levels travels as one file.
+
+```json
+{
+  "format": "kula-world-bundle",
+  "version": 1,
+  "title": "Spiral campaign",
+  "author": "",
+  "notes": "",
+  "levels": [
+    {
+      "format": "kula-world-level",
+      "version": 1,
+      "title": "Spiral 1",
+      "author": "",
+      "notes": "",
+      "world": "HIRO",
+      "time": 99,
+      "hidden": false,
+      "invisibleFromAfar": false,
+      "simon": false,
+      "circuits": {},
+      "blocks": [
+        { "cell": [17, 17, 17], "kind": 0, "faces": { "0": { "type": 30, "facing": 3 } } }
+      ]
+    }
+  ]
+}
+```
+
+| key | meaning | default on read |
+| --- | --- | --- |
+| `format`, `version` | the marker `kula-world-bundle` and the integer 1; a reader refuses any other marker | the marker is required; a `version` that is not a whole number is read as 1 with a line, and a higher one is read with a line saying the file is newer |
+| `title`, `author`, `notes` | the bundle's own texts, a title of up to 80 characters and the others of up to 2000, which say what the set is and stand beside each level's own texts | `""`, and a longer text is cut to its most with a line |
+| `levels` | the levels in play order, each a whole project document as "The project file" above specifies it | `[]` with a line where it is missing or not a list |
+
+A bundle carries no world, target or flag of its own: each level keeps every key of its own document, so one bundle may gather levels of several worlds, and a level's `into` stays the slot of the disc it is meant for, which is what the disc box reads.
+
+**The growth rule.** Keys are only ever added; a published key never changes its meaning or its type; every optional key has a default on read; a reader ignores keys it does not know.
+
+`version` stays 1 for as long as that holds, as the project file's version does, and a reader meeting a higher number says the file is newer than it and reads what it knows.
+
+A world or artwork of a level's own, if one is ever carried, comes as a new key under the growth rule, with `world` still naming the disc world an older reader draws the level in.
+
+**Reading a bundle file.** `readBundle` refuses a document that does not carry the marker and takes everything else, with a report line for every value it could not take as written:
+
+- The head's texts are read as a level's texts are, a `title` past 80 characters or an `author` or `notes` past 2000 cut to that many and one that is not text left empty, each with a line.
+- An entry of `levels` that is not an object carrying the level file's marker is left out with a line naming its place in the list, counted from 0 as the blocks of a level are.
+- Every other entry is read by `readProject` under the project reader's rules above, every line it collects prefixed with its place and its title, `level 3 (Spiral 2): `, an untitled level named as the map names one, and its repairs counted into the bundle's count.
+- A list of more than 230 levels, as many as the disc has slots, keeps the first 230 and says so in one line.
+- A key the reader does not know is passed over in silence, and a higher `version` is read with a line saying so, which is a note and not a repair, as it is for a level.
+
+Lines of one shape are kept to the first three and the rest counted, once over the whole report with every level's lines in it as its reader collected them, so a bundle of broken levels gives a report shorter than itself and lines of one shape from levels numbered alike are counted together.
+
+Each level's own read, which `levels` carries, has its lines kept to three a shape on their own, as `readProject` gives them for a level file.
+
+The reader gates nothing the project reader does not: a level whose world is not one of the disc's worlds and one the level writer refuses are read and left to whoever opens the bundle, as a level file is left to the file opener.
+
+**Writing a bundle file.** `writeBundle` writes the head's five keys one a line in the order above, then each level as `writeProject` writes it, its lines indented inside its own braces in the list, so a diff between two bundles is a diff between levels, a level can be cut out of a bundle by taking its indent away, with the comma after its closing brace where it is not the last, and a bundle read and written again is the same text.
+
+The bundle has no Python twin: `public/js/format/bundle.js` is its one reader and writer, and the levels inside one are held to the Python side by the project file's fixtures, since each is read and written as a level file is.
+
 ## Onto the disc
 
 A draft is exported to the disc by `public/js/editor/patchdialog.js`, which takes a list of drafts, a row each, and places them as one patch: opened from a draft's card it lists that draft, a select under the rows adds any other draft this browser holds or, by its last entry, a level from a file, read as the sidebar's `open a file…` reads one through `public/js/editor/intake.js` and made a draft marked saved, a pack's or an image's question asked in the box's place and the box opened again once it is answered or declined, and a row's `take out` drops it, as `take all out` drops every row.
