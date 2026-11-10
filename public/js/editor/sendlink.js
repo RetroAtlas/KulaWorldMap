@@ -9,7 +9,8 @@ export const ISSUE_FORM =
   "https://github.com/RetroAtlas/KulaWorldMap/issues/new?template=level.yml";
 
 const SUBJECT = "A level for the community levels: ";
-const GRANT = "I made this level and share it under CC BY 4.0, credited to ";
+const GRANT =
+  "This level is my own, not an edit of one of the game's levels, and I share it under CC BY 4.0, credited to ";
 
 const isSurrogate = (ch) => ch.length === 1 && ch >= "\ud800" && ch <= "\udfff";
 // a lone surrogate, which a title read from a file can carry, is what encodeURIComponent throws on

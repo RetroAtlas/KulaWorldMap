@@ -15,7 +15,7 @@ const HAS_ERRORS =
 const TOO_LONG = "This level is too large for a link. Save it as a file instead.";
 const UNCOPIED = "The link could not be copied. Select it in the field and copy it yourself.";
 const SEND_NOTE =
-  "A level sent in is shared under CC BY 4.0 with credit to its author, and a person looks at every level before it appears.";
+  "A level sent in is shared under CC BY 4.0 with credit to its author, and a person looks at every level before it appears. The community levels take levels of your own, not edits of the game's levels.";
 const GATE = "Give the level an author first, so it can be credited.";
 const PASTE =
   "This link is too long to fill the form in by itself, so copy it and paste it into the form's Link field.";
@@ -322,7 +322,9 @@ test("send it in by email opens a message to the map's makers carrying the title
   const body = at.searchParams.get("body");
   expect(body).toContain(link);
   expect(body).toContain("Spiral & Co, by Ada.");
-  expect(body).toContain("I made this level and share it under CC BY 4.0, credited to Ada.");
+  expect(body).toContain(
+    "This level is my own, not an edit of one of the game's levels, and I share it under CC BY 4.0, credited to Ada.",
+  );
   await expect(box).toBeHidden();
   expect(await toasts(page)).toEqual([]);
   expect(errors).toEqual([]);

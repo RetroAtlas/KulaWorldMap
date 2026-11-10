@@ -23,7 +23,7 @@ const TOO_LONG = "This level is too large for a link. Save it as a file instead.
 const COPIED = "Link copied.";
 const UNCOPIED = "The link could not be copied. Select it in the field and copy it yourself.";
 const SEND_NOTE =
-  "A level sent in is shared under CC BY 4.0 with credit to its author, and a person looks at every level before it appears.";
+  "A level sent in is shared under CC BY 4.0 with credit to its author, and a person looks at every level before it appears. The community levels take levels of your own, not edits of the game's levels.";
 const GATE = "Give the level an author first, so it can be credited.";
 const KIN = (title) =>
   `This level still holds much of the game's ${title}, so it cannot be sent in. The community levels take levels of your own. The link and the file work as they are.`;

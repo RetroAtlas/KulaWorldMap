@@ -182,13 +182,19 @@ The box judges the level through the same `kinOf` the tool calls, over the shape
 
 A box that opens refusing, for a level the checks find errors in, has no second part, since there is no link to send.
 
-The part says in one sentence that a level sent in is shared under CC BY 4.0 with credit to its author and that a person looks at every level before it appears, the look "Adding a level by hand" describes.
+The part says that a level sent in is shared under CC BY 4.0 with credit to its author and that a person looks at every level before it appears, the look "Adding a level by hand" describes.
 
-`send it in by email` opens a new message to the contact address, its subject "A level for the community levels: <title>" and its body the title and the author, the link, the statement "I made this level and share it under CC BY 4.0, credited to <author>." and the line "Anything else goes here.", so the grant stands in the message the level arrives in and the sender has only to send it.
+The note adds that the community levels take levels of your own, not edits of the game's levels, the rule "Adding a level by hand" states, so a sender reads it before either road opens.
+
+`send it in by email` opens a new message to the contact address, its subject "A level for the community levels: <title>" and its body the title and the author, the link, the statement "This level is my own, not an edit of one of the game's levels, and I share it under CC BY 4.0, credited to <author>." and the line "Anything else goes here.", so the grant stands in the message the level arrives in and the sender has only to send it.
 
 `send it in as a GitHub issue (needs an account)` opens the repository's form for a level, `.github/ISSUE_TEMPLATE/level.yml`, with the title and the link filled in through the query keys `title` and `link`, the link's text area rendered as text so the form keeps the link as it is.
 
-The form asks for notes and for a tick on "I made this level and share it under CC BY 4.0, credited to the name in its Author field", which it needs before it is sent, and takes no author, since the link carries the name.
+The form opens saying that the link carries the level whole with the name in its Author field, which the level is credited to, that the community levels take levels of your own, not edits of the game's levels, and that a person looks at every level before it appears.
+
+The form asks for notes and for a tick on "This level is my own, not an edit of one of the game's levels, and I share it under CC BY 4.0, credited to the name in its Author field", which it needs before it is sent, and takes no author, since the link carries the name.
+
+The tick is the message's statement with the name in the Author field in the author's place, which the unit test of `public/js/editor/sendlink.js` holds the form to, so the two roads grant in one wording.
 
 The form is filled only while its address stays within 3,500 characters, `ISSUE_MOST` of `public/js/editor/sendlink.js`, the room a signed-in visitor's request headers leave a URL; past it the form opens bare, the part says to copy the link and paste it into the form's Link field, and the box stays up for the copy.
 
@@ -200,7 +206,7 @@ Every text of either address, the subject, the body, the title and the link, goe
 
 The box opens each address through `window.open` with `noopener`.
 
-What a sender states, by either road, is that the level is their own work and that they share it under CC BY 4.0 with credit to the name in its Author field; the statement is what the commit that adds the record points at, as "Adding a level by hand" says.
+What a sender states, by either road, is that the level is their own, not an edit of one of the game's levels, and that they share it under CC BY 4.0 with credit to the name in its Author field; the statement is what the commit that adds the record points at, as "Adding a level by hand" says.
 
 ## Adding a level by hand
 

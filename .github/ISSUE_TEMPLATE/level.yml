@@ -4,7 +4,7 @@ title: "A level for the community levels: "
 body:
   - type: markdown
     attributes:
-      value: The link from the share box of the level's card carries the level whole, the name in its Author field included, which is the name the level is credited to. A person looks at every level before it appears.
+      value: The link from the share box of the level's card carries the level whole, the name in its Author field included, which is the name the level is credited to. The community levels take levels of your own, not edits of the game's levels. A person looks at every level before it appears.
   - type: textarea
     id: link
     attributes:
@@ -23,5 +23,5 @@ body:
     attributes:
       label: Licence
       options:
-        - label: I made this level and share it under CC BY 4.0, credited to the name in its Author field.
+        - label: This level is my own, not an edit of one of the game's levels, and I share it under CC BY 4.0, credited to the name in its Author field.
           required: true

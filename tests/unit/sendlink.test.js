@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData } from "./fixtures.js";
@@ -31,7 +32,7 @@ test("the message goes to the address it is given, with the title as its subject
     [
       `${TITLE}, by ${AUTHOR}.`,
       LINK,
-      `I made this level and share it under CC BY 4.0, credited to ${AUTHOR}.`,
+      `This level is my own, not an edit of one of the game's levels, and I share it under CC BY 4.0, credited to ${AUTHOR}.`,
       "Anything else goes here.",
     ].join("\r\n\r\n"),
   );
@@ -83,6 +84,24 @@ test("a lone surrogate in a text is replaced before it is encoded, so a title or
   assert.equal(query(form).get("link"), LINK);
   const whole = mailtoFor({ title: "Añо 😀", author: AUTHOR, link: LINK, address: address() });
   assert.equal(query(whole).get("subject"), "A level for the community levels: Añо 😀");
+});
+
+test("the form's required tick states the grant the message states, with the name in the Author field in the author's place", () => {
+  const body = query(
+    mailtoFor({ title: TITLE, author: AUTHOR, link: LINK, address: address() }),
+  ).get("body");
+  const grant = body.split("\r\n\r\n")[2];
+  assert.ok(grant.endsWith(`, credited to ${AUTHOR}.`), grant);
+  const tick = grant.replace(`${AUTHOR}.`, "the name in its Author field.");
+  const form = readFileSync(
+    new URL("../../.github/ISSUE_TEMPLATE/level.yml", import.meta.url),
+    "utf8",
+  );
+  const lines = form.split("\n").map((line) => line.trim());
+  const at = lines.indexOf(`- label: ${tick}`);
+  assert.ok(at > 0, form);
+  assert.equal(lines[at + 1], "required: true");
+  assert.equal(lines.filter((line) => line.startsWith("- label: ")).length, 1);
 });
 
 test("every shipped level's link fills the form", () => {
