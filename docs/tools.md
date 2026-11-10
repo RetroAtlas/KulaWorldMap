@@ -10,7 +10,7 @@ A tool that reads a release's disc takes its image from `--disc`, else from `$KU
 | `kula_disc.py` | where this game keeps its packs, textures and executable, the three releases by id, each with where its executable's first byte would stand in memory, the pointer its start sets in gp and the address of the ball's record, and which of them an image is, told by its boot line |
 | `kula_pak.py` | the `.PAK` container, and the names inside it |
 | `kula_level.py` | the lattice and the record table, field by field |
-| `kula_build.py` | reads every level, every mesh and every pack's layout, and writes `public/map_data.json`, `public/objects.json`, `public/packs.json` and the sheet of the effects' sprites under `public/tex/`, and for each release, under `public/releases/`, its rules, its packs' layout, the levels of its disc that differ from the US data, its artwork against the US atlases, with the sheets of the textures its disc draws otherwise laid under `public/tex/<id>/`, and its objects against the US models, the model lists of the types its mesh file draws otherwise and the jump's arc where that differs, and, where the release has a map under `maps/`, what its executable's motion and skins tables change from the US tables, read through the map, a map that still has pending rows passed over as no map, the run saying so |
+| `kula_build.py` | reads every level, every mesh and every pack's layout, and writes `public/map_data.json`, `public/objects.json`, `public/packs.json` and the sheet of the effects' sprites under `public/tex/`, and for each release, under `public/releases/`, its rules, its packs' layout, the levels of its disc that differ from the US data, its artwork against the US atlases, with the sheets of the textures its disc draws otherwise laid under `public/tex/<id>/`, and its objects against the US models, the model lists of the types its mesh file draws otherwise and the jump's arc where that differs, and, where the release has a map under `maps/`, what its executable's motion and skins tables change from the US tables, read through the map, or kept from the release's committed file while the map still has pending rows, the run saying so |
 | `kula_kinds.py` | per-type contact sheets, for naming objects |
 | `kula_score.py` | what each level scores on the disc of a release, the US disc's unless `--release` says, the hourglass's points by that release's rules, beside the curated score where there is one meant for that disc |
 | `kula_faces.py` | what the six slots of every record hold, per kind and per face |
@@ -67,13 +67,11 @@ It then cuts, through `kula_tex.py` and against the committed US atlases rather 
 
 Cutting the sheets takes a few seconds more than the levels do, most of it reading the US atlases back.
 
-The same run reads the disc's `/HIRO/HIRO.GGI` through `kula_ggi.py` and records in the release file, under `objects`, the whole model list of every type whose models are not the committed `public/objects.json`'s and the jump's arc where it is not, beside the four readings the meshes are read with, which the run takes from the US file where it does not read the release's executable.
+The same run reads the disc's `/HIRO/HIRO.GGI` through `kula_ggi.py` and records in the release file, under `objects`, the whole model list of every type whose models are not the committed `public/objects.json`'s and the jump's arc where it is not, beside the four readings the meshes are read with, which the run takes from the US file where the release has no map.
 
 It stops where that file differs from the US one in what the release file does not carry, a type's models missing or added, a ball that is none of the US fourteen, a shadow or an effects' sprite drawn otherwise or another block size, since the release file would otherwise say nothing of the change.
 
 Where the release has a map under `maps/`, the same run reads its executable through it, as `kula_motion.py` and `kula_skins.py` do, and records in the release file, under `objects` after the jump's arc, what its motion and skins tables change from the committed `public/objects.json`'s: a key of either table whole where its value differs, but for the motion table's types and kinds, whose entries it records one level down, an entry whole where any value in it differs.
-
-A map that still has pending rows is passed over as no map, the run saying so, since the build never ships a table read through an unfinished map, which the readers' own runs refuse.
 
 The skins' tint stays out of that record, since the artwork entry carries the tint of every world the disc colours otherwise already, and the run stops where a world's tint is not the US one and the artwork entry names none for it.
 
@@ -84,6 +82,14 @@ With the executable read, the four readings the meshes are read with come off it
 The worlds the Simon rooms are played in come off the executable too and are held to the committed rooms', so a room that differs from the US one ships as any other level does.
 
 A release with no map carries nothing under `motion` and `skins`, its tables being the US ones, and a room of its that differs from the US one is refused, since no executable read says the world it is played in.
+
+A map that still has pending rows is not read through, the run saying so, since the build never ships a table read through an unfinished map, which the readers' own runs refuse.
+
+The run keeps instead the four readings and the motion and skins records the release's committed file carries, laid over the US ones as the viewer lays them, so a rebuild after a US reading changes leaves the release's own numbers standing and only a key or an entry the committed record lacks is the US one.
+
+It stops where no committed file carries the three, where a kept key or entry is one the US table lacks or is not shaped as the US one, as an entry written whole before a reading added a key to it would be, and where the kept motion table and the rules disagree on a reading both readers make.
+
+The Simon rooms of a release whose map has pending rows are the committed rooms, as with no map, so a room of its that differs from the US one is refused.
 
 The US run holds every committed map under `maps/` to its own readings, the US value of every keyed row against what the US executable reads at the row's address, and stops naming the first that differs, so a reader change cannot leave a map stale in silence.
 

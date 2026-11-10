@@ -7,9 +7,10 @@ import io
 import json
 import os
 import sys
+import tempfile
 import unittest
 import zlib
-from contextlib import redirect_stdout
+from contextlib import contextmanager, redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -19,12 +20,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kula_build import (  # noqa: E402
     BASE,
     IDENTITY,
+    NESTED,
     PACKS,
     PUBLIC,
+    Tables,
     base_art,
     base_objects,
     code_of,
+    held_tables,
     hold_to_rules,
+    kept,
     laid_out,
     layout_of,
     mesh_readings,
@@ -230,7 +235,8 @@ class TheMap(unittest.TestCase):
         self.assertIsNone(unfinished.map)
         self.assertIsNone(unmapped.map)
         self.assertEqual(said.getvalue(), "the jp map has 2 pending rows, so its tables and the readings its meshes are "
-                                          "read with are the base's and the Simon rooms are the committed ones\n")
+                                          "read with are kept from its committed file, the base's where that lacks a "
+                                          "key, and the Simon rooms are the committed ones\n")
 
 
 SHADE = [1, 0, 2, 0, 2, 0]    # the top face alone in its shade
@@ -412,6 +418,65 @@ class TheTables(unittest.TestCase):
                 with self.assertRaises(SystemExit) as stop:
                     hold_to_rules(table, rules)
                 self.assertIn(what, str(stop.exception))
+
+
+RECORD = {"readings": {"jump.skip": None},
+          "motion": {"play": {"clock": {"tick": 1, "second": 50}, "wait": {"fire": 21}}, "kinds": {"5": {"speed": 25, "dwell": 40}}},
+          "skins": {"hides": {"other": [1, 2]}}}
+
+
+@contextmanager
+def committed_as(objects):
+    """A committed jp file holding the objects entry given, or none where None is given, beside a jp map with rows
+    pending."""
+    with tempfile.TemporaryDirectory() as folder, maps_of(jp=LEFT):
+        path = Path(folder) / "jp.json"
+        if objects is not None:
+            path.write_text(json.dumps({"id": "jp", "objects": objects}))
+        with mock.patch.dict("kula_build.RELEASE_FILES", {"jp": path}):
+            yield
+
+
+def held(code=None):
+    return held_tables(code or SimpleNamespace(map=None), "jp", {"motion": MOTION, "skins": SKINS}, READINGS, RULES)
+
+
+class TheKeptTables(unittest.TestCase):
+    def test_a_pending_map_keeps_the_committed_readings_and_tables_the_bases_where_they_lack_a_key_or_an_entry(self):
+        with committed_as(RECORD):
+            tables = held()
+        self.assertEqual(tables, Tables({**READINGS, "jump.skip": None},
+                                        changed(MOTION, ("play.wait.fire", 21), ("kinds.5.dwell", 40)),
+                                        changed(SKINS, ("hides.other", [1, 2]))))
+        self.assertEqual((motion_overlay(tables.motion, MOTION), skins_overlay(tables.skins, SKINS)),
+                         (RECORD["motion"], RECORD["skins"]))
+
+    def test_a_release_read_through_its_map_keeps_nothing_and_one_with_no_map_takes_the_bases(self):
+        with committed_as(RECORD):
+            self.assertIsNone(held(SimpleNamespace(map={})))
+        with maps_of():
+            self.assertEqual(held(), Tables(READINGS, MOTION, SKINS))
+
+    def test_a_pending_map_with_no_committed_file_or_none_carrying_the_tables_stops_the_build(self):
+        for objects in (None, {"readings": READINGS, "motion": {}}):
+            with self.subTest(objects=objects), committed_as(objects), self.assertRaises(SystemExit) as stop:
+                held()
+            self.assertIn("no committed jp.json carries its readings and its tables", str(stop.exception))
+
+    def test_a_kept_key_or_entry_the_base_lacks_or_shapes_otherwise_stops_the_build_naming_each(self):
+        record = {"glow": {}, "types": {"35": {"turn": -16, "take": {"points": 10, "clock": {"from": 5999}}}, "99": {}},
+                  "kinds": {"7": {"cycle": [1]}}}
+        with self.assertRaises(SystemExit) as stop:
+            kept("jp", "motion", record, MOTION, NESTED)
+        self.assertIn("glow, types.35.take.clock, types.99, kinds.7.cycle.0 of its committed motion are not shaped",
+                      str(stop.exception))
+        self.assertEqual(kept("jp", "readings", {"jump.skip": None, "shadow.sprite": 7}, READINGS),
+                         {**READINGS, "jump.skip": None, "shadow.sprite": 7})
+
+    def test_the_kept_motion_is_held_to_the_rules(self):
+        with committed_as({**RECORD, "motion": {"hz": 50}}), self.assertRaises(SystemExit) as stop:
+            held()
+        self.assertIn("frames a second as 50, where the rules read 60", str(stop.exception))
 
 
 class ReleaseFile:

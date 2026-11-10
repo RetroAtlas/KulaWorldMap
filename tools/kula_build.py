@@ -10,8 +10,9 @@ data, its artwork against the US atlases, the sheets of the textures its
 disc draws otherwise, laid under public/tex/<id>/, and the tint of a world it
 colours otherwise, its objects against the US models, the model lists of the
 types its mesh file draws otherwise and the jump's arc where that differs,
-and, where the release has a map under maps/ with nothing pending, what its
-executable's motion and skins tables change from the US tables.
+and, where the release has a map under maps/, what its executable's motion
+and skins tables change from the US tables, kept from its committed file
+while the map has rows pending.
 
     export KULA_DISC="/path/to/Roll Away.bin"
     python3 tools/kula_build.py                 # the US data and public/releases/us.json
@@ -64,6 +65,9 @@ ARTWORK = ("textures", "shade", "turn", "light")
 
 # What a run reads off a disc.
 Read = namedtuple("Read", "levels checked speeds untrailed problems")
+
+# The readings and the tables a release is built with.
+Tables = namedtuple("Tables", "readings motion skins")
 
 
 def shown_as(theme, pack, index):
@@ -136,7 +140,8 @@ def map_of(release):
     left = Map.pending(release)
     if left:
         print(f"the {release} map has {len(left)} pending row{'s' if len(left) != 1 else ''}, so its tables and the "
-              f"readings its meshes are read with are the base's and the Simon rooms are the committed ones")
+              f"readings its meshes are read with are kept from its committed file, the base's where that lacks a "
+              f"key, and the Simon rooms are the committed ones")
         return None
     return Map.load(release)
 
@@ -336,6 +341,69 @@ def hold_to_rules(motion, rules):
                  f"{count} numbered levels")
 
 
+def unshaped(value, base, path):
+    """The dotted path of the first place `value` is not shaped as `base`, the keys of a dict and the items of a
+    list compared and a null shaped as anything, else None."""
+    if value is None or base is None:
+        return None
+    if isinstance(value, dict) and isinstance(base, dict):
+        if set(value) != set(base):
+            return path
+        return next(filter(None, (unshaped(value[k], base[k], f"{path}.{k}") for k in base)), None)
+    if isinstance(value, list) and isinstance(base, list):
+        return next(filter(None, (unshaped(v, b, f"{path}.{i}") for i, (v, b) in enumerate(zip(value, base)))), None)
+    return path if isinstance(value, (dict, list)) or isinstance(base, (dict, list)) else None
+
+
+def kept(release, what, record, base, nested=()):
+    """The base's table with the release's committed record of it laid over as the viewer lays a release's file,
+    a key of the record whole but for the keys in `nested`, whose entries are laid one level down, so a key or an
+    entry the record lacks is the base's; the tool's exit where the record holds one the base's lacks or one not
+    shaped as the base's, as an entry written whole before a reading added a key to it would be."""
+    out, apart = dict(base), []
+    for key, value in record.items():
+        if key not in base:
+            apart.append(key)
+        elif key in nested:
+            apart += [unshaped(v, base[key][e], f"{key}.{e}") if e in base[key] else f"{key}.{e}"
+                      for e, v in value.items()]
+            out[key] = {**base[key], **value}
+        else:
+            apart.append(unshaped(value, base[key], key))
+            out[key] = value
+    apart = [p for p in apart if p]
+    if apart:
+        sys.exit(f"the {release} map has rows pending and {', '.join(apart)} of its committed {what} "
+                 f"{'is' if len(apart) == 1 else 'are'} not shaped as the base's and cannot be kept; finish the map")
+    return out
+
+
+def committed_record(release):
+    """The readings and the tables the release's committed file carries under `objects`, or the tool's exit where
+    no committed file carries them."""
+    path = RELEASE_FILES[release]
+    objects = json.loads(path.read_text()).get("objects", {}) if path.exists() else {}
+    if any(k not in objects for k in Tables._fields):
+        sys.exit(f"the {release} map has rows pending and no committed {path.name} carries its readings and its "
+                 f"tables to keep; finish the map")
+    return Tables(*(objects[k] for k in Tables._fields))
+
+
+def held_tables(code, release, shapes, mesh, rules):
+    """The readings and the tables a release is built with where its executable is not read through its map, else
+    None: with a map whose rows are pending, those its committed file carries, laid over the base's and the
+    motion held to the rules; with no map, the base's."""
+    if code.map is not None:
+        return None
+    if not Map.exists(release):
+        return Tables(mesh, shapes["motion"], shapes["skins"])
+    record = committed_record(release)
+    motion = kept(release, "motion", record.motion, shapes["motion"], NESTED)
+    hold_to_rules(motion, rules)
+    return Tables(kept(release, "readings", record.readings, mesh), motion,
+                  kept(release, "skins", record.skins, shapes["skins"]))
+
+
 def rooms_of(code, base, copycat):
     """The world each room of the Simon pack is played in, by its number: off
     the release's own executable where it is read, held to the committed
@@ -370,7 +438,9 @@ def other_release(disc, release):
     held to the committed rooms; without a map the committed data says both
     and the base's file the readings, since no executable but the base's is
     read, so a room that is not the base's cannot be placed and is refused,
-    and the tables are the base's."""
+    and the tables are the base's. A map with rows pending is read as no map
+    but for the tables and the readings, which the release's committed file
+    keeps, the base's only where that lacks a key."""
     missing = [p.name for p in (OUT, OBJECTS, SPARKS, RELEASE_FILES[BASE]) if not p.exists()]
     if missing:
         sys.exit(f"no {' or '.join(missing)} to write {release} against; build the base first")
@@ -383,7 +453,8 @@ def other_release(disc, release):
     code = code_of(disc, release)
     rules = rules_of(code, release)
     tgis = tgis_of(disc)
-    skins = skins_table(code, tgis) if code.map is not None else shapes["skins"]
+    held = held_tables(code, release, shapes, own["objects"]["readings"], rules)
+    skins = skins_table(code, tgis) if held is None else held.skins
     copycat = skins["copycat"]
     read = read_levels(disc, copycat, rooms_of(code, base, copycat))
     problems = read.problems + slot_problems(base, read.levels, [p for _, p in packs(disc)])
@@ -394,13 +465,14 @@ def other_release(disc, release):
     if rooms_apart and code.map is None:
         sys.exit(f"{', '.join(rooms_apart)} differ from the base's rooms, which say the world each is played in")
     art, pixels = release_art(release, tgis, shapes["skins"], own["art"]["quads"], base_atlases(THEMES))
-    mesh, motion, faces = own["objects"]["readings"], {}, {}
-    if code.map is not None:
+    if held is None:
         r = readings(code)
         theirs = table(r, next(iter(read.speeds)), rules["hz"])
         hold_to_rules(theirs, rules)
         mesh = mesh_readings(r)
-        motion, faces = motion_overlay(theirs, shapes["motion"]), skins_overlay(skins, shapes["skins"], art["tint"])
+    else:
+        mesh, theirs = held.readings, held.motion
+    motion, faces = motion_overlay(theirs, shapes["motion"]), skins_overlay(skins, shapes["skins"], art["tint"])
     models = release_objects(Ggi(disc.read_file(GGI)), shapes, mesh, motion=motion, skins=faces)
     return release_json(release, rules, layout_of(disc), art, models, levels), read, pixels
 
