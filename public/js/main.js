@@ -22,6 +22,7 @@ import { openModal } from "./viewer/ui/modal.js";
 import { named } from "./viewer/ui/keys.js";
 import { wireSettings } from "./viewer/ui/settings.js";
 import { toast } from "./viewer/ui/toast.js";
+import { address } from "./viewer/ui/address.js";
 import { KEY, heldIn } from "./format/held.js";
 import { warm } from "./viewer/draw/atlas.js";
 import "./viewer/chrome/a11y.js";
@@ -159,7 +160,7 @@ function showAbout(opener) {
     used under <a href="js/vendor/pako-LICENSE.txt">its licence</a>.</p>
     <p><a href="https://github.com/RetroAtlas/KulaWorldMap">Source and tooling</a> &middot;
     <a href="https://retroatlas.org/">RetroAtlas</a> &middot;
-    <a href="mailto:${["hello", "retroatlas.org"].join("@")}">Get in touch</a></p>`,
+    <a href="mailto:${address()}">Get in touch</a></p>`,
     opener,
   );
 }
