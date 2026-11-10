@@ -191,6 +191,65 @@ function oneOf(raw, key, n, where, report) {
   return 0;
 }
 
+/** The text under `key` cut to `most` characters, with a line where it was longer. */
+function cut(raw, key, most, report) {
+  const chars = [...raw[key]];
+  if (chars.length <= most) return raw[key];
+  report.push(
+    `${key} is ${chars.length} characters long, more than the ${most} kept; it is cut to ${most}`,
+  );
+  return chars.slice(0, most).join("");
+}
+
+/** The text under `key`, cut to `most`; missing is empty, and so is a value that is not text,
+    with a line. */
+export function text(raw, key, most, report) {
+  if (raw[key] === undefined) return "";
+  if (typeof raw[key] !== "string") {
+    report.push(`${key} is not text; it is left empty`);
+    return "";
+  }
+  return cut(raw, key, most, report);
+}
+
+/** As `text`, for a key the document may leave out: missing stays missing, as does a value that
+    is not text, with a line. */
+function optional(raw, key, most, report) {
+  if (raw[key] === undefined) return undefined;
+  if (typeof raw[key] !== "string") {
+    report.push(`${key} is not text; it is left out`);
+    return undefined;
+  }
+  return cut(raw, key, most, report);
+}
+
+/** The flag under `key`; missing is false, and so is a value that is neither true nor false,
+    with a line. */
+function flag(raw, key, report) {
+  if (raw[key] === undefined) return false;
+  if (typeof raw[key] === "boolean") return raw[key];
+  report.push(`${key} is neither true nor false; it is taken as false`);
+  return false;
+}
+
+/** The version lines: one that is not a whole number is read as this reader's version with a line,
+    and a newer one with a note; returns the count of notes, the lines that repair nothing. */
+export function readVersion(raw, report) {
+  if (raw.version !== undefined && !safe(raw.version)) {
+    report.push(
+      `a version of ${show(raw.version)} is not a whole number; the file is read as version ${VERSION}`,
+    );
+    return 0;
+  }
+  if (safe(raw.version) && raw.version > VERSION) {
+    report.push(
+      `written as version ${raw.version} of the format, newer than this reader's version ${VERSION}; what it knows is read`,
+    );
+    return 1;
+  }
+  return 0;
+}
+
 function readFaces(faces, where, report) {
   const out = {};
   for (const [key, o] of Object.entries(faces)) {
@@ -306,60 +365,20 @@ export function readProject(source) {
   const raw = typeof source === "string" ? JSON.parse(source) : source;
   if (!isObject(raw) || raw.format !== FORMAT) throw new Error(`not a ${FORMAT} file`);
   const report = [];
-  let notes = 0;
-  if (raw.version !== undefined && !safe(raw.version))
-    report.push(
-      `a version of ${show(raw.version)} is not a whole number; the file is read as version ${VERSION}`,
-    );
-  else if (safe(raw.version) && raw.version > VERSION) {
-    report.push(
-      `written as version ${raw.version} of the format, newer than this reader's version ${VERSION}; what it knows is read`,
-    );
-    notes++;
-  }
-  const cut = (key, most) => {
-    const chars = [...raw[key]];
-    if (chars.length <= most) return raw[key];
-    report.push(
-      `${key} is ${chars.length} characters long, more than the ${most} kept; it is cut to ${most}`,
-    );
-    return chars.slice(0, most).join("");
-  };
-  const text = (key, most = Infinity) => {
-    if (raw[key] === undefined) return "";
-    if (typeof raw[key] !== "string") {
-      report.push(`${key} is not text; it is left empty`);
-      return "";
-    }
-    return cut(key, most);
-  };
-  const optional = (key, most) => {
-    if (raw[key] === undefined) return undefined;
-    if (typeof raw[key] !== "string") {
-      report.push(`${key} is not text; it is left out`);
-      return undefined;
-    }
-    return cut(key, most);
-  };
-  const flag = (key) => {
-    if (raw[key] === undefined) return false;
-    if (typeof raw[key] === "boolean") return raw[key];
-    report.push(`${key} is neither true nor false; it is taken as false`);
-    return false;
-  };
+  const notes = readVersion(raw, report);
   const project = {
     format: FORMAT,
     version: VERSION,
-    title: text("title", TITLE_MOST),
-    author: text("author", TEXT_MOST),
-    notes: text("notes", TEXT_MOST),
-    world: text("world", TEXT_MOST),
+    title: text(raw, "title", TITLE_MOST, report),
+    author: text(raw, "author", TEXT_MOST, report),
+    notes: text(raw, "notes", TEXT_MOST, report),
+    world: text(raw, "world", TEXT_MOST, report),
   };
-  const into = optional("into", TEXT_MOST);
+  const into = optional(raw, "into", TEXT_MOST, report);
   if (into !== undefined) project.into = into;
-  const from = optional("from", TEXT_MOST);
+  const from = optional(raw, "from", TEXT_MOST, report);
   if (from !== undefined) project.from = from;
-  const fromRelease = optional("fromRelease", TEXT_MOST);
+  const fromRelease = optional(raw, "fromRelease", TEXT_MOST, report);
   if (fromRelease !== undefined) project.fromRelease = fromRelease;
   if (raw.time === undefined || safe(raw.time)) project.time = raw.time ?? DEFAULT_TIME;
   else {
@@ -371,9 +390,9 @@ export function readProject(source) {
     report.push(`a time of ${project.time} is outside the file's range; it is ${held}`);
     project.time = held;
   }
-  project.hidden = flag("hidden");
-  project.invisibleFromAfar = flag("invisibleFromAfar");
-  project.simon = flag("simon");
+  project.hidden = flag(raw, "hidden", report);
+  project.invisibleFromAfar = flag(raw, "invisibleFromAfar", report);
+  project.simon = flag(raw, "simon", report);
   project.circuits = {};
   if (raw.circuits !== undefined && !isObject(raw.circuits))
     report.push("circuits is not a table of colours; every colour starts on");
@@ -430,8 +449,9 @@ function inline(value) {
   return JSON.stringify(value);
 }
 
-/** The project file's text, written the same way every time. */
-export function writeProject(project) {
+/** The lines between the project file's braces: the head's keys one a line, then the blocks one a
+    line inside their list. */
+export function projectLines(project) {
   const head = {
     format: FORMAT,
     version: VERSION,
@@ -454,9 +474,14 @@ export function writeProject(project) {
   );
   const lines = Object.entries(head).map(([k, v]) => `  ${JSON.stringify(k)}: ${inline(v)},`);
   const blocks = [...project.blocks].sort(byCell).map((b) => `    ${inline(writeBlock(b))}`);
-  lines.push(blocks.length ? `  "blocks": [\n${blocks.join(",\n")}\n  ]` : `  "blocks": []`);
-  return `{\n${lines.join("\n")}\n}\n`;
+  const last = blocks.pop();
+  if (last === undefined) lines.push(`  "blocks": []`);
+  else lines.push(`  "blocks": [`, ...blocks.map((l) => `${l},`), last, `  ]`);
+  return lines;
 }
+
+/** The project file's text, written the same way every time. */
+export const writeProject = (project) => `{\n${projectLines(project).join("\n")}\n}\n`;
 
 /** The level the viewer draws for a project, under `pack` at the index `id` and tagged with its
     origin: what the game would load of it, and whether it is a Simon room. A level under the
