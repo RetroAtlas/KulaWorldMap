@@ -78,6 +78,7 @@ A map that still has pending rows is passed over as no map, the run saying so, s
 - [docs/annotations.md](docs/annotations.md): what each curated name, point value and note rests on.
 - [docs/editor.md](docs/editor.md): the level editor's file, the level written back to the game's bytes, and what holds the writers to the disc.
 - [docs/disc.md](docs/disc.md): the disc image, its sectors and the room in each pack, and how a level is placed onto it and carried in a patch.
+- [docs/community.md](docs/community.md): the community levels, the catalogue that carries them, its shape, its gates and the slots its levels open under.
 - [docs/tools.md](docs/tools.md): what each tool under `tools/` does.
 - [docs/testing.md](docs/testing.md): the checks, what each suite holds, how it runs and how a test is added.
 - [CLAUDE.md](CLAUDE.md): the rules for changing any of it, and [backlog/](backlog/) the open questions.

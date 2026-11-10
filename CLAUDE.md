@@ -62,7 +62,7 @@ No commit message reports what a test found, a test of its own or any other: eve
   - `viewer/ui/` is the page's primitives, which know nothing of the map.
   - `viewer/draw/` is what paints a canvas.
   - `viewer/chrome/` is what stands beside the map and speaks for it.
-  - `format/` is the readers and writers of the level, the project, the pack, the disc image, the patch, the store and the link that carries a level, which touch no DOM and nothing of the viewer, and hold the lattice every layer lays a level in.
+  - `format/` is the readers and writers of the level, the project, the pack, the disc image, the patch, the store, the link that carries a level and the community catalogue, which touch no DOM and nothing of the viewer, and hold the lattice every layer lays a level in.
   - `editor/` and `play/` are what load only through the boot's dynamic import, the editor when a level of your own is wanted and play when the ball is.
   - `community/` is what loads only through the boot's dynamic import when a level comes by its link, and reaches nothing of the editor.
   - `main.js` is the boot.
