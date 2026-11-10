@@ -239,6 +239,14 @@ Under the settings the card says how the level plays, as the level line's note d
 
 The card offers `duplicate` and `delete`, which asks to be pressed again, each saying what it did and which level is then on screen.
 
+The card's `share…` opens "Share this level", a box with the link that carries the level whole, as Permalinks says, selected in a field for copying, under a note that the link holds the level as it is now and that it is to be shared again after a change; the link opens the level framed to fit any window and turned as the map was turned when the box opened, with the slice kept and no block selected.
+
+The box offers `copy the link`, which says "Link copied." and closes the box, or keeps it open and says the link could not be copied and is to be selected in the field instead; `send to an app…`, first in the row and only where the browser has a share sheet that takes a link, which hands the sheet the title and the link, a sheet dismissed saying nothing and one the browser cannot show saying, as a refused copy does, that the link is to be selected in the field; `email it to someone`, which opens a new message with the title as its subject and the link as its body; `save the file instead`, the card's `save as .json`; and `cancel`.
+
+Where the checks find errors the box opens refusing: no link is made, one sentence says a level with errors has no link until they are fixed and that the level line's note lists them, and the row offers the file and `cancel`.
+
+Where the link would run past 8,000 characters the file leads the row and the box says the level is too large for a link.
+
 The card's `save as .json` writes the draft as the map's own file and `save as .kwl` as the file the game loads, each named after the title, after which the row reads "saved to a file" and counts the changes since, with a dot on the save button while there are any; `open a file…` in the row above takes either back, or a level file from elsewhere, read for what it holds rather than by its name, opens it as a new draft and says what it had to repair, or that it has notes on what it read where it repaired nothing.
 
 `open a file…` also takes one of the game's packs, which asks which of its levels to open and opens it in the world on screen, since a pack does not say which world it is from, a disc image, which asks for the pack and the level and opens it in the world the map lists the level that lies there under, named as the pause screen names it, and in the pack's own world where none of the game's levels lies there, and a level saved by the community's level viewer, read in the world on screen; declining the question opens nothing.
@@ -719,6 +727,8 @@ A module may take the panel down through `clearDetail` and build it again for th
 A module may reinstall the slot shown in place through `reshow` in `js/viewer/chrome/navigate.js`, which keeps the selection where its cell stands and frames the level afresh where it was fitted, and may register a segment of the link's tail with `before` beside `read`, told the segment before the slot is resolved, so that what it names is installed once.
 
 A module may answer a link's slot with a level of its own through `provideLevels` in `js/viewer/chrome/navigate.js`, each source asked with the slot the link names, in upper case, and answering with a level or nothing; a link to a slot a source answers installs the level where that slot is not the one shown, whatever level is on screen, which is a change of level, or an update where the level's own slot is the one shown, while a link to the slot shown installs nothing and lays its view on the level there.
+
+A module may read what the link writes for the level shown through `viewParts` in `js/viewer/chrome/navigate.js`, the view a module parked or the camera and the target as they stand, whether the level is framed to fit, the slice and the selected cell, which is how the editor's share box writes its link with the turn the map has.
 
 The route planner is built on the same seams and loads with the boot, since a linked route must draw on the first frame:
 

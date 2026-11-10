@@ -31,6 +31,7 @@ import {
 import { ERROR, TIME_LIMIT, circuitMembers, playsAs, timeOf, validate } from "../format/checks.js";
 import { download, readLevelText, slug } from "./files.js";
 import { pasteLevelLink } from "./importdialog.js";
+import { shareLevel } from "./sharedialog.js";
 import { draftsOf, readLevel, readWith } from "./intake.js";
 import { heldImage, openPatchDialog } from "./patchdialog.js";
 import { edit as step } from "./trail.js";
@@ -467,6 +468,13 @@ function buildForm(id, box) {
     title: "Make a patch that puts this level on the game's disc",
   });
   patch.onclick = () => openPatchDialog(id);
+  const share = el("button", {
+    id: "draftShare",
+    type: "button",
+    textContent: "share…",
+    title: "Share this level by a link that carries it whole",
+  });
+  share.onclick = () => shareLevel(id, () => saveAs(id, false));
   const note = el("span", {
     className: "note",
     textContent: "Saved in this browser",
@@ -505,7 +513,7 @@ function buildForm(id, box) {
     circuits.box,
     plays,
     errors,
-    el("div", { className: "row" }, saveJson, saveKwl, patch, note),
+    el("div", { className: "row" }, saveJson, saveKwl, share, patch, note),
     el("div", { className: "row" }, duplicate, del),
   );
 

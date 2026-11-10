@@ -231,24 +231,26 @@ export function writeHash(push = false) {
   emit("view-changed");
 }
 
-function currentHash() {
-  const l = state.lvl;
+/** What the link writes for the level shown: the view a module parked, else the camera, the
+    target, whether the level is framed to fit and the slice as they stand, with the cell selected. */
+export function viewParts() {
   const s = state.selected;
-  const view = state.parked ?? {
+  const { cam, target, fitted, slice } = state.parked ?? {
     cam: state.cam,
     target: state.target,
     fitted: state.framing === fit,
     slice: state.slice,
   };
+  return { cam, target, fitted, slice, picked: s && [s.x, s.y, s.z] };
+}
+
+function currentHash() {
+  const l = state.lvl;
   return (
     l &&
     formatHash({
       slot: slotOf(l),
-      cam: view.cam,
-      target: view.target,
-      slice: view.slice,
-      picked: s && [s.x, s.y, s.z],
-      fitted: view.fitted,
+      ...viewParts(),
       tails: tails.map((t) => t.write()).filter((segment) => segment != null),
     })
   );

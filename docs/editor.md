@@ -401,6 +401,12 @@ Every shipped level's segment is under 1,200 characters, a bound the codec's uni
 
 A dense hand-made level grows with its block count, and its author and notes may run to 2,000 characters each, which is why the reader caps the segment and the caps gate what it reads.
 
+The share box of the Level card writes the link through `shareLink` in `public/js/editor/sharelink.js`, in the permalink's full form, since a tail segment is recognised only after a full head: the shared slot at the digest of the level's canonical text, the yaw and pitch the map stands at, `fit` in the view's place, the slice, no selected cell, and the segment as the one tail, so the level opens framed to any window and turned as its author had it.
+
+The box offers the link only for a draft the checks find no error in.
+
+The box leads with the file where the link would pass 8,000 characters, the bound `LINK_MOST`, which no shipped level's link reaches.
+
 A codec over the game's bytes, which packs a dense level several times smaller, would ride under a letter of its own, since a segment never changes what it means.
 
 ## Onto the disc
