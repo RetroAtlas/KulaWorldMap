@@ -117,7 +117,9 @@ The bar under the box narrows a search to the world or the level in hand, or, by
 
 The line at the top of the map names the level and counts what it holds, with the level's note under it where there is one.
 
-Its time is the figure the disc shown's HUD shows as the level starts, once its clock has ticked, one more than the whole seconds the clock holds in the ticks that HUD counts a second, so a level whose file gives 99 reads 83 under the US disc, whose clock runs 82.5 seconds, 99 under the PAL disc and 119 under the Japanese, as The three discs below says of play's clock.
+Its time is the figure the disc shown's HUD counts as the level starts, once its clock has ticked, one more than the whole seconds the clock holds in the ticks that HUD counts a second, so a level whose file gives 99 reads 83 under the US disc, whose clock runs 82.5 seconds, 99 under the PAL disc and 119 under the Japanese, as The three discs below says of play's clock.
+
+The game's HUD draws its digits only once the clock is down to 50 ([motion.md](motion.md)), and the map shows the figure from the start, on the line and in play's HUD.
 
 Where the disc shown has no rules to hand, its file having failed to load, or the tables are missing, the line gives the file's own number, as play's clock does with no rules.
 
@@ -187,9 +189,9 @@ On the PAL disc a hop ends at the face's level and falls from there where nothin
 
 On the PAL disc the fire's, the invisible block's and the swirl's cycles run at that disc's own counts.
 
-Play's clock follows the disc shown, filled as that disc's game fills it and shown as its HUD shows it, so a 99-second level opens at 83 on the US disc, whose clock runs 82.5 seconds, at 99 on the PAL disc, where it runs its 99, and at 119 on the Japanese disc, where every 99-second level runs 119.
+Play's clock follows the disc shown, filled as that disc's game fills it and counted as its HUD counts it, so a 99-second level opens at 83 on the US disc, whose clock runs 82.5 seconds, at 99 on the PAL disc, where it runs its 99, and at 119 on the Japanese disc, where every 99-second level runs 119.
 
-The PAL and Japanese HUDs read 100 and 120 for the one tick the clock is full, before the 99 and 119 a player sees.
+The PAL and Japanese HUDs count 100 and 120 for the one tick the clock is full, and 99 and 119 from the next.
 
 On the Japanese disc the ball's breath follows that disc's own count of the clock, measured against 7200 ticks and quickened by a fiftieth of what the clock is short, where the US ball's is measured against 6000 and quickened by a fortieth.
 
