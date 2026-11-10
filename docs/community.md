@@ -2,7 +2,7 @@
 
 The community levels are levels players made and sent in, each its author's work shared under CC BY 4.0 with credit to the name in its Author field, published in one catalogue the page reads rather than in any browser's store.
 
-This document specifies the catalogue: the index that carries the levels, the shape of its entries, the gates their documents pass, the rule it grows by, the slots its levels open under, the panel that shows it, how a level is sent in and how it is added to it by hand; `public/js/format/catalogue.js` is its one reader and writer, `public/js/community/panel.js` shows it, `public/js/editor/sendlink.js` composes the addresses a level is sent in by and `tools/community.js` joins the records into it.
+This document specifies the catalogue: the index that carries the levels, the shape of its entries, the gates their documents pass, the rule it grows by, the slots its levels open under, the panel that shows it, how a level is sent in, how it is added to it by hand and how an intake would add one itself, designed and not built; `public/js/format/catalogue.js` is its one reader and writer, `public/js/community/panel.js` shows it, `public/js/editor/sendlink.js` composes the addresses a level is sent in by and `tools/community.js` joins the records into it.
 
 ## The catalogue
 
@@ -222,3 +222,74 @@ The tool refuses, naming the record in one sentence each:
 - notes past 320 characters, the page's cap;
 - a bundle of more than 60 levels, or of none;
 - a record whose id the ledger retires or has not issued, an issued id that is neither a record's id nor retired, and a record file not written as the editor saves it.
+
+## An intake that runs itself
+
+Nothing of this section is built: a level reaches the catalogue by the hand road "Adding a level by hand" describes, and this section is the shape of the intake that would add one itself, settled here so that it is built from a known shape once the levels arriving make the hand step a chore, and not before.
+
+**When to build it.** The intake is worth building once more than about two levels a month arrive by hand, or once the catalogue is past about twenty entries; below that a person running the tool costs less than any writer, and the community the levels would come from is small, a chat room of some seventy, a forum with a handful active in a month and no custom level found anywhere in years, so the hand road may stay the only one.
+
+**The write path is the issue form.** A static page can hold no secret, so the page writes nothing anywhere; the one write it can lead to is the repository's form for a level, which "Sending a level in" fills, where the author is signed in on the form's own site and GitHub holds the identity.
+
+The form's body holds 65,536 characters, so every link within the box's bound of 8,000 fits its Link field many times over, and a longer link, which the box leads with the file for, fits too while it is under that room, and is read as any pasted link is, since the reader's cap on a segment lies past it.
+
+The required tick on the licence stands in every issue the form takes, so the grant is in the issue the Action's commit names, as the hand road's commit names it.
+
+**The form's answers are text, not a contract.** An issue form's answers reach the issue's body under `### <label>` headings, a shape GitHub does not document as a contract, so the Action reads the body for the one thing it needs, the link, found in the body by its shape, and hands the tool the link alone, which `--add` takes as it takes a pasted link, its `s` segment read as `segmentOf` of `tools/community.js` reads it.
+
+Nothing else of the body is read: not the notes, not the title and no address.
+
+**The only writer is an Action in the repository it writes to.** A workflow on an issue's opening runs for anyone's issue with no approval gate, and the token it is given reaches its own repository and nothing beyond, so a writer living where the records live needs no stored secret; a writer anywhere else would need a personal token or an app's key kept as a secret, which is what this shape keeps out.
+
+The Action runs only for an issue carrying the label the form applies to every issue it opens, read from the event and not from the body, so an issue opened blank, without the form and its tick, starts nothing.
+
+**A data repository of its own.** The records, the ledger and the index move to a repository that holds the catalogue alone, with a Pages site of its own that serves the index, so the Action's token can change nothing of this repository, its code or its site, a flaw in the intake reaches no further than the catalogue's data, and a level's pull request runs no browser suite and deploys no page; this repository keeps the reader, the panel, the share box and the tool.
+
+The tool runs there from a checkout of this repository at a pinned release, so the gates a level passes are one code in both places and move by a bump a person makes; the command reads the records under its own repository's root and the face table, the names and the shipped levels' digests from this repository's files, so it gains a flag for the root the records stand under before the move.
+
+The two tests of `tests/unit/community.test.js` that read the committed catalogue, the index held to the records and the ledger byte for byte and every issued id held to exactly one of a record and a retired id, move with the records and run in the data repository's own workflow against the pinned tool, so the committed index is held to the records where they stand.
+
+The rest of that file, the tool's refusals and its command, stays here with the tool, as `tests/unit/catalogue.test.js` stays with the reader.
+
+**The page fetches across origins.** `INDEX_URL`, the panel's address for the index, becomes the data site's address and the fetch crosses origins, which GitHub Pages allows by answering every request with `Access-Control-Allow-Origin: *`; this site's own origin answers it, and the data site's own origin is to be verified before the move, since a fetch refused there would show every visitor the failed line.
+
+**The write is a pull request a person merges.** The Action's job, given `contents: write`, `pull-requests: write` and `issues: write` for itself, writes the record, the ledger and the index on a branch of its own in one commit that names the issue by its number and says the grant was made there, as the hand road's commit does, runs the tool and the moved tests there, since a run made by the workflow's token starts no other run, and opens a pull request from the branch.
+
+The ruleset on main takes no push but a merge, with no bypass for Actions, so the token cannot push to main, and a person merges.
+
+That merge is the look the site promises in "a person looks at every level before it appears", and it is a person's push to main, which starts the Pages deploy there as a push to main starts it here; nothing publishes without it.
+
+The data repository needs "Allow GitHub Actions to create and approve pull requests" on, a setting off by default and inherited from the organisation, so allowed there first; its default workflow permissions may stay read, since the job asks for its own; a ruleset on main requiring a pull request before merging; and Pages built from the workflow, as here.
+
+**The body never reaches a shell through an expression.** The issue's body is the author's text, and an expression that writes it into a `run` step writes it into the shell, so the body reaches the Action as an environment variable set from the event or as an action input, which the step that finds the link reads as a value; the link alone goes on to `--add`, which decodes the level from the link's own text and fetches nothing, so no address in an issue is ever followed.
+
+The tool's sentence on a refusal carries the level's title as typed, with only the characters that would hide or reorder the terminal's text replaced, so it goes to the comment the same way, as a step's output an action reads or as an environment variable, never through an expression in a `run` step.
+
+**Every refusal of the tool stands.** A level passes every refusal "Adding a level by hand" lists, `recordOf` and `indexOf` between them, and no fewer.
+
+A refused level ends as a comment on the issue carrying the tool's sentence, and no pull request.
+
+The level is credited to the name in its Author field, which the link carries, never to the login that opened the issue.
+
+**The owner is the author's numeric id.** The opener's numeric GitHub id is kept beside the record's id in the ledger or in a table beside it, never in the record, which is the document as the editor saves it, nor in the index, which the page reads.
+
+A later issue from the same id is taken as the author's update, the record replaced under its id, or removal, the record deleted and the id retired, through the same pull request, and an issue from any other id on a published record is refused.
+
+How such an issue names the record is open, since the form takes a link alone, a shared link names no record and a removal carries no level.
+
+The login is kept beside the number for a person reading the ledger alone, since a login changes hands and the number does not.
+
+**A bundle stays on the hand road.** A bundle shares as a file and the form takes a link alone, and a file attached to an issue is something the body names, which the Action never fetches, so a bundle comes by email with its file, as "Adding a level by hand" says.
+
+**The form and its address move with the records.** The form, `.github/ISSUE_TEMPLATE/level.yml`, moves to the data repository, where it gains the label the Action runs on, and `ISSUE_FORM` of `public/js/editor/sendlink.js` with it, so the issue the box opens is the one the Action runs on.
+
+`send it in by email` stays as it is, a message a person reads.
+
+**Ruled out.**
+
+- Usernames and password hashes in a private repository: the page cannot read it without a token, a token in the page is public, a hash store the page can read is crackable offline, "logged in" would be a variable in the visitor's tab, and the write would still need a credential in the page; identity has to be borrowed from a service with a server, GitHub through its form, or be a key the author holds, never a secret the site holds.
+- OAuth from the page: GitHub's flow cannot be completed from a static page, since the token exchange needs the client's secret even with PKCE and the device flow's endpoints send no CORS headers; anonymous gists are gone too.
+- A hosted database or function: the free plans looked at pause a project after a week idle, cap it by credits, or have closed or announced their closing, so the catalogue would hang on a service's terms rather than on a repository a person holds.
+- A relay: a Nostr relay would need a library the repo may not vendor, and the writer would still be a key or a secret somewhere.
+- The Action pushing to main itself, since the merge is where a person looks, and this repository's own Action writing into the data repository, since a write across repositories takes a secret kept.
+- Reading the body by its headings, which are no contract, or following an address in it, which would make the writer a fetcher of whatever an issue names.
