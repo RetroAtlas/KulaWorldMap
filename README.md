@@ -67,6 +67,8 @@ A map that still has pending rows is passed over as no map, the run saying so, s
 
 `python3 tools/kula_map.py --release <id>` rewrites that release's map, `tools/maps/<id>.json`, where each instruction the executable's readers match on the North American disc stands on that release's, from the two discs and the hand table `tools/kula_map_hand.py`, generated and committed too, and is run after a reader gains a row, before the build.
 
+`node tools/community.js` joins the community levels' records under `catalogue/levels/` into `public/community/index.json`, the index the page reads the community levels from, generated and committed too, and adds a level sent in from its link or its file with `--add`; [docs/community.md](docs/community.md) says how a level is added by hand.
+
 ## Where the rest is
 
 - [docs/viewer.md](docs/viewer.md): every control the map has, what moves, the compass, the search and the permalinks, the editor, the route planner and play mode, and how the viewer is built.

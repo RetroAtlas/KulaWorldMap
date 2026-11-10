@@ -1,6 +1,6 @@
 # What is in `tools/`
 
-Dependency-free Python 3, standard library only. `oxipng` is used to compress images where it is on PATH, and `ogcard.js` and `icons.js` are the two Node tools. Every tool that reads the disc takes it from `$KULA_DISC`, a raw 2352-byte-sector `.bin` image, which is never committed.
+Dependency-free Python 3, standard library only. `oxipng` is used to compress images where it is on PATH, and `ogcard.js`, `icons.js` and `community.js` are the three Node tools. Every tool that reads the disc takes it from `$KULA_DISC`, a raw 2352-byte-sector `.bin` image, which is never committed.
 
 A tool that reads a release's disc takes its image from `--disc`, else from `$KULA_DISC`, `$KULA_DISC_EU` or `$KULA_DISC_JP` by the release, and refuses one whose boot line names another release's executable.
 
@@ -48,6 +48,7 @@ A tool that reads a release's disc takes its image from `--disc`, else from `$KU
 | `maps/<id>.json` | a release's map as `kula_map.py` writes it, generated and committed, a row to a line keyed by the US address, with the names, the words and the pending block after the rows |
 | `ogcard.js` | render the social card from the map itself (Node, needs Playwright) |
 | `icons.js` | render the raster icons from the favicon (Node, needs Playwright) |
+| `community.js` | the community levels' records under `catalogue/levels/` joined into `public/community/index.json`, the index the page reads, each record held to the gates a link's level passes, to the levels the three discs ship and to the other records by digest, and a level sent in added from its link or its file under the id `catalogue/ids.json` names (Node, [community.md](community.md)) |
 | `serve.py` | local static server, caching off, 404.html like the host |
 
 `kula_build.py` writes the four JSON files and the sheet in under a second, laid out so that a rebuild diffs line by line, or model by model, and refuses to write when the level file's cross-check fails ([level-format.md](level-format.md)) or when a cap or a loader figure the level writer's checks rest on is not what the executable holds ([editor.md](editor.md)). [tgi.md](tgi.md) and [ggi.md](ggi.md) show the artwork and geometry tools' own switches.

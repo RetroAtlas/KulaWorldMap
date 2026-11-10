@@ -2,7 +2,7 @@
 
 The community levels are levels players made and sent in, each its author's work shared under CC BY 4.0 with credit to the name in its Author field, published in one catalogue the page reads rather than in any browser's store.
 
-This document specifies the catalogue: the index that carries the levels, the shape of its entries, the gates their documents pass, the rule it grows by and the slots its levels open under; `public/js/format/catalogue.js` is its one reader and writer.
+This document specifies the catalogue: the index that carries the levels, the shape of its entries, the gates their documents pass, the rule it grows by, the slots its levels open under and how a level is added to it by hand; `public/js/format/catalogue.js` is its one reader and writer, and `tools/community.js` joins the records into it.
 
 ## The catalogue
 
@@ -133,3 +133,30 @@ A published bundle never loses a level or changes its order, so a removal or a r
 A retired id covers every `<id>-<n>` under it, so a link to any level of a bundle taken down is told it was.
 
 **The licence.** Every community level is its author's work, shared under CC BY 4.0 with credit to the name in its Author field; the index names the licence at its head as the SPDX identifier, and every entry carries the licence it is shared under, which tells something only where it differs from the licence at the head.
+
+## Adding a level by hand
+
+A level arrives as the link the share box writes or as the file the editor saves, by email to the contact address or as an issue on the repository, with the author's grant of CC BY 4.0 in the message, and nothing adds it to the catalogue but a person running the tool and committing what it wrote.
+
+`node tools/community.js --add <link or file>` reads the level, the `s` segment of a link through `decodeSegment` or a project or bundle file, fills `author` and `notes` from `--author <name>` and `--notes <text>` only where the document's own author and notes are empty, holds it to every refusal below and to the other records, writes it as `catalogue/levels/<id>.json` under the id `catalogue/ids.json` names as `next`, the file as the editor saves it, bumps `next`, writes `public/community/index.json` again and prints the id.
+
+`node tools/community.js` with no argument writes the index again from the records and the ledger, which is how a record corrected by hand or an id retired reaches the page, and prints every refusal in place of writing where there is one.
+
+`npm test` then holds the committed index to the records through the tool's own functions, every record to the refusals and to the text the editor saves, the ledger to the text the tool writes, and every id the ledger has issued to exactly one of a record and a retired id, so a stale index, a hand edit of it or a gap in the ledger fails there before it is pushed.
+
+The record, the ledger and the index land in one commit whose body names the issue by its number, or says the level came by email and when, and says that the author granted CC BY 4.0 there, so `git log` on a record leads to the grant.
+
+A level sent in again replaces its record under its id: the new document is written over `catalogue/levels/<id>.json` as the editor saves it, the tool run with no argument and the commit made as the first was, so the id and every link to it keep their meaning.
+
+Taking a level down deletes its record and lists its id under `retired` in `catalogue/ids.json` in the same commit, the tool run with no argument after, so a link to the level is told it was taken down rather than that there was no such level, and the id is never given again.
+
+The tool refuses, naming the record in one sentence each:
+
+- a document that reads with a repair, since what the page would show would not be what was sent;
+- a document the checks find an error in, judged with the face table of `public/objects.json` and the names of `public/annotations.json` as the editor judges a draft;
+- a document the writer refuses, over the record cap or one `writeKwl` cannot write, and one over the game's caps as `overCaps` counts them;
+- a level that is, byte for byte, a level one of the three discs ships or a level another record carries, a bundle's levels among them, since the catalogue holds no copies;
+- a title, an author or notes holding a control character, a line break in the notes aside, a bidi formatting character or a zero-width character, any of which could hide or reorder what the page shows;
+- notes past 320 characters, the page's cap;
+- a bundle of more than 60 levels, or of none;
+- a record whose id the ledger retires or has not issued, an issued id that is neither a record's id nor retired, and a record file not written as the editor saves it.
