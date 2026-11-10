@@ -13,6 +13,7 @@ import {
   sector,
 } from "../../public/js/format/sectors.js";
 import { projectOf, readKwl, writeKwl } from "../../public/js/format/kwl.js";
+import { shareLink } from "../../public/js/editor/sharelink.js";
 import { mapData, levelKey, releases } from "../unit/fixtures.js";
 import { levelTitle } from "../../public/js/viewer/data.js";
 import {
@@ -32,6 +33,22 @@ import {
 } from "../unit/synthetic.js";
 
 const EDIT_MARS = "/#MARS/0/45,35/fit/33";
+/** A level as the map's own link carries it, in a world other than the one on screen. */
+const CARRIED = {
+  format: "kula-world-level",
+  version: 1,
+  title: "Carried one",
+  author: "Ada",
+  notes: "Mind the gap.",
+  world: "HIRO",
+  time: 60,
+  blocks: [{ cell: [17, 17, 17], kind: 0, faces: { 0: { type: 30, facing: 3 } } }],
+};
+const CARRIED_LINK = shareLink(
+  CARRIED,
+  { cam: { yaw: 45, pitch: 35 }, target: null, slice: 33 },
+  "https://example.test/map/",
+);
 const orbit = JSON.parse(
   readFileSync(fileURLToPath(new URL("../fixtures/orbit-levels.json", import.meta.url)), "utf8"),
 );
@@ -558,7 +575,7 @@ const pending = (page, key) =>
     key,
   );
 
-test("a pasted link opens a shared level, a text that is no link is refused in place, and cancel gives nothing", async ({
+test("a pasted link opens a shared level, the map's own link or the community viewer's link, a text that is no link is refused in place, and cancel gives nothing", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -574,7 +591,7 @@ test("a pasted link opens a shared level, a text that is no link is refused in p
   await expect(dialog).toBeVisible();
   await expect(dialog.locator("#pasteTitle")).toHaveText("Open a shared level");
   await expect(dialog.locator("#pasteNote")).toHaveText(
-    "Paste a link from the community's level viewer. The level opens as your own, in the world on screen or the one the link names.",
+    "Paste a link from this map that carries a level, or a link from the community's level viewer. The level opens as a copy among your levels, in the world the link names or the one on screen where it names none.",
   );
   await expect(link).toBeFocused();
   await dialog.locator("#pasteOpen").click();
@@ -605,6 +622,22 @@ test("a pasted link opens a shared level, a text that is no link is refused in p
   await dialog.locator("#pasteOpen").click();
   await expect(dialog).toBeHidden();
   expect((await outcome(page, "second")).project.world).toBe("HELL");
+
+  await pasting(page, "whole", "MARS");
+  await expect(dialog).toBeVisible();
+  await link.fill(CARRIED_LINK);
+  await link.press("Enter");
+  await expect(dialog).toBeHidden();
+  expect((await outcome(page, "whole")).project).toMatchObject({
+    title: "Carried one",
+    world: "HIRO",
+  });
+  await pasting(page, "bare", "MARS");
+  await expect(dialog).toBeVisible();
+  await link.fill(CARRIED_LINK.slice(CARRIED_LINK.indexOf("#")));
+  await dialog.locator("#pasteOpen").click();
+  await expect(dialog).toBeHidden();
+  expect((await outcome(page, "bare")).project.title).toBe("Carried one");
 
   await pasting(page, "third", "MARS");
   await expect(dialog).toBeVisible();

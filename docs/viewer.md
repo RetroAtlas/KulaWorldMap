@@ -261,6 +261,8 @@ A PPF given another image says so and keeps the chooser, as does a patch that do
 
 `paste a link…` in the same row opens a box for the link to a level shared from the community's level viewer, which opens as a new draft in the world on screen, or in the world the link names where that is one of the ten; a text that is no such link is said so under the field, which stays for another try.
 
+The box takes the map's own link too, one that carries a level whole as Permalinks says, as the whole address or its hash alone, and makes a copy of that level among your levels, with the title, the author and the notes the link carries and in the world it names, where following the link shows the level without keeping it; a link whose level is over one of the game's caps is said so under the field, in the checks' words.
+
 Your levels stay in this browser, written a moment after each change, with "Saved in this browser" shown for a moment on the card, until they are saved to a file; a browser that cannot keep them, one that gives the map no room for them, one with no room for more, or one that refuses to keep them for another reason, says so.
 
 ### Put it on the disc

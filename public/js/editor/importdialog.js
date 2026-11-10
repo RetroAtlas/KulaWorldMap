@@ -10,7 +10,7 @@ import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { WORLDS } from "../format/kwl.js";
 
 const PASTE_NOTE =
-  "Paste a link from the community's level viewer. The level opens as your own, in the world on screen or the one the link names.";
+  "Paste a link from this map that carries a level, or a link from the community's level viewer. The level opens as a copy among your levels, in the world the link names or the one on screen where it names none.";
 const PASTE_FIRST = "Paste the link first.";
 const PATCH_NOTE =
   "A patch carries only what it changes, so its levels come back whole over the disc image it was made for.";
@@ -230,7 +230,7 @@ function buildPaste() {
     link: el("input", {
       id: "pasteLink",
       type: "text",
-      placeholder: "https://…?level=…",
+      placeholder: "https://…",
       autocomplete: "off",
       spellcheck: false,
       title: "The link to the shared level",

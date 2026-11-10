@@ -13,7 +13,7 @@ import {
   writeKwl,
 } from "../format/kwl.js";
 import { readProject } from "../format/project.js";
-import { recordOverflow } from "../format/checks.js";
+import { overCaps, recordOverflow } from "../format/checks.js";
 import { readPak } from "../format/pak.js";
 import { openDisc } from "../format/iso.js";
 import { PACKS, PPF_MAGIC, identify } from "../format/patch.js";
@@ -29,7 +29,10 @@ import {
 } from "../format/patchread.js";
 import { SECTOR_RAW, USER_OFF } from "../format/sectors.js";
 import { isOrbit, readOrbit, readOrbitLink } from "../format/orbit.js";
+import { LETTER, decodeSegment } from "../format/share.js";
 import { inflate as unpack } from "../format/inflate.js";
+import { skinsTable } from "../viewer/data.js";
+import { carriesLevel, parseHash } from "../viewer/permalink.js";
 import { releases } from "../viewer/release.js";
 import { pickFromDisc, pickFromPack, pickFromPatch, slotTitle, slotWorld } from "./importdialog.js";
 
@@ -51,6 +54,7 @@ const MADE_FOR = "The patch was made for this image.";
 const UNCHECKED = "The patch carries no check of the image it was made for.";
 const otherImage = (name) => `${name} is not the image the patch was made for.`;
 const notApplied = (name, why) => `The patch does not apply to ${name}: ${why}.`;
+const overCapped = (over) => `That link cannot be read as a level: ${over}.`;
 const SHARED = "Shared level";
 const MARK = "CD001";
 const PVD_AT = 16 * SECTOR_RAW + USER_OFF;
@@ -313,8 +317,23 @@ export async function readLevelFile(source, name, world, held = null) {
   return writable(read);
 }
 
-/** { project, report, repairs } for pasted text: a link to a shared level of the community's viewer. */
+/** The hash a pasted text holds, from its first `#`, or the whole text where it has none. */
+const hashOf = (text) => text.slice(Math.max(0, text.indexOf("#")));
+
+/**
+ * { project, report, repairs } for pasted text: the map's own link, which carries the
+ * level whole, read as the link's segment and titled as its document is, with a level
+ * over one of the game's caps refused in the checks' words, or a link to a shared level
+ * of the community's viewer, titled Shared level.
+ */
 export async function readLevelText(text, world) {
+  const hash = hashOf(text.trim());
+  if (carriesLevel(hash)) {
+    const read = await decodeSegment(parseHash(hash).tails.find((s) => s[0] === LETTER));
+    const over = overCaps(read.project, skinsTable()?.hides);
+    if (over) throw new Error(overCapped(over));
+    return writable(read);
+  }
   const read = await readOrbitLink(text, world);
   read.project.title = SHARED;
   return writable(read);

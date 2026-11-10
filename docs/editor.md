@@ -470,6 +470,8 @@ Each level a patch lists is read by `readKwl` in its slot's world, titled by the
 
 Every file opened this way makes a new draft marked saved, as the map's own file does, with the reader's report in the card's fold, and a patch makes one of each level it lists.
 
+`readLevelText` reads what is pasted into the box the sidebar's `paste a link…` opens and tries the map's own link first: where the text is a URL whose hash, or a hash alone, carries a level as "The link that carries a level" says, `decodeSegment` reads the segment, the level is refused in the checks' words where it is over one of the game's caps, so a hand-made link of thousands of blocks reaches neither the map nor the store, and the read keeps the title its document carries and passes through the writer as a file does; any other text is read as the community viewer's link below.
+
 ### The community's viewer
 
 The community's Saturn viewer, orbit, keeps a level as JSON of blocks, and the same level in a share link.
