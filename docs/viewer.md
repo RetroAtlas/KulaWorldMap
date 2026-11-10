@@ -650,6 +650,10 @@ The modules lie in layers, and a module imports only its own layer and those ben
 - `js/play/` is what loads when the ball is wanted.
 - `js/community/` is what loads when a level comes by its link, decoding the segment and standing the level beside the map, and reaches nothing of the editor.
 
+`js/viewer/ui/tiles.js` lays a list of items out as tiles, each a button with a picture, and knows nothing of levels: whoever mounts it hands each item a key, a stamp, its words and a function that paints its picture into the tile's canvas, and hands the items anew as they change, the tiles keeping the picture of an item whose stamp stands and the focus where it was.
+
+A tile's picture is painted as the tile comes within a screen of showing, again when its item's stamp changes or the screen's density does, and on request, at once for a tile within that screen and when it next nears for one farther off, and a paint that says it was not whole is asked again the next time the tile nears, so a long list paints only what shows.
+
 ### What the page fetches
 
 The page itself starts what the boot will ask for before any of its modules has arrived: every module the boot imports, so they load in one round rather than as each is found in the last, the data files, and the textures of the world the link's pack names, or the first world's textures where there is no link, so everything is on its way together.
@@ -765,7 +769,7 @@ The viewer tells the editor, the planner and play what has changed through the `
 - `selection-changed`, which the panel says as the cell it shows changes or it closes, and which the editor follows.
 - `go-to`, which the panel says with the cell a click on a name in it leads to, on which the search finds that cell and play centres the view there and lets the ball go.
 - `show-changed`, which the sidebar says with a switch's key as it is turned and the level line as its note folds, on which play puts the dust away as its switch goes off.
-- `density-changed`, which the frame says once the canvas is sized again for a change in the screen's pixel density, on which whatever paints an icon paints it again.
+- `density-changed`, which the frame says once the canvas is sized again for a change in the screen's pixel density, on which whatever paints an icon or a tile paints it again.
 - `atlas-loaded`, which `js/viewer/draw/atlas.js` says with the world as that world's textures land, and again as the disc's sheets are drawn over them, on which the editor draws its palette and its icons again.
 - `slice-changed`, which whatever moves the slice says, play among them as it takes the view and gives it back, and which the slice's control follows.
 - `course-changed`, which the planner says with the route as it changes, on which Follow and Keep let go of a route that no longer stands.
