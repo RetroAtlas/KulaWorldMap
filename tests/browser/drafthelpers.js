@@ -90,4 +90,4 @@ export const faced = (page, face, object) =>
   );
 
 export const EDITOR_FILES =
-  /\/js\/(editor\/(editor|drafts|draftlist|palette|trail)|community\/[a-z]+|format\/(project|kwl)|vendor\/pako_deflate\.min|play\/(play|ball|dust))\.js$/;
+  /\/js\/(editor\/(editor|drafts|draftlist|levelcard|palette|trail)|community\/[a-z]+|format\/(project|kwl)|vendor\/pako_deflate\.min|play\/(play|ball|dust))\.js$/;

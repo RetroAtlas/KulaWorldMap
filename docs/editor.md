@@ -520,7 +520,7 @@ Every control changes one key of the project through the copy-on-write functions
 - The facing buttons write `facing`, labelled by the way the thing then points, read through the same heading rule the panel uses.
 - The colour, worth and phase swatches write `variant`.
 - The pressed facing button or swatch, which stands for what the face holds or for the value an absent key is read as, writes nothing.
-- The circuit row's button, which a face holding a switch or a teleporter and a laser's block show for their one colour, with the count of the switches, teleporters and lasers of it, writes `circuits` through `setCircuit`, as do the four Circuits rows of the Level card in `public/js/editor/draftlist.js`, one per colour, built once with the card and brought up to date at every update of the draft, so a colour's starting state is set beside the level's other settings.
+- The circuit row's button, which a face holding a switch or a teleporter and a laser's block show for their one colour, with the count of the switches, teleporters and lasers of it, writes `circuits` through `setCircuit`, as do the four Circuits rows of the Level card in `public/js/editor/levelcard.js`, one per colour, built once with the card and brought up to date at every update of the draft, so a colour's starting state is set beside the level's other settings.
 
 A teleporter's "leads to" and a run's axis and far end are shown and not edited, since the links are rebuilt at every write and a run is re-laid with the tool.
 
