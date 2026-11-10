@@ -44,7 +44,7 @@ function takenBy(idx, table) {
   return out;
 }
 
-function cast(lit, faces, colour, [part, of]) {
+function shine(lit, faces, colour, [part, of]) {
   const shade = {
     [FULL]: colour.map((v) => v & ~1),
     [PART]: colour.map((v) => Math.floor((v * part) / of) & ~1),
@@ -70,8 +70,9 @@ export const lightsWith = (fn) => {
 
 /** For each face lit, keyed by its cell and its number among the game's six faces, the
     colour added at each corner in the order of its texture's first turn; and
-    whether any device is on or a module casts a light. */
-export function deviceLights(l, idx, frame) {
+    whether any device is on or a module casts a light. With `cast` off the
+    casters are neither asked nor cast and the devices' light alone is given. */
+export function deviceLights(l, idx, frame, cast = true) {
   const table = motionTable();
   const glow = table?.glow;
   const lit = new Map();
@@ -85,13 +86,13 @@ export function deviceLights(l, idx, frame) {
     if (state.hiddenKinds.has(m.id)) continue;
     if (markerNow(m) === "on" || (isExit(m) && exitsOpen())) on = true;
     if (!lightOnAt(m, glow.every, frame)) continue;
-    cast(lit, faces, colours[world][markerCircuit(m) ?? 0] ?? colours[world][0], glow.part);
+    shine(lit, faces, colours[world][markerCircuit(m) ?? 0] ?? colours[world][0], glow.part);
   }
-  for (const fn of casters) {
+  for (const fn of cast ? casters : []) {
     for (const { x, y, z, face, colour } of fn(l, idx, frame) ?? []) {
       const home = idx.cells.get(cellKey(x, y, z));
       if (!home) continue;
-      cast(lit, spillOf(idx, glow, home, face), colour, glow.part);
+      shine(lit, spillOf(idx, glow, home, face), colour, glow.part);
       on = true;
     }
   }

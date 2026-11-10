@@ -22,6 +22,7 @@ import {
   glintSteps,
   glints,
   lightShare,
+  apart,
 } from "../../public/js/viewer/motion.js";
 
 const table = objects.motion;
@@ -504,6 +505,43 @@ test("the glints are the same whatever frames they are drawn on, and start afres
   const at300 = structuredClone(glints(stepped, cuts, 300));
   assert.deepEqual(glints(fresh(), cuts, 300), at300);
   assert.deepEqual(glints(stepped, cuts, 0), glints(fresh(), cuts, 0));
+});
+
+test("a paint apart steps nothing the frame keeps: a press, an orbit and the glint generator stand as they were after, also when fn throws", () => {
+  const e = table.types[10];
+  press(e, "apart", 0, false);
+  for (let f = 1; f <= 4; f++) press(e, "apart", f, true);
+  const was = press(e, "apart", 4, true).height;
+  assert.notEqual(was, 1);
+  // a fresh store finds the button at full on the frame it is first pressed
+  assert.equal(
+    apart(() => press(e, "apart", 10, true).height),
+    1,
+  );
+  near(press(e, "apart", 4, true).height, was);
+  assert.throws(
+    () =>
+      apart(() => {
+        press(e, "apart", 10, true);
+        throw new Error("mid-paint");
+      }),
+    /mid-paint/,
+  );
+  near(press(e, "apart", 4, true).height, was);
+  const o = table.types[42];
+  orbit(table, o, "apart", 0, still);
+  const round = orbit(table, o, "apart", 300, still);
+  const atPhase = apart(() => orbit(table, o, "apart", 0, still)).offset;
+  assert.notDeepEqual(round.offset, atPhase);
+  assert.deepEqual(apart(() => orbit(table, o, "apart", 300, still)).offset, atPhase);
+  assert.deepEqual(orbit(table, o, "apart", 300, still).offset, round.offset);
+  const g = fresh();
+  for (let f = 0; f < 300; f++) glints(g, cuts, f);
+  const kept = glints(g, cuts, 300);
+  const inside = apart(() => glints(g, cuts, 0));
+  assert.notEqual(inside, kept);
+  assert.deepEqual(inside, glints(fresh(), cuts, 0));
+  assert.equal(glints(g, cuts, 300), kept);
 });
 
 test("the ball rolls a block from rest in 18 frames, at 33 a frame from the sixth", () => {

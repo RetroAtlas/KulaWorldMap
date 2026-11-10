@@ -81,10 +81,23 @@ let balls = null;
 export const ballsWith = (fn) => {
   balls = fn;
 };
+let still = false;
+/** Run `fn` with the level's own starts in place of the points a module
+    stands, and give back what it returns. */
+export function stillWith(fn) {
+  const was = still;
+  still = true;
+  try {
+    return fn();
+  } finally {
+    still = was;
+  }
+}
 export function ballsFor(l, face) {
   const half = 0.5 / modelUnit();
   const pointed = [state.hover, state.selected].filter(Boolean);
-  return [...(balls?.(l, face) ?? startPoints(l)), ...pointed.map((c) => point(c, face, half))];
+  const stood = still ? null : balls?.(l, face);
+  return [...(stood ?? startPoints(l)), ...pointed.map((c) => point(c, face, half))];
 }
 
 const pressedAt = (motion, m, home, l) =>

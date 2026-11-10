@@ -105,3 +105,18 @@ test("a module's light sums with a device's light where they share a face, and o
   assert.deepEqual(deviceLights(level, idx, LIT).lit, device);
   shut();
 });
+
+test("with cast off the devices' light alone is given and no caster is asked", () => {
+  opened();
+  const device = deviceLights(level, idx, LIT).lit;
+  cast = [{ x: home.x, y: home.y, z: home.z, face: exit.face, colour: green }];
+  const before = asked.length;
+  const { lit, on } = deviceLights(level, idx, LIT, false);
+  assert.deepEqual(lit, device);
+  assert.ok(on);
+  assert.equal(asked.length, before);
+  shut();
+  assert.deepEqual(deviceLights(level, idx, 0, false), { lit: new Map(), on: false });
+  assert.equal(asked.length, before);
+  cast = null;
+});

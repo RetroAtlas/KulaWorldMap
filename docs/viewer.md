@@ -714,6 +714,12 @@ A module may give the things on the blocks the points its ball stands at in plac
 
 It may tint a traveller it hands by three numbers, one a channel, which the thing's colours are drawn through.
 
+A module that paints a level still, outside the frame, may run its paint through `stillWith` in `js/viewer/draw/things.js`, under which the things on the blocks read the level's own starts and not the points a module stands through `ballsWith`, so a ball that moves on the map lights and sinks nothing in a paint outside the frame.
+
+It may ask `deviceLights` in `js/viewer/draw/lights.js` for the devices' light alone, with `cast` off, under which the lights a module hands through `lightsWith` are neither asked for nor cast, so a burst on the map reaches the frame's own paint and no other.
+
+It may run its paint through `apart` in `js/viewer/motion.js`, under which the boost buttons' counts, the orbits and the glint generator are fresh stores of its own and the frame's own stores are back once the paint returns or throws, so a paint of another level, or of the level shown at another frame, steps nothing the frame keeps.
+
 A module that runs the level may hand the frame, through `runWith`, the clock it draws at, the index of cells and things it draws from, shaped as the level's own index with a thing only on a block it holds, and what travels, each standing in for the frame's own counterpart while it is registered, and may say that every invisible block is seen.
 
 The handed index may carry the blocks breaking up with the size of each in the game's units, which the frame draws as cubes of that side about their middles, every face turned to the camera drawn and the faces of the blocks beside them toward them shown, a platform's apart, the pick following the shrunk cube.

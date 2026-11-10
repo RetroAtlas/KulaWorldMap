@@ -115,7 +115,7 @@ export function pose(table, entry, m, frame, phase, time = 0, open = 0) {
 // An orbit's rate changes with the thing's form, which runs on a clock of its
 // own, so the orbit's angle is the sum of every frame's step, kept between
 // draws.
-const orbits = new Map();
+let orbits = new Map();
 export function orbit(table, entry, key, frame, phase) {
   const form = (at) => ((phase[0] + entry.form.rate * at) % table.turn >= entry.form.past ? 1 : 0);
   let s = orbits.get(key);
@@ -232,7 +232,7 @@ export const inReach = (entry, ball, button) =>
 // up after, and the button is drawn that count over full high. The count is
 // kept between draws, and a change in what presses it counts from the frame
 // it is found at, so a press after a still spell starts then.
-const presses = new Map();
+let presses = new Map();
 export function press(entry, key, frame, pressed) {
   const e = entry.press;
   const now = Math.floor(frame);
@@ -278,7 +278,7 @@ export function glintSteps(entry, corners) {
 // Each frame the game runs the glint over every cut at every level of detail,
 // each run stepping the generator once, and the map draws the first level.
 // `lengths` holds, by cut, the frames a glint of each facet lasts.
-const glinting = new WeakMap();
+let glinting = new WeakMap();
 export function glints(entry, lengths, frame) {
   const now = Math.floor(frame);
   let s = glinting.get(entry);
@@ -302,6 +302,20 @@ export function glints(entry, lengths, frame) {
     }
   }
   return s.cuts;
+}
+
+/** Run `fn` with fresh stores in place of the kept ones, which are back once
+    it returns, however it returns, and give back what it returns. */
+export function apart(fn) {
+  const kept = [orbits, presses, glinting];
+  orbits = new Map();
+  presses = new Map();
+  glinting = new WeakMap();
+  try {
+    return fn();
+  } finally {
+    [orbits, presses, glinting] = kept;
+  }
 }
 
 /** How much of its colour a ball's corner shows, of 256, where its normal

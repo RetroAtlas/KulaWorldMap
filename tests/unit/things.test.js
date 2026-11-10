@@ -16,6 +16,7 @@ import {
   thingDisc,
   ballsFor,
   ballsWith,
+  stillWith,
   restOf,
   squashed,
   shadowStrength,
@@ -78,6 +79,29 @@ test("a module may stand its ball's points in place of the level's starts, and n
   state.hover = null;
   ballsWith(null);
   assert.deepEqual(ballsFor(l, 0), starts);
+});
+
+test("inside stillWith the things read the level's own starts whatever a module stands, and the module's points again after, also when fn throws", () => {
+  const l = levelNamed("LEVEL 1");
+  ballsWith(null);
+  const starts = ballsFor(l, 0);
+  ballsWith(() => [[9, 9, 9]]);
+  assert.deepEqual(ballsFor(l, 0), [[9, 9, 9]]);
+  assert.deepEqual(
+    stillWith(() => ballsFor(l, 0)),
+    starts,
+  );
+  assert.deepEqual(ballsFor(l, 0), [[9, 9, 9]]);
+  assert.throws(
+    () =>
+      stillWith(() => {
+        assert.deepEqual(ballsFor(l, 0), starts);
+        throw new Error("mid-paint");
+      }),
+    /mid-paint/,
+  );
+  assert.deepEqual(ballsFor(l, 0), [[9, 9, 9]]);
+  ballsWith(null);
 });
 
 test("the ball's shadow is full at rest, fades as the ball rises and is gone a block up, and the corkscrew's shadow thins by its bounce", () => {
