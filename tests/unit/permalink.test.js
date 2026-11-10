@@ -244,7 +244,7 @@ test("a yaw is written as the reader brings it round", () => {
   }
 });
 
-test("a link carries a level where its slot is under the shared pack and a segment lettered for one rides at its tail", () => {
+test("a link carries a level where its slot is under the shared pack and a segment lettered for one rides at its tail, or where its slot is under the community's pack", () => {
   const segment = "seNpVUMtqwzAQvPsrhM5O";
   for (const hash of [
     `#SHARED/L3K9ZQ2/45,35/fit/33/${segment}`,
@@ -252,6 +252,10 @@ test("a link carries a level where its slot is under the shared pack and a segme
     `#SHARED/L3K9ZQ2/45,35/0.90/17,17,17/0,0/33/${segment}`,
     `#SHARED/L3K9ZQ2/45,35/fit/33/17,12,17/${segment}`,
     `#SHARED/L3K9ZQ2/45,35/fit/33/d-eu/${segment}/rAbc-_9`,
+    "#COMMUNITY/17/45,35/fit/33",
+    "#community/17",
+    "#COMMUNITY/17-3/45,35/fit/33/d-eu",
+    "#COMMUNITY/x",
   ])
     assert.ok(carriesLevel(hash), hash);
   // a disc's slot, whatever rides at its tail, the shared slot with no segment or with the

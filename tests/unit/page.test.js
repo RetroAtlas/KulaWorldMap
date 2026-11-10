@@ -38,10 +38,11 @@ test("the page preloads the first level's world without a link, whatever the lin
   assert.deepEqual(preloaded("#hellfi/1"), texture("HELL"));
 });
 
-test("the page preloads no texture for a draft, a level carried in its link or a link it cannot read", () => {
+test("the page preloads no texture for a draft, a level carried in its link, a community level or a link it cannot read", () => {
   for (const hash of [
     "#DRAFT/1/45,35/fit/33",
     "#SHARED/L3K9ZQ2/45,35/fit/33",
+    "#COMMUNITY/17/45,35/fit/33",
     "#NOWHERE/0",
     "#INCA%2F11",
     "#COPYCAT/10",

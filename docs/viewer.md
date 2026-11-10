@@ -215,7 +215,7 @@ The sidebar's "Your levels", after the worlds, lists the levels of your own this
 
 The editor loads only when it is wanted, when a level of your own is made, opened or linked to, or, once the map has drawn its first level, when this browser already holds one, so a plain visit loads none of its code, though the strip's and the palette's markup and the editor's styles are in every page, hidden until they are wanted.
 
-`new` makes a level of one plain block and a start in the world on screen and opens it editing, and `copy this level` makes one out of the level on screen, a shipped level as the game loads it, a level that came by its link as its own document with its author and notes kept, or a copy of a draft, and opens it as it is; either is a draft at once, marked "Draft" on the level line and shown on the map as the game would load it.
+`new` makes a level of one plain block and a start in the world on screen and opens it editing, and `copy this level` makes one out of the level on screen, a shipped level as the game loads it, a level that came by its link or one of the community levels as its own document with its author and notes kept, or a copy of a draft, and opens it as it is; either is a draft at once, marked "Draft" on the level line and shown on the map as the game would load it.
 
 Where the disc shown is the PAL or the Japanese one and the level is that disc's own, the copy carries the disc's tag after the level's title, `BONUS 30 (EU)`, so copies of one slot from two discs are told apart among your levels.
 
@@ -249,7 +249,7 @@ Where this browser holds levels of its own that could not be read, a row under t
 
 For the shown draft a Level card edits its title, up to eighty characters, its author, up to eighty characters as well, its notes, its world, the time as its file holds it, any whole number from 1 to 32767, a fraction rounded, which says so when it keeps the old value, a line under it saying what the clock starts at on each disc, and whether it plays as a hidden level or shows invisible blocks from afar, each change redrawing the map with the view, the slice, the hidden kinds, the selection, the clock and the switch presses kept; a Plays as choice above Hidden level lets a level with no key play as a bonus level or as a Simon room, one step undo takes back, and shows a level with a key as an arcade level with no choice, since the game decides that from the keys, its tip saying so and that taking every key away opens the choice.
 
-The name typed into Author is remembered in this browser and given to every level `new` makes and to every copy of one of the game's levels, until another name is typed or the field is cleared; a copy of a draft or of a level that came by its link, and a level opened from a file, keep the author they have.
+The name typed into Author is remembered in this browser and given to every level `new` makes and to every copy of one of the game's levels, until another name is typed or the field is cleared; a copy of a draft, of a level that came by its link or of a community level, and a level opened from a file, keep the author they have.
 
 Under its title the card of a copy of one of the game's levels says which level it was copied from, naming the disc where that level is the PAL or the Japanese disc's own.
 
@@ -362,6 +362,28 @@ The box keeps its levels and the image once it is closed, for as long as the pag
 Opening it from any level's card adds a row for that level under the others, where no row holds it, and a level deleted while the box was closed is gone from the rows without a word.
 
 `take all out` takes every row out and keeps the image, and the focus goes to `add a level…`.
+
+## Community levels
+
+The sidebar's "Community levels", after Your levels, lists the levels players made and sent in, folded under its heading as Your levels is, with how many there are beside the name once they are read and a chevron: the fold is closed on a first visit, opens by itself when one of its levels comes on screen, and otherwise stays as it was last left, across visits and reloads.
+
+The levels are read from this site when the fold is first opened, or once the map has drawn where the fold was left open, or at the start where the link names one of them, and never on a plain visit; nothing of them is kept in this browser until one is copied.
+
+Each is a tile as a level of your own is, its picture, its title, "Community" and a line with its author and its world, `by Ada · HIRO`, or the world alone where it names no author, newest first; choosing one shows it, marked "Community" on the level line, and its tile is marked as the one on screen.
+
+Once there are two or more, a row above them offers a sort, newest first, by title, by author with the levels naming none last or by world in the game's order, and a filter.
+
+The filter keeps the levels whose title, author or world holds its text, whatever the case, "Nothing matches." standing where it keeps none.
+
+The sort and the filter start afresh on every visit.
+
+Under the level line the note names the author, "By Ada.", gives the notes as written and offers `copy this level`, which makes a level of your own out of it with its author and notes kept, as the sidebar's `copy this level` does, and `save the file`, which saves it as the map's own file named by its title.
+
+Where there is no level yet the fold says "Nothing here yet.", and where the levels could not be read it says so and asks to open the panel again, which reads them once more.
+
+A link to a community level (`#COMMUNITY/17/...`) opens it on any device, the levels read before the link is; a link to a level taken down says "That level was taken down.", one to a level the catalogue does not hold says the community levels hold no such level, and one that arrives while the levels could not be read says so, each giving way to the view on screen as a link the map cannot honour does, whether it opens the page or arrives while the page is up.
+
+The levels are their authors' work, shared under CC BY 4.0 with credit to the name in the Author field, which the fold's sentence and the About say, and [community.md](community.md) has the catalogue they are read from and how a level is added to it.
 
 ## The editor
 
@@ -676,6 +698,10 @@ A level can travel whole in its link: a segment lettered `s` at the tail carries
 
 A link whose segment will not read, or one to that slot that carries no segment, cut short on its way, gives way to the view on screen and says so once, whether it opens the page or arrives while the page is up.
 
+A community level opens under a slot of its own, `#COMMUNITY/17/...`, the id of its record in the catalogue, which is read from this site before the link is, so the link opens the level on any device, marked "Community" on the level line with its note under it; [community.md](community.md) has the slots, a bundle's levels among them.
+
+A link to a community level taken down, to one the catalogue never held or arriving while the catalogue could not be read gives way the same way, saying which in one toast.
+
 While the level is framed to fit the window, the link says `fit` in place of the zoom, the cell and the pan (`#INCA/11/45,35/fit/33`), so it opens framed to whatever window it is opened in, as one that stops at the turn does; a link that names the zoom, the cell or the pan holds the view there, and one that names the zoom alone opens at that zoom centred on the blocks, as a fit is.
 
 While the ball is being rolled the link keeps the view the ball was first put down from, so a link copied then opens the level as it looked before, or, once a run has gone on to another level, opens that level in the same view, and playing itself is never in a link.
@@ -698,7 +724,7 @@ The modules lie in layers, and a module imports only its own layer and those ben
 - `js/format/` reads and writes the level, the project, the pack, the disc image, the patch, the store, the link that carries a level and the community catalogue, touches no DOM and nothing of the viewer, and holds the lattice, its side, the key of a cell, the six faces in the game's order, the game's numbers for the kinds of block and the types of thing and the sets of them the layers share, which every layer imports.
 - `js/editor/` is what loads when a level of your own is wanted.
 - `js/play/` is what loads when the ball is wanted.
-- `js/community/` is what loads when a level comes by its link, decoding the segment and standing the level beside the map, and reaches nothing of the editor.
+- `js/community/` is what loads when a level comes by its link or the community levels are wanted, decoding the segment or reading the catalogue and standing the levels beside the map, and reaches nothing of the editor.
 
 `js/viewer/ui/tiles.js` lays a list of items out as tiles, each a button with a picture, and knows nothing of levels: whoever mounts it hands each item a key, a stamp, its words and a function that paints its picture into the tile's canvas, and hands the items anew as they change, the tiles keeping the picture of an item whose stamp stands and the focus where it was.
 
@@ -722,13 +748,15 @@ Beside the worlds' atlases under `tex/` the build lays the sheet of the seven sp
 
 A link that carries a level fetches the community module and what it imports beside the data, since the level comes whole in the link; the page cannot read the world off the segment before the decode, so that world's textures are fetched once the level is decoded, as a draft's textures are.
 
+The community levels' index, `community/index.json`, is fetched with the module that reads it when their fold is first opened or once the map has drawn where the fold was left open, and at the start, once the data has come and before the first link is read, where the link names one of them, and never on a plain visit; an index that did not arrive is said in the fold and fetched again the next time the fold is opened.
+
 ### How a level reaches the screen
 
 Every level reaches the screen through one funnel in `js/viewer/chrome/navigate.js`, the disc's levels by their place in the data, the release shown choosing the level installed at that place, and any other through `showLevel`, and a module may provide levels for a link to name beyond the disc's slots through `provideLevels`, or keep a segment of its own at the link's tail through `tailWith`, written with the view and handed back to it when a link opens; a level from elsewhere installed again is an update, as is a level installed again at its own slot where the module asks, which keeps the hidden kinds, the slice and the selection where the level still has its cell.
 
 A draft reaches the screen as `toLevel` in `js/format/project.js` makes it, the level the reader in `js/format/kwl.js` makes of the bytes the writer there writes for the draft, so what the frame draws is what the game would load of it, drawn as a disc level is.
 
-A level `toLevel` makes carries a tag naming its origin, `Draft` for a level of your own and `Shared` for one that came by its link, which the level line shows as a pill after the title and the level as it is spoken says before the title.
+A level `toLevel` makes carries a tag naming its origin, `Draft` for a level of your own, `Shared` for one that came by its link and `Community` for one of the community levels, which the level line shows as a pill after the title and the level as it is spoken says before the title.
 
 A level under the drafts' pack carries its store id as `draft` beside the tag, the mark the editor reads, and a level drawn under another pack carries no `draft` at all.
 
@@ -792,7 +820,7 @@ What listens to the pointer registers with `js/viewer/chrome/interaction.js` for
 
 A module may add lines of its own to the tip through `tipWith` in `js/viewer/chrome/interaction.js`, under what the tip says of the cell, which is how the editor and the planner say what a click there would do and play says what the ball has taken from it.
 
-A module may fill the panel through `onShow` in `js/viewer/chrome/detail.js` and stand a note of its own under the level line through `noteWith` in `js/viewer/chrome/navigate.js`, which asks what is registered before it falls back to the level's own note, and those two seams are how the editor's form, a draft's overview and the note under a level that came by its link come in.
+A module may fill the panel through `onShow` in `js/viewer/chrome/detail.js` and stand a note of its own under the level line through `noteWith` in `js/viewer/chrome/navigate.js`, which asks what is registered before it falls back to the level's own note, and those two seams are how the editor's form, a draft's overview and the notes under a level that came by its link or from the community levels come in.
 
 A module may take the panel down through `clearDetail` and build it again for the cell it shows through `refreshDetail`, both in `js/viewer/chrome/detail.js`, which is how play keeps what the panel says true as the level runs.
 
@@ -834,6 +862,8 @@ The viewer tells the editor, the planner and play what has changed through the `
 Play mode loads the same way, under `js/play/`, when the ball is first asked for by its key, the corner's button or a block's panel, and never on a plain visit.
 
 The community layer's `js/community/community.js` loads when a link carries a level, with the data where the page opens on such a link, so the level is decoded before the first link is read, and on the hashchange that brings one, after which the link is read again once the level is decoded, the last link asked for winning where another arrives within one decode; it never loads on a plain visit, nor for a link to the shared slot that carries no segment.
+
+The same module loads for the community levels, when their fold is first opened or once the map has drawn where the fold was left open, and with the data where the link names one of them, `#COMMUNITY/17/...`, which waits for the index as a carried level waits for its decode; a module that could not be fetched is said in the fold and fetched again at its next opening.
 
 ### The ball's motion
 

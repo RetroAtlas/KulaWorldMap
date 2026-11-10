@@ -157,8 +157,11 @@ function showAbout(opener) {
     <p>You can make levels of your own: build them block by block on the map, keep them in this
     browser, save them as files, the map's own or the level the game loads, gather them into a
     bundle saved as one file, and put one on the game's disc as a patch an emulator applies. A
-    level can also travel by a link that carries it whole, so it opens on any device. A level is
-    packed for the disc and for its link with pako's deflate, used under
+    level can also travel by a link that carries it whole, so it opens on any device. The
+    community levels are levels other players made and sent in, shared under
+    <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> with credit to their
+    authors; the page reads them from this site when their panel is opened and sends nothing
+    anywhere. A level is packed for the disc and for its link with pako's deflate, used under
     <a href="js/vendor/pako-LICENSE.txt">its licence</a>.</p>
     <p><a href="https://github.com/RetroAtlas/KulaWorldMap">Source and tooling</a> &middot;
     <a href="https://retroatlas.org/">RetroAtlas</a> &middot;
@@ -320,21 +323,36 @@ function wirePlay() {
   );
 }
 
-// A level carried whole in its link is decoded by the community layer, which loads only for
-// such a link: with the data where the page opens on one, and on the hashchange that brings
-// one.
+// A level beyond the disc's levels, carried whole in its link or one of the community levels, is
+// stood by the community layer, which loads only for such a link, with the data where the page
+// opens on one and on the hashchange that brings one, and for the community levels' fold.
 const UNSHARED =
   "The level in that link could not be loaded; open the link again to try once more.";
 const CUT_SHORT = "That link was cut short on its way and carries no level. Ask for it again.";
 let communityLoading = null;
 
-// A fetch that failed is tried again by the next link.
-const bootCommunity = () =>
+// A fetch that failed is tried again by the next link or the next opening of the fold, each
+// saying so in its own way.
+const bootCommunity = (failed = () => toast(UNSHARED)) =>
   (communityLoading ??= import("./community/community.js").catch(() => {
     communityLoading = null;
-    toast(UNSHARED);
+    failed();
     return null;
   }));
+
+// The community levels load when their fold is opened, or once the map has drawn where it was
+// left open, and a module that could not be fetched is said in the fold.
+function wireCommunity() {
+  const fold = $("communityFold");
+  const failed = () => {
+    $("communityFailed").hidden = false;
+  };
+  const open = () => {
+    if (fold.open) bootCommunity(failed).then((m) => m?.openPanel());
+  };
+  fold.addEventListener("toggle", open);
+  open();
+}
 
 /** Decode the level `link` carries, saying once where it will not read; whether it did. */
 const prepared = (m, link) =>
@@ -446,6 +464,7 @@ Promise.all([
   addEventListener("hashchange", followCommunityLink);
   buildKinds();
   if (wanted && !awaited) bootEditor();
+  wireCommunity();
   warmOthers();
 });
 

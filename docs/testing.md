@@ -70,7 +70,7 @@ A game formula is never re-derived in a test; the test reads the table's word an
 
 ## How a test is added
 
-A spec file is one subject, named for it: a new browser test goes in the spec of its subject, and a new spec is made only for a subject no spec holds. The helpers two specs need live in a helper module beside them, `tests/browser/helpers.js` for what the map's specs share and `playhelpers.js`, `drafthelpers.js` and `patchhelpers.js` for their areas; a helper one spec needs stays at that spec's head. Read a helper module's exports before writing a helper of your own.
+A spec file is one subject, named for it: a new browser test goes in the spec of its subject, and a new spec is made only for a subject no spec holds. The helpers two specs need live in a helper module beside them, `tests/browser/helpers.js` for what the map's specs share and `playhelpers.js`, `drafthelpers.js`, `patchhelpers.js` and `communityhelpers.js` for their areas; a helper one spec needs stays at that spec's head. Read a helper module's exports before writing a helper of your own.
 
 A browser test of play holds the page's clock before its first step of the game, through `frozen`, `onward` and `stepUntil` in `helpers.js`, opens its level through `drafted` or the play helpers' drafts, and reads the frames it means; it waits on the wall clock only where the wall clock is its subject. The live region, the toasts, the drawer and the hash's deferred write run on timers and animation frames the held clock does not drive, and a held-clock test awaits or flushes them, or installs Playwright's own clock before the page loads where a timer is what it waits for.
 

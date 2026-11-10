@@ -286,7 +286,7 @@ function save() {
 
 export function restore() {
   Object.assign(state.show, DEFAULTS);
-  restoreYours();
+  restoreFolds();
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || "null");
     if (v && typeof v === "object") {
@@ -346,21 +346,24 @@ on("atlas-loaded", (world) => {
   if (world === state.lvl?.theme) buildKinds();
 });
 
-// "Your levels" folds under its heading, closed until opened, and keeps the way
-// it was left from one visit to the next.
-const YOURS = "kula.yours";
-function yoursKept() {
+// The sidebar's folds, closed until opened, each keep the way they were left from one visit to
+// the next under a key of their own.
+const FOLDS = [
+  ["yoursFold", "kula.yours"],
+  ["communityFold", "kula.community"],
+];
+function foldKept(key) {
   try {
-    return localStorage.getItem(YOURS);
+    return localStorage.getItem(key);
   } catch {
     return null;
   }
 }
-function restoreYours() {
-  if (yoursKept() === "open") $("yoursFold").open = true;
+function restoreFolds() {
+  for (const [id, key] of FOLDS) if (foldKept(key) === "open") $(id).open = true;
 }
 /** Whether "Your levels" was folded away by a press, rather than never opened. */
-export const yoursClosed = () => yoursKept() === "closed";
+export const yoursClosed = () => foldKept(FOLDS[0][1]) === "closed";
 
 on("level-changed", () => {
   markLevel();
@@ -369,13 +372,14 @@ on("level-changed", () => {
   syncSlice();
 });
 
-$("yoursFold").addEventListener("toggle", () => {
-  try {
-    localStorage.setItem(YOURS, $("yoursFold").open ? "open" : "closed");
-  } catch {
-    /* ignore */
-  }
-});
+for (const [id, key] of FOLDS)
+  $(id).addEventListener("toggle", () => {
+    try {
+      localStorage.setItem(key, $(id).open ? "open" : "closed");
+    } catch {
+      /* ignore */
+    }
+  });
 
 on("level-updated", () => {
   buildKinds();

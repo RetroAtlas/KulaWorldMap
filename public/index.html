@@ -209,7 +209,7 @@
       </section>
 
       <section id="yours" class="panel yours">
-        <details id="yoursFold">
+        <details id="yoursFold" class="fold">
           <summary>
             <h2>Your levels</h2>
             <span id="yoursCount" class="n" aria-hidden="true"></span>
@@ -262,6 +262,43 @@
           <p class="sub">
             Your levels stay in this browser. Save one as a file, or share it by a link that carries
             it whole.
+          </p>
+        </details>
+      </section>
+
+      <section id="community" class="panel community">
+        <details id="communityFold" class="fold">
+          <summary>
+            <h2>Community levels</h2>
+            <span id="communityCount" class="n" aria-hidden="true"></span>
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg>
+          </summary>
+          <div id="communityView" class="view" hidden>
+            <label class="sr" for="communitySort">Sort the community levels by</label>
+            <select id="communitySort" title="The order of the community levels">
+              <option value="newest">newest</option>
+              <option value="title">title</option>
+              <option value="author">author</option>
+              <option value="world">world</option>
+            </select>
+            <label class="sr" for="communityFilter">Filter the community levels</label>
+            <input
+              id="communityFilter"
+              type="search"
+              placeholder="filter by title, author or world"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div id="communityTiles"></div>
+          <p id="communityEmpty" class="sub" hidden>Nothing here yet.</p>
+          <p id="communityFailed" class="sub" hidden>
+            The community's levels could not be loaded. Open the panel again to try once more.
+          </p>
+          <p class="sub">
+            Levels players made and sent in, shared under CC BY 4.0 with credit to their authors.
+            Open one to look round it or play it, or copy it to make it your own. To send in one of
+            your own, share it from its card.
           </p>
         </details>
       </section>

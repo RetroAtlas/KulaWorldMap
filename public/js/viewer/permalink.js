@@ -71,9 +71,11 @@ export function parseHash(hash) {
   };
 }
 
-/** Whether a link carries a level whole: the shared pack's slot, with a segment lettered for
-    a level at its tail. */
+/** Whether a link names a level the community layer stands before the link is read: the shared
+    pack's slot with a segment lettered for a level at its tail, which carries the level whole,
+    or a slot of the community's pack, whose level the catalogue holds. */
 export function carriesLevel(hash) {
   const link = parseHash(hash);
+  if (link.slot.startsWith("COMMUNITY/")) return true;
   return link.slot.startsWith("SHARED/") && link.tails.some((segment) => segment[0] === "s");
 }

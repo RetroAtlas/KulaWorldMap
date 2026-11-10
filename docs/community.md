@@ -2,7 +2,7 @@
 
 The community levels are levels players made and sent in, each its author's work shared under CC BY 4.0 with credit to the name in its Author field, published in one catalogue the page reads rather than in any browser's store.
 
-This document specifies the catalogue: the index that carries the levels, the shape of its entries, the gates their documents pass, the rule it grows by, the slots its levels open under and how a level is added to it by hand; `public/js/format/catalogue.js` is its one reader and writer, and `tools/community.js` joins the records into it.
+This document specifies the catalogue: the index that carries the levels, the shape of its entries, the gates their documents pass, the rule it grows by, the slots its levels open under, the panel that shows it and how a level is added to it by hand; `public/js/format/catalogue.js` is its one reader and writer, `public/js/community/panel.js` shows it and `tools/community.js` joins the records into it.
 
 ## The catalogue
 
@@ -133,6 +133,22 @@ A published bundle never loses a level or changes its order, so a removal or a r
 A retired id covers every `<id>-<n>` under it, so a link to any level of a bundle taken down is told it was.
 
 **The licence.** Every community level is its author's work, shared under CC BY 4.0 with credit to the name in its Author field; the index names the licence at its head as the SPDX identifier, and every entry carries the licence it is shared under, which tells something only where it differs from the licence at the head.
+
+## The panel
+
+The sidebar's "Community levels" shows the catalogue, as [viewer.md](viewer.md) says under "Community levels"; `public/js/community/panel.js` is the panel, loaded by the boot with the rest of the community layer when the fold is first opened, once the map has drawn where the fold was left open, or with the data where the link names a community level, and never on a plain visit.
+
+The panel fetches the index at `INDEX_URL`, `community/index.json`, with a null fallback, reads it through `readCatalogue` with the face table of the disc shown and holds the catalogue for the visit; an index that did not arrive, or one the reader throws on, is said in the fold's own line and not held, so the next opening fetches it again, and a module the page could not fetch is said in the same line by the boot.
+
+Each entry is a tile through `public/js/viewer/ui/tiles.js`, keyed by its id, its picture painted by `paintLevel` from the level `toLevel` makes of the entry's document under `COMMUNITY_PACK` with the tag `Community`, built once and kept with its index for the pictures and the links; the tiles stand newest first, the highest id first, and `public/js/community/sort.js` holds the row's four sorts and its filter over the title, the author and the world as the map names it.
+
+Choosing a tile shows the level through `showLevel` with the document attached to the level as `project`, which is what `copy this level` under the level line clones into a draft, author and notes kept and no `from` set, and what `save the file` writes through `writeProject`, named by the title's slug.
+
+The panel answers a link's slot through `provideLevels`: `COMMUNITY/<id>` with a level entry's document and `COMMUNITY/<id>-<n>` with the level at place `n` of a bundle entry's list, both read by one regular expression and `Number`, from the catalogue held.
+
+Before the first link is read, and on a hashchange that brings such a link, the boot awaits `prepare`, which fetches the index where none is held and builds the level, and throws the toast's sentence where it cannot: "The community's levels could not be loaded, so that link could not be followed." where the index did not arrive, "That level was taken down." for an id under `retired`, and "The community levels hold no such level." for any other slot the catalogue does not answer.
+
+The fold keeps whether it is open under `localStorage["kula.community"]`, as Your levels keeps its own under `kula.yours`, and opens itself when a level of the community's pack comes on screen.
 
 ## Adding a level by hand
 
