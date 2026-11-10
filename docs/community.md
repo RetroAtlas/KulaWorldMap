@@ -2,7 +2,7 @@
 
 The community levels are levels players made and sent in, each its author's work shared under CC BY 4.0 with credit to the name in its Author field, published in one catalogue the page reads rather than in any browser's store.
 
-This document specifies the catalogue: the index that carries the levels, the shape of its entries, the gates their documents pass, the rule it grows by, the slots its levels open under, the panel that shows it, how a level is sent in, how it is added to it by hand and how an intake would add one itself, designed and not built; `public/js/format/catalogue.js` is its one reader and writer, `public/js/community/panel.js` shows it, `public/js/editor/sendlink.js` composes the addresses a level is sent in by and `tools/community.js` joins the records into it.
+This document specifies the catalogue: the index that carries the levels, the shape of its entries, the gates their documents pass, the rule it grows by, the slots its levels open under, the panel that shows it, how a level is sent in, how it is added to it by hand and how an intake would add one itself, designed and not built; `public/js/format/catalogue.js` is its one reader and writer, `public/js/community/panel.js` shows it, `public/js/editor/sendlink.js` composes the addresses a level is sent in by, `public/js/format/kinship.js` judges whether a level is a copy of one of the game's levels or resembles one and `tools/community.js` joins the records into it.
 
 ## The catalogue
 
@@ -212,12 +212,33 @@ A level sent in again replaces its record under its id: the new document is writ
 
 Taking a level down deletes its record and lists its id under `retired` in `catalogue/ids.json` in the same commit, the tool run with no argument after, so a link to the level is told it was taken down rather than that there was no such level, and the id is never given again.
 
+A level that is an edit of one of the game's levels cannot be granted under CC BY 4.0 by the player who edited it, so the catalogue takes levels of a player's own, while sharing such a level by its link stays as it is.
+
+Whether a level is such an edit is judged by its blocks through `kinOf` in `public/js/format/kinship.js`, which the tool calls, and not by the `from` key alone, since a player may copy a shipped level as scaffolding and rebuild it from nothing.
+
+A level's shape is its blocks, each as its cell and kind, and the blocks two levels hold in common are counted at the best alignment of the one over the other, every offset between a block of each with the same kind tried, so a copy shifted by a cell, or with a block added at any corner, still holds every block of its source.
+
+The share two levels have is the blocks they hold in common over the more numerous of the two, so a level that holds a small one whole is not its edit unless little else stands in it.
+
+The objects on the faces do not count, so a copy with its objects changed is still the copy.
+
+One bar decides a copy: a level whose `from` names a shipped level, that disc's variant where `fromRelease` names a disc holding one, is refused where its share with that level is a half or more, `NEAR`, since the file records where the copy came from and a level at the bar still lays its source's own shape.
+
+A level whose share with the level its `from` names is a fifth or more, `FROM_NOTE`, but under a half is admitted with a note naming that level, since a rebuild that kept part of its source is the call of the person adding it, and a share under a fifth passes the `from` over.
+
+A level the rule does not refuse and the line above does not note, whatever its `from` says, is admitted with a note where its share with any level of the three discs is a half or more, `NEAR`, with at least eight blocks in common, `FLOOR`, so three plain blocks in a row name no level, the note naming the nearest such level.
+
+A level that resembles a game level without a recorded source is noted and not refused because no count of blocks tells an honest simple level, a flat slab or a ring, which lie close to the game's simplest levels, from a copy whose `from` was stripped, so the person's look, which every level gets before it appears, is the backstop for a level whose provenance the file does not record.
+
+The note, which any level the rule does not refuse may draw, its `from` naming a level or not, reads `note: record <id>: <name> holds <percent> percent of the blocks of the game's <title>, which is worth a look`, the percent how much of the game level's blocks stand in the level, in whole percent, which stays true where the level has outgrown the game level it holds, and the title the number the pause screen shows or the disc's name, with the disc's label after a variant's title; `--add` prints it after the id for the level added alone, the run with no argument prints one for every record after the index's line, and either exits 0.
+
 The tool refuses, naming the record in one sentence each:
 
 - a document that reads with a repair, since what the page would show would not be what was sent;
 - a document the checks find an error in, judged with the face table of `public/objects.json` and the names of `public/annotations.json` as the editor judges a draft;
 - a document the writer refuses, over the record cap or one `writeKwl` cannot write, and one over the game's caps as `overCaps` counts them;
 - a level that is, byte for byte, a level one of the three discs ships or a level another record carries, a bundle's levels among them, since the catalogue holds no copies;
+- a copy whose share with the level its `from` names is a half or more, `NEAR` of `public/js/format/kinship.js`, that disc's variant of the slot where `fromRelease` names a disc holding one, named with the game's level and how much of that level's blocks it holds, in whole percent, since a copy that still lays its source's own shape is an edit of a game level and not its sender's own work, while a `from` naming no shipped slot is passed over, and a copy gutted and rebuilt passes whatever its `from` says while its shape shares under a half with its source at any alignment, noted from a fifth up;
 - a title, an author or notes holding a control character, a line break in the notes aside, a bidi formatting character or a zero-width character, any of which could hide or reorder what the page shows;
 - notes past 320 characters, the page's cap;
 - a bundle of more than 60 levels, or of none;
@@ -268,6 +289,8 @@ The tool's sentence on a refusal carries the level's title as typed, with only t
 **Every refusal of the tool stands.** A level passes every refusal "Adding a level by hand" lists, `recordOf` and `indexOf` between them, and no fewer.
 
 A refused level ends as a comment on the issue carrying the tool's sentence, and no pull request.
+
+The tool's note, where the level draws one, goes into the pull request's body, where the person merging reads it.
 
 The level is credited to the name in its Author field, which the link carries, never to the login that opened the issue.
 

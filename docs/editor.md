@@ -76,6 +76,8 @@ A template of a shipped level takes its `title` from the number the pause screen
 
 A copy made on the map of a level that differs on the disc shown carries that disc's tag after the level's title, `BONUS 30 (EU)`, so two copies of one slot from two discs are told apart, and a copy of a level the discs share keeps the plain title.
 
+The community catalogue reads `from` and `fromRelease` as where a copy came from, refuses a copy whose share of blocks with the level they name is a half or more as an edit of a game level, notes one for the person adding it where the share is a fifth or more, and notes a level that resembles one of the game's levels at a half or more whatever its `from` says, as [community.md](community.md) says under "Adding a level by hand".
+
 **The growth rule.** Keys are only ever added; a published key never changes its meaning or its type; every optional key has a default on read; a reader ignores keys it does not know.
 
 `version` stays 1 for as long as that holds, which is meant to be forever; it exists so that a reader meeting a higher number can say the file is newer than it, read what it knows and warn rather than misread it.

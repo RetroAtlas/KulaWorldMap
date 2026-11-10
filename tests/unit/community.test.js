@@ -14,10 +14,27 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { levelKey, mapData, releases } from "./fixtures.js";
-import { HIDES, level, plain, project, start } from "./project-doc.js";
+import {
+  EXIT,
+  HIDES,
+  cornered,
+  grown,
+  level,
+  nudged,
+  own,
+  plain,
+  project,
+  rebuilt,
+  start,
+} from "./project-doc.js";
 import { NAMES } from "../../public/js/viewer/data.js";
 import { VERSION, spelled, writeKwl } from "../../public/js/format/kwl.js";
-import { fromLevel, readProject, writeProject } from "../../public/js/format/project.js";
+import {
+  fromLevel,
+  moveBlocks,
+  readProject,
+  writeProject,
+} from "../../public/js/format/project.js";
 import { BUNDLE_FORMAT, readBundle, writeBundle } from "../../public/js/format/bundle.js";
 import {
   BUNDLE_IN_CATALOGUE_MOST,
@@ -28,6 +45,14 @@ import {
   writeCatalogue,
 } from "../../public/js/format/catalogue.js";
 import { encodeLevel } from "../../public/js/format/sharewrite.js";
+import {
+  FLOOR,
+  FROM_NOTE,
+  NEAR,
+  commonOf,
+  shapeOf,
+  shareOf,
+} from "../../public/js/format/kinship.js";
 import {
   INDEX,
   LEDGER,
@@ -41,6 +66,8 @@ import {
   recordOf,
   segmentOf,
   shippedDigests,
+  shippedShapes,
+  shippedTitles,
   writeLedger,
 } from "../../tools/community.js";
 
@@ -48,7 +75,13 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 const text = (path) => readFileSync(join(root, path), "utf8");
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const digests = JSON.parse(text("tests/fixtures/kwl-digests.json"));
-const deps = { hides: HIDES, names: NAMES, shipped: shippedDigests() };
+const deps = {
+  hides: HIDES,
+  names: NAMES,
+  shipped: shippedDigests(),
+  shapes: shippedShapes(),
+  titles: shippedTitles(),
+};
 const EMPTY_TEXT = `{\n  "version": 1,\n  "licence": "CC-BY-4.0",\n  "entries": [],\n  "retired": []\n}\n`;
 const PHASE_AT = (i) =>
   `block ${i} at 5,5,5 has a phase of "x", which is not a whole number; it is 0`;
@@ -205,8 +238,115 @@ test("a level a disc ships is refused as a copy, whatever its texts say, the var
   );
   const v = fromLevel(variant);
   refuses(v, `"${v.title}" is the disc's level at ${slot} (eu), byte for byte`);
-  const own = { hides: HIDES, names: NAMES, shipped: new Map() };
-  assert.equal(recordOf(shipped, own).title, shipped.title);
+  const bare = { ...deps, shipped: new Map(), shapes: new Map(), titles: new Map() };
+  assert.equal(recordOf(shipped, bare).title, shipped.title);
+});
+
+test("a copy of one of the game's levels is refused by the share of its blocks with the level its from names, a half or more, a corner block added and a variant's edit among them, named with how much of the game's level it holds, while a copy gutted and rebuilt, one that kept a third of its source and one outgrown by more than as many blocks again pass", () => {
+  const forty = fromLevel(level("LEVEL 42"));
+  const title = `"${forty.title}"`;
+  const n = forty.blocks.length;
+  const copied = (name, percent, of) =>
+    `${name} holds ${percent} percent of the blocks of the game's ${of}, which it was copied from; the community levels take levels of your own`;
+  const moved = nudged(forty, 3);
+  const percent = Math.round(((n - 3) / n) * 100);
+  refuses(moved, copied(title, percent, "LEVEL 42"));
+  refuses({ ...moved, title: "Mine", author: "Me" }, copied('"Mine"', percent, "LEVEL 42"));
+  refuses(cornered(forty), copied(title, 100, "LEVEL 42"));
+  const [, , jp] = releases;
+  const hidden = fromLevel(jp.levels["/HILLS/HILLS.PAK#18"]);
+  const m = hidden.blocks.length;
+  refuses(
+    nudged(hidden, 1),
+    copied(`"${hidden.title}"`, Math.round(((m - 1) / m) * 100), "HIDDEN 2 (JP)"),
+  );
+  refuses(
+    bundle([row(2, "Two"), moved]),
+    copied(`level 1 (${forty.title}) of the bundle "Campaign"`, percent, "LEVEL 42"),
+  );
+  assert.deepEqual(
+    lines(() => indexOf([{ id: 1, document: moved }], { next: 2 }, deps)),
+    [`record 1: ${copied(title, percent, "LEVEL 42")}`],
+  );
+  assert.doesNotThrow(() => recordOf(rebuilt(forty, 0), deps));
+  const third = Math.ceil(n / 3);
+  assert.ok(third / n >= FROM_NOTE && third / n < NEAR);
+  assert.doesNotThrow(() => recordOf(rebuilt(forty, third), deps));
+  const first = fromLevel(level("LEVEL 1"));
+  const outgrown = grown(first, first.blocks.length + 1);
+  assert.ok(shareOf(shapeOf(first), shapeOf(outgrown)) < NEAR);
+  assert.doesNotThrow(() => recordOf(outgrown, deps));
+  assert.doesNotThrow(() => recordOf(row(3, "Own"), deps));
+});
+
+test("a level the rule does not refuse is admitted with a note where it holds part of one of the game's levels, naming that level and how much of its blocks it holds: a copy stripped of its from, a copy shifted whole, a flat slab and a bundle's level that resemble one, and a copy that kept a third of the level its from names or outgrew it by more than as many blocks again, with none where it holds too few of any", () => {
+  const forty = fromLevel(level("LEVEL 42"));
+  const title = `"${forty.title}"`;
+  const n = forty.blocks.length;
+  const look = (name, percent, of) =>
+    `${name} holds ${percent} percent of the blocks of the game's ${of}, which is worth a look`;
+  const noted = (...documents) =>
+    indexOf(
+      documents.map((document, i) => ({ id: i + 1, document })),
+      { next: documents.length + 1 },
+      deps,
+    ).notes;
+  const moved = own(nudged(forty, 3));
+  const percent = Math.round(((n - 3) / n) * 100);
+  assert.equal(recordOf(moved, deps).title, forty.title);
+  assert.deepEqual(noted(moved), [{ id: 1, note: look(title, percent, "LEVEL 42") }]);
+  assert.deepEqual(noted({ ...moved, title: "Mine", author: "Me" }), [
+    { id: 1, note: look('"Mine"', percent, "LEVEL 42") },
+  ]);
+  const shifted = own(
+    moveBlocks(
+      forty,
+      forty.blocks.map((b) => b.cell),
+      [1, 0, 0],
+    ),
+  );
+  assert.deepEqual(noted(shifted), [{ id: 1, note: look(title, 100, "LEVEL 42") }]);
+  const flat = [];
+  for (let x = 17; x <= 20; x++) for (let y = 17; y <= 20; y++) flat.push(plain([x, y, 17]));
+  flat[0].faces = { 0: start() };
+  flat[flat.length - 1].faces = { 0: { type: EXIT } };
+  const slab4 = project(flat, { title: "Slab", author: "Ada" });
+  const first = deps.shapes.get(levelKey(level("LEVEL 1")));
+  const held = commonOf(shapeOf(slab4), first);
+  assert.ok(held >= FLOOR && held / Math.max(first.size, flat.length) >= NEAR);
+  assert.equal(recordOf(slab4, deps).title, "Slab");
+  assert.deepEqual(noted(slab4), [
+    { id: 1, note: look('"Slab"', Math.round((held / first.size) * 100), "LEVEL 1") },
+  ]);
+  assert.deepEqual(noted(row(2, "Two"), bundle([row(3, "Three"), moved])), [
+    { id: 2, note: look(`level 1 (${forty.title}) of the bundle "Campaign"`, percent, "LEVEL 42") },
+  ]);
+  const third = Math.ceil(n / 3);
+  assert.deepEqual(noted(rebuilt(forty, third)), [
+    { id: 1, note: look(title, Math.round((third / n) * 100), "LEVEL 42") },
+  ]);
+  const one = fromLevel(level("LEVEL 1"));
+  const outgrown = grown(one, one.blocks.length + 1);
+  assert.deepEqual(noted(outgrown), [{ id: 1, note: look(`"${one.title}"`, 100, "LEVEL 1") }]);
+  assert.deepEqual(noted(own(rebuilt(forty, third)), rebuilt(forty, 0), row(3, "Own")), []);
+});
+
+test("the shipped shapes are every level of the three discs under its slot, a variant under slot@release, each its template's shape, and the titles name each as the pause screen shows it, the disc's label after a variant's title", () => {
+  const shapes = new Map();
+  const titles = new Map();
+  for (const l of mapData.levels) {
+    shapes.set(levelKey(l), shapeOf(fromLevel(l)));
+    titles.set(levelKey(l), l.shown || l.name);
+  }
+  for (const r of releases)
+    for (const [slot, l] of Object.entries(r.levels)) {
+      shapes.set(`${slot}@${r.id}`, shapeOf(fromLevel(l)));
+      titles.set(`${slot}@${r.id}`, `${l.shown || l.name} (${r.label})`);
+    }
+  assert.deepEqual(deps.shapes, shapes);
+  assert.deepEqual(deps.titles, titles);
+  assert.equal(deps.titles.get(levelKey(level("LEVEL 42"))), "LEVEL 42");
+  assert.equal(deps.titles.get("/HILLS/HILLS.PAK#18@jp"), "HIDDEN 2 (JP)");
 });
 
 test("a title, an author or notes holding a control, a bidi formatting or a zero-width character is refused, naming the character, a line break standing in the notes alone", () => {
@@ -647,6 +787,30 @@ test("the command writes the index from the records and the ledger, adds a level
     assert.equal(await run([]), 0);
     assert.deepEqual(said, [`${INDEX}: 3 entries`]);
     assert.deepEqual(readCatalogue(file(INDEX), { hides: HIDES }).catalogue.retired, [4]);
+
+    const forty = fromLevel(level("LEVEL 42"));
+    const k = forty.blocks.length;
+    const look = (id, percent) =>
+      `note: record ${id}: "${forty.title}" holds ${percent} percent of the blocks of the game's LEVEL 42, which is worth a look`;
+    const shifted = own(
+      moveBlocks(
+        forty,
+        forty.blocks.map((b) => b.cell),
+        [1, 0, 0],
+      ),
+    );
+    writeFileSync(join(dir, "shifted.json"), writeProject(shifted));
+    assert.equal(await run(["--add", join(dir, "shifted.json")]), 0);
+    assert.deepEqual(said, ["5", look(5, 100)]);
+    const edited = own(nudged(forty, 3));
+    writeFileSync(join(dir, "edited.json"), writeProject(edited));
+    assert.equal(await run(["--add", join(dir, "edited.json")]), 0);
+    const note = look(6, Math.round(((k - 3) / k) * 100));
+    assert.deepEqual(said, ["6", note]);
+    assert.equal(file(`${RECORDS}/6.json`), writeProject(edited));
+    assert.equal(file(LEDGER), writeLedger({ next: 7, retired: [4] }));
+    assert.equal(await run([]), 0);
+    assert.deepEqual(said, [`${INDEX}: 5 entries`, look(5, 100), note]);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -690,4 +854,15 @@ test("docs/community.md says how a level is added by hand: the command, the reco
   };
   assert.equal(figure(/notes past (\d+) characters/), NOTES_MOST);
   assert.equal(figure(/a bundle of more than (\d+) levels/), BUNDLE_IN_CATALOGUE_MOST);
+  const WORDS = { 0.5: "a half", 0.2: "a fifth" };
+  for (const bar of [NEAR, FROM_NOTE])
+    assert.ok(
+      section.includes(`is ${WORDS[bar]} or more`),
+      `the section has no ${WORDS[bar]} or more`,
+    );
+  const COUNTS = { 8: "eight" };
+  assert.ok(
+    section.includes(`at least ${COUNTS[FLOOR]} blocks in common`),
+    `the section has no at least ${COUNTS[FLOOR]} blocks in common`,
+  );
 });

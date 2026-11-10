@@ -19,6 +19,7 @@ import {
   readCatalogue,
   writeCatalogue,
 } from "../public/js/format/catalogue.js";
+import { commonOf, kinOf, shapeOf, shapesOf } from "../public/js/format/kinship.js";
 import { NAMES, setAnnotations } from "../public/js/viewer/data.js";
 import { parseHash } from "../public/js/viewer/permalink.js";
 
@@ -81,8 +82,9 @@ function repaired(count, lines, name) {
   );
 }
 
-/** The digest of `project` past every gate a level passes, or a thrown sentence naming it `name`. */
-function levelOf(project, name, { hides, names, shipped }) {
+/** The digest of `project` past every gate a level passes, with the note that it holds part of a
+    shipped level or null, or a thrown sentence naming it `name`. */
+function levelOf(project, name, { hides, names, shipped, shapes, titles }) {
   const errors = validate(project, hides, names).filter((f) => f.level === ERROR);
   if (errors.length) {
     const more = errors.length > 1 ? `, and ${counted(errors.length - 1, "more error")}` : "";
@@ -103,10 +105,20 @@ function levelOf(project, name, { hides, names, shipped }) {
   const digest = sha256(bytes);
   if (shipped.has(digest))
     throw new Error(`${name} is the disc's level at ${shipped.get(digest)}, byte for byte`);
-  return digest;
+  const kin = kinOf(project, shapes);
+  if (kin === null) return { digest, note: null };
+  const other = shapes.get(kin.slot);
+  const percent = Math.round((commonOf(shapeOf(project), other) / other.size) * 100);
+  const held = `${name} holds ${percent} percent of the blocks of the game's ${titles.get(kin.slot)}`;
+  if (kin.refused)
+    throw new Error(
+      `${held}, which it was copied from; the community levels take levels of your own`,
+    );
+  return { digest, note: `${held}, which is worth a look` };
 }
 
-/** The document as its reader gives it and its levels named with their digests, or a thrown sentence. */
+/** The document as its reader gives it and its levels named with their digests and notes, or a
+    thrown sentence. */
 function admitted(raw, deps) {
   if (isObject(raw) && raw.format === FORMAT) {
     const read = readProject(raw, { collapsed: false });
@@ -116,7 +128,7 @@ function admitted(raw, deps) {
     if (text !== null) throw new Error(text);
     return {
       document: read.project,
-      levels: [{ name, digest: levelOf(read.project, name, deps) }],
+      levels: [{ name, ...levelOf(read.project, name, deps) }],
     };
   }
   if (!isObject(raw) || raw.format !== BUNDLE_FORMAT)
@@ -142,7 +154,7 @@ function admitted(raw, deps) {
     repaired(l.repairs, l.report, where);
     const refused = refusedText(l.project, where);
     if (refused !== null) throw new Error(refused);
-    return { name: where, digest: levelOf(l.project, where, deps) };
+    return { name: where, ...levelOf(l.project, where, deps) };
   });
   return { document: read.bundle, levels };
 }
@@ -198,9 +210,12 @@ export function writeLedger({ next, retired }) {
   return `{\n  "next": ${next},\n  "retired": [${ids.join(", ")}]\n}\n`;
 }
 
-/** { catalogue } for the records under the ledger, or a thrown error listing every refusal, one a line. */
+/** { catalogue, notes } for the records under the ledger, the notes `{ id, note }` for each level
+    that holds part of one of the game's levels, or a thrown error listing every refusal, one a
+    line. */
 export function indexOf(records, ledger, deps) {
   const refusals = [];
+  const notes = [];
   const { next, retired } = ledgerOf(ledger, refusals);
   const ids = new Set();
   const seen = new Map();
@@ -226,11 +241,12 @@ export function indexOf(records, ledger, deps) {
       refusals.push(`${at}: ${e.message}`);
       continue;
     }
-    for (const { name, digest } of got.levels) {
+    for (const { name, digest, note } of got.levels) {
       const other = seen.get(digest);
       if (other !== undefined)
         refusals.push(`${at}: ${name} is the same level as ${other}, byte for byte`);
       else seen.set(digest, `${name} in ${at}`);
+      if (note !== null) notes.push({ id, note });
     }
     entries.push(entryOf(id, got.document));
   }
@@ -244,7 +260,7 @@ export function indexOf(records, ledger, deps) {
   const catalogue = { version: VERSION, licence: LICENCE, entries, retired };
   const { report } = readCatalogue(writeCatalogue(catalogue), { hides: deps.hides });
   if (report.length) throw new Error(`the index written reads back with a line: ${report[0]}`);
-  return { catalogue };
+  return { catalogue, notes };
 }
 
 // --- the files ---------------------------------------------------------------------
@@ -280,20 +296,54 @@ export function readLedger(root = ROOT) {
   return existsSync(path) ? read(path) : { next: 1, retired: [] };
 }
 
+let discs = null;
+/** Every level the discs ship as `{ slot, release, level }`, the US levels in the map's order and
+    then each other release's variants, `release` that disc's file and null for the US one. */
+function shippedLevels() {
+  if (discs === null) {
+    discs = read(join(ROOT, "public/map_data.json")).levels.map((level) => ({
+      slot: `${level.pack}#${level.index}`,
+      release: null,
+      level,
+    }));
+    const releases = join(ROOT, "public/releases");
+    for (const name of readdirSync(releases).sort()) {
+      const r = read(join(releases, name));
+      for (const [slot, level] of Object.entries(r.levels ?? {}))
+        discs.push({ slot, release: r, level });
+    }
+  }
+  return discs;
+}
+
 /** Every level the discs ship, by the SHA-256 of its canonical file to the first slot that holds it. */
 export function shippedDigests() {
   const out = new Map();
-  const hold = (l, where) => {
-    const digest = sha256(writeKwl(fromLevel(l)));
-    if (!out.has(digest)) out.set(digest, where);
-  };
-  for (const l of read(join(ROOT, "public/map_data.json")).levels) hold(l, `${l.pack}#${l.index}`);
-  const releases = join(ROOT, "public/releases");
-  for (const name of readdirSync(releases).sort()) {
-    const r = read(join(releases, name));
-    for (const [key, l] of Object.entries(r.levels ?? {})) hold(l, `${key} (${r.id})`);
+  for (const { slot, release, level } of shippedLevels()) {
+    const digest = sha256(writeKwl(fromLevel(level)));
+    if (!out.has(digest)) out.set(digest, release === null ? slot : `${slot} (${release.id})`);
   }
   return out;
+}
+
+const keyed = ({ slot, release }) => (release === null ? slot : `${slot}@${release.id}`);
+
+/** Every level the discs ship by its shape, under its slot, a variant of another disc under
+    `slot@release`. */
+export function shippedShapes() {
+  return shapesOf(shippedLevels().map((l) => ({ slot: keyed(l), project: fromLevel(l.level) })));
+}
+
+/** The title a refusal names each shipped level by, under the slot `shippedShapes` keys it by:
+    the number the pause screen shows or the disc's name, with the disc's label after a variant's
+    title. */
+export function shippedTitles() {
+  return new Map(
+    shippedLevels().map(({ slot, release, level }) => [
+      keyed({ slot, release }),
+      `${level.shown || level.name}${release === null ? "" : ` (${release.label})`}`,
+    ]),
+  );
 }
 
 let loaded = null;
@@ -301,7 +351,13 @@ function readDeps() {
   if (loaded === null) {
     setAnnotations(read(join(ROOT, "public/annotations.json")));
     const hides = read(join(ROOT, "public/objects.json")).skins.hides;
-    loaded = { hides, names: NAMES, shipped: shippedDigests() };
+    loaded = {
+      hides,
+      names: NAMES,
+      shipped: shippedDigests(),
+      shapes: shippedShapes(),
+      titles: shippedTitles(),
+    };
   }
   return loaded;
 }
@@ -357,8 +413,12 @@ const written = (r) => {
 };
 
 /** The command over `root`, printing through `out`, a character that would hide or reorder what the
-    terminal shows replaced on the way: the index written again, or a level added; its exit code. */
+    terminal shows replaced on the way: the index written again, or a level added, and a note for
+    each level that holds part of one of the game's levels; its exit code. */
 export async function main(argv, root = ROOT, out = console.log) {
+  const noted = (notes) => {
+    for (const { id, note } of notes) out(`note: record ${id}: ${note}`);
+  };
   try {
     const args = argsOf(argv);
     const records = readRecords(root);
@@ -369,10 +429,11 @@ export async function main(argv, root = ROOT, out = console.log) {
         stale.map((r) => `${r.path} is not written as the editor saves it`).join("\n"),
       );
     if (args.add === null) {
-      const { catalogue } = indexOf(records, ledger, readDeps());
+      const { catalogue, notes } = indexOf(records, ledger, readDeps());
       writeUnder(root, INDEX, writeCatalogue(catalogue));
       const n = catalogue.entries.length;
       out(`${INDEX}: ${n} ${n === 1 ? "entry" : "entries"}`);
+      noted(notes);
       return 0;
     }
     const document = filled(await documentFrom(args.add), args);
@@ -381,11 +442,12 @@ export async function main(argv, root = ROOT, out = console.log) {
       next: isId(id) ? id + 1 : id,
       retired: isObject(ledger) ? ledger.retired : undefined,
     };
-    const { catalogue } = indexOf([...records, { id, document }], bumped, readDeps());
+    const { catalogue, notes } = indexOf([...records, { id, document }], bumped, readDeps());
     writeUnder(root, `${RECORDS}/${id}.json`, canonicalOf(document));
     writeUnder(root, LEDGER, writeLedger(bumped));
     writeUnder(root, INDEX, writeCatalogue(catalogue));
     out(String(id));
+    noted(notes.filter((n) => n.id === id));
     return 0;
   } catch (e) {
     for (const line of e.message.split("\n")) out(shown(line));
