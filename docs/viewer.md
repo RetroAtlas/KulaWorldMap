@@ -684,6 +684,12 @@ A level under the drafts' pack carries its store id as `draft` beside the tag, t
 
 `js/viewer/draw/cells.js` puts the cells in the painter's order, back to front, and paints them in it, each block with what stands on it and the frame's block and cell hooks run on it, handing back what is to show through the blocks and whether anything it drew is moving, so the one loop can paint a level into any canvas.
 
+`js/viewer/draw/still.js` paints a level frozen at its first frame into any canvas through the cell painter, the frame's camera, view, slice, switches, hidden kinds, circuits, selection and hover swapped for the still's own and given back once the paint returns or throws, with the stores and the registrations the frame keeps set aside through the seams, so a tile has a picture and the frame none of the paint.
+
+A still is framed as the social card's levels are, turned to the card's yaw and pitch with a slim margin, the outlines on and the labels, the grid, the camera and see-through off.
+
+A still draws the world's textures where they have landed and the world's flat tint otherwise, never starting a fetch of its own, saying which it drew so what asked can paint again once the textures land.
+
 The frame draws the blocks through `js/viewer/draw/blocks.js`, which lays each world's textures from `js/viewer/draw/atlas.js` and the light a device casts on them from `js/viewer/draw/lights.js`, which casts a light a module hands it through `lightsWith` as it casts a device's light, from a cell and a face in a colour of the module's own, on the faces a device there would light and at the same levels, so that nothing on the blocks changes until a module hands one.
 
 `js/viewer/draw/atlas.js` keeps its atlases by disc and world, a disc's atlas of a world being the US atlas with that disc's sheets drawn over it at the origin in the order its file names them, built once all have landed and said with `atlas-loaded` as the atlas's own landing is, so `js/viewer/draw/blocks.js` and whatever else paints a face asks for the world's atlas alone and carries no branch for the disc.

@@ -8,6 +8,28 @@ export const PITCH_MAX = 84;
 export const ZOOM_MIN = 0.08;
 export const ZOOM_MAX = 5;
 
+/** The Display switches before a link, a kept choice or a preference of the browser sets any. */
+export const SHOW_DEFAULTS = Object.freeze({
+  objects: true,
+  models: true,
+  motion: true,
+  through: false,
+  labels: false,
+  faces: false,
+  base: false,
+  hidden: false,
+  camera: false,
+  compass: true,
+  invisible: true,
+  skins: true,
+  outlines: false,
+  note: true,
+  course: false,
+  dust: true,
+  playfrom: false,
+  playon: false,
+});
+
 export const state = {
   data: null,
   lvl: null,
@@ -25,26 +47,7 @@ export const state = {
   parked: null,
   slice: SIDE - 1,
   view: { w: 0, h: 0, dpr: 1 },
-  show: {
-    objects: true,
-    models: true,
-    motion: true,
-    through: false,
-    labels: false,
-    faces: false,
-    base: false,
-    hidden: false,
-    camera: false,
-    compass: true,
-    invisible: true,
-    skins: true,
-    outlines: false,
-    note: true,
-    course: false,
-    dust: true,
-    playfrom: false,
-    playon: false,
-  },
+  show: { ...SHOW_DEFAULTS },
   hiddenKinds: new Set(),
   // by colour, and by the last key for the exits, the clock frames at which a panel turned each circuit over
   presses: new Map(),
