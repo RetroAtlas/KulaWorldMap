@@ -16,6 +16,7 @@ import {
   retarget,
   pivot,
   fitLevel,
+  framing,
   levelCentre,
 } from "../../public/js/viewer/state.js";
 import { SIDE, cellKey, FACE_NORMAL } from "../../public/js/format/lattice.js";
@@ -29,6 +30,58 @@ const cross = (a, b) => [
   a[2] * b[0] - a[0] * b[2],
   a[0] * b[1] - a[1] * b[0],
 ];
+
+// The turns the fit is held at, the orbit's rest and the pitch's two ends among them.
+const TURNS = [
+  [45, 35],
+  [0, 0],
+  [135, 50],
+  [315, -30],
+  [10, 84],
+  [200, -84],
+];
+
+/** The box every corner of every block of `l` lands in on screen, as the view stands. */
+function extent(l) {
+  let x0 = Infinity,
+    y0 = Infinity,
+    x1 = -Infinity,
+    y1 = -Infinity;
+  for (let i = 0; i < l.cells.length; i += 4) {
+    const [x, y, z] = l.cells.slice(i, i + 3);
+    for (const dx of [0, 1])
+      for (const dy of [0, 1])
+        for (const dz of [0, 1]) {
+          const [sx, sy] = screen(x + dx, y + dy, z + dz);
+          x0 = Math.min(x0, sx);
+          x1 = Math.max(x1, sx);
+          y0 = Math.min(y0, sy);
+          y1 = Math.max(y1, sy);
+        }
+  }
+  return [x0, y0, x1, y1];
+}
+
+/** Every corner of `l` is inside a view `w` by `h` with `m` px clear on each side, reaching
+    the margin on one axis unless the zoom stopped first, and centred in it. */
+function framed(l, w, h, m, where) {
+  const edge = (v, size) => Math.min(v - m, size - m - v);
+  const [x0, y0, x1, y1] = extent(l);
+  const room = Math.min(edge(x0, w), edge(x1, w), edge(y0, h), edge(y1, h));
+  assert.ok(room > -1e-6, `${where}: ${[x0, y0, x1, y1]}`);
+  const { zoom } = state.cam;
+  if (zoom > ZOOM_MIN && zoom < FIT_ZOOM_MAX) assert.ok(room < 1e-6, `${where}: ${room}`);
+  near(x0 - m, w - m - x1, 1e-6);
+  near(y0 - m, h - m - y1, 1e-6);
+}
+
+/** The view as the fit left it, in the shape the framing answers with. */
+const fitted = () => ({
+  target: state.target,
+  panX: state.cam.panX,
+  panY: state.cam.panY,
+  zoom: state.cam.zoom,
+});
 
 /** The pinned link's view on an 800 by 600 canvas, put back once the test is done. */
 function pinnedView(t) {
@@ -144,46 +197,65 @@ test("the view turns about a selected cell only while it is centred on that cell
 
 test("a fitted level has every corner of every block inside the view, with the margin, at any turn", () => {
   state.view = { w: 800, h: 600, dpr: 1 };
-  const m = FIT_MARGIN / 2;
-  const edge = (v, size) => Math.min(v - m, size - m - v);
-  for (const [yaw, pitch] of [
-    [45, 35],
-    [0, 0],
-    [135, 50],
-    [315, -30],
-    [10, 84],
-    [200, -84],
-  ]) {
+  for (const [yaw, pitch] of TURNS) {
     Object.assign(state.cam, { yaw, pitch });
     for (const l of mapData.levels) {
       fitLevel(l);
       const where = `${l.name} at ${yaw},${pitch}`;
       assert.deepEqual(state.target, levelCentre(l), where);
-      let x0 = Infinity,
-        y0 = Infinity,
-        x1 = -Infinity,
-        y1 = -Infinity;
-      for (let i = 0; i < l.cells.length; i += 4) {
-        const [x, y, z] = l.cells.slice(i, i + 3);
-        for (const dx of [0, 1])
-          for (const dy of [0, 1])
-            for (const dz of [0, 1]) {
-              const [sx, sy] = screen(x + dx, y + dy, z + dz);
-              x0 = Math.min(x0, sx);
-              x1 = Math.max(x1, sx);
-              y0 = Math.min(y0, sy);
-              y1 = Math.max(y1, sy);
-            }
-      }
-      const room = Math.min(edge(x0, 800), edge(x1, 800), edge(y0, 600), edge(y1, 600));
-      assert.ok(room > -1e-6, `${where}: ${[x0, y0, x1, y1]}`);
-      // the blocks reach the margin on one axis, unless the zoom stopped first
-      const { zoom } = state.cam;
-      if (zoom > ZOOM_MIN && zoom < FIT_ZOOM_MAX) assert.ok(room < 1e-6, `${where}: ${room}`);
-      near(x0 - m, 800 - m - x1, 1e-6);
-      near(y0 - m, 600 - m - y1, 1e-6);
+      framed(l, 800, 600, FIT_MARGIN / 2, where);
     }
   }
+});
+
+test("framing a level for the view's own size gives the fit's figures exactly, under the orbit and under a frame", (t) => {
+  t.after(() => {
+    state.frame = null;
+  });
+  state.view = { w: 800, h: 600, dpr: 1 };
+  for (const [yaw, pitch] of TURNS) {
+    Object.assign(state.cam, { yaw, pitch });
+    for (const l of mapData.levels) {
+      const where = `${l.name} at ${yaw},${pitch}`;
+      state.frame = null;
+      fitLevel(l);
+      assert.deepEqual(framing(l, basisAt(yaw, pitch), 800, 600), fitted(), where);
+      state.frame = frameOf([0, 0, 1], FACE_NORMAL[1]);
+      fitLevel(l);
+      assert.deepEqual(framing(l, camera(), 800, 600), fitted(), `${where} under a frame`);
+    }
+  }
+});
+
+test("framing a level for a small canvas with a slim margin keeps every corner inside it at any turn, whatever the view's size and frame", (t) => {
+  t.after(() => {
+    state.frame = null;
+  });
+  const [w, h, margin] = [160, 120, 6];
+  for (const [yaw, pitch] of TURNS) {
+    Object.assign(state.cam, { yaw, pitch });
+    for (const l of mapData.levels) {
+      // the view stands at another size under a frame while the framing is asked, which reads neither
+      state.view = { w: 800, h: 600, dpr: 1 };
+      state.frame = frameOf([0, 0, 1], FACE_NORMAL[1]);
+      const { target, panX, panY, zoom } = framing(l, basisAt(yaw, pitch), w, h, margin);
+      state.view = { w, h, dpr: 1 };
+      state.frame = null;
+      state.target = target;
+      Object.assign(state.cam, { panX, panY, zoom });
+      framed(l, w, h, margin / 2, `${l.name} at ${yaw},${pitch}`);
+    }
+  }
+});
+
+test("a level with no block is framed at its middle and keeps the zoom and the pan it had", () => {
+  const l = { cells: [], min: [10, 10, 15], max: [12, 12, 17] };
+  assert.deepEqual(framing(l, basisAt(45, 35), 160, 120, 6), { target: [11.5, 11.5, 16.5] });
+  Object.assign(state.cam, { yaw: 45, pitch: 35, zoom: 1.5, panX: 0.3, panY: -0.2 });
+  state.view = { w: 800, h: 600, dpr: 1 };
+  fitLevel(l);
+  assert.deepEqual(state.target, [11.5, 11.5, 16.5]);
+  assert.deepEqual([state.cam.zoom, state.cam.panX, state.cam.panY], [1.5, 0.3, -0.2]);
 });
 
 test("under no frame the camera is the plain orbit, and the pinned link's cells stand where they always have", (t) => {

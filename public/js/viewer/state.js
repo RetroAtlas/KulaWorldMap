@@ -101,13 +101,15 @@ export function frameOf(h, n) {
 
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
+/** A world point in projected units through the basis `c`, before zoom and pan. */
+const projectIn = (c, x, y, z) => [
+  x * c.right[0] + y * c.right[1] + z * c.right[2],
+  -(x * c.up[0] + y * c.up[1] + z * c.up[2]),
+];
+
 /** A world point in projected units, before zoom and pan. */
 export function project(x, y, z) {
-  const c = camera();
-  return [
-    x * c.right[0] + y * c.right[1] + z * c.right[2],
-    -(x * c.up[0] + y * c.up[1] + z * c.up[2]),
-  ];
+  return projectIn(camera(), x, y, z);
 }
 
 /** Larger is further from the camera. */
@@ -162,10 +164,12 @@ export const levelCentre = (l) => [0, 1, 2].map((i) => (l.min[i] + l.max[i] + 1)
 export const FIT_MARGIN = 60;
 export const FIT_ZOOM_MAX = 3;
 
-/** Aim at the level's middle, zoomed and panned so every block fits the view. */
-export function fitLevel(l) {
-  state.target = levelCentre(l);
-  const [tx, ty] = project(...state.target);
+/** The view that frames `l` in a `w` by `h` canvas seen through `basis`, with `margin` px of
+    the canvas kept clear, the two sides sharing it: the target at the level's middle, and the
+    pan and the zoom that fit every block, left out where the level has none. */
+export function framing(l, basis, w, h, margin = FIT_MARGIN) {
+  const target = levelCentre(l);
+  const [tx, ty] = projectIn(basis, ...target);
   let x0 = Infinity,
     y0 = Infinity,
     x1 = -Infinity,
@@ -175,20 +179,30 @@ export function fitLevel(l) {
     for (const dx of [0, 1])
       for (const dy of [0, 1])
         for (const dz of [0, 1]) {
-          const [px, py] = project(x + dx, y + dy, z + dz);
+          const [px, py] = projectIn(basis, x + dx, y + dy, z + dz);
           x0 = Math.min(x0, px - tx);
           x1 = Math.max(x1, px - tx);
           y0 = Math.min(y0, py - ty);
           y1 = Math.max(y1, py - ty);
         }
   }
-  if (!Number.isFinite(x0)) return;
-  state.cam.panX = (x0 + x1) / 2;
-  state.cam.panY = (y0 + y1) / 2;
-  const { w, h } = state.view;
-  const zx = (w - FIT_MARGIN) / Math.max(1e-3, (x1 - x0) * BLOCK);
-  const zy = (h - FIT_MARGIN) / Math.max(1e-3, (y1 - y0) * BLOCK);
-  state.cam.zoom = Math.max(ZOOM_MIN, Math.min(FIT_ZOOM_MAX, zx, zy));
+  if (!Number.isFinite(x0)) return { target };
+  const panX = (x0 + x1) / 2;
+  const panY = (y0 + y1) / 2;
+  const zx = (w - margin) / Math.max(1e-3, (x1 - x0) * BLOCK);
+  const zy = (h - margin) / Math.max(1e-3, (y1 - y0) * BLOCK);
+  const zoom = Math.max(ZOOM_MIN, Math.min(FIT_ZOOM_MAX, zx, zy));
+  return { target, panX, panY, zoom };
+}
+
+/** Aim at the level's middle, zoomed and panned so every block fits the view. */
+export function fitLevel(l) {
+  const f = framing(l, camera(), state.view.w, state.view.h);
+  state.target = f.target;
+  if (f.zoom === undefined) return;
+  state.cam.panX = f.panX;
+  state.cam.panY = f.panY;
+  state.cam.zoom = f.zoom;
 }
 
 // The view turns about the selected cell while it is centred on that cell,
