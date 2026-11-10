@@ -8,7 +8,8 @@ import { NOT_LINK, OWN_LEVEL } from "../../public/js/format/orbit.js";
 import { NOT_CARRIED } from "../../public/js/format/share.js";
 import { BUNDLE_FORMAT, writeBundle } from "../../public/js/format/bundle.js";
 import { shareLink } from "../../public/js/editor/sharelink.js";
-import { SLUG_MOST, readLevelFile, readLevelText, slug } from "../../public/js/editor/files.js";
+import { SLUG_MOST, slug } from "../../public/js/viewer/ui/download.js";
+import { readLevelFile, readLevelText } from "../../public/js/editor/files.js";
 
 const ORIGIN = "https://example.test/map/";
 const parts = { cam: { yaw: 45, pitch: 35 }, target: null, slice: 33 };

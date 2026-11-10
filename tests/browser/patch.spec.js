@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { settle, steps, trackErrors } from "./helpers.js";
 import { writeProject } from "../../public/js/format/project.js";
-import { SLUG_MOST } from "../../public/js/editor/files.js";
+import { SLUG_MOST } from "../../public/js/viewer/ui/download.js";
 import { synthetic, syntheticImage } from "../unit/synthetic.js";
 import { annotations, mapData } from "../unit/fixtures.js";
 import {

@@ -17,11 +17,11 @@ import { BASE, discWord, levelOn, releaseOf, releases, rulesOf } from "../viewer
 import { say, describeLevel } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";
 import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
+import { download, slug } from "../viewer/ui/download.js";
 import { COLOURS, facesOf, levelKey, writeKwl } from "../format/kwl.js";
 import { TEXT_MOST, UNTITLED, setCircuit, setMeta, writeProject } from "../format/project.js";
 import { ERROR, TIME_LIMIT, circuitMembers, playsAs, timeOf, validate } from "../format/checks.js";
 import { writeBundle } from "../format/bundle.js";
-import { download, slug } from "./files.js";
 import { shareLevel } from "./sharedialog.js";
 import { readWith } from "./intake.js";
 import { openPatchDialog } from "./patchdialog.js";

@@ -1,6 +1,5 @@
-// Files out of the page and into it: a download whose URL outlives the click,
-// a file name out of a title, and a level, or a bundle's levels, read out of
-// whatever was picked or pasted, by what it holds and never by its name.
+// Files into the page: a level, or a bundle's levels, read out of whatever
+// was picked or pasted, by what it holds and never by its name.
 import {
   COPYCAT_PACK,
   FORMAT,
@@ -65,30 +64,6 @@ const ISO_SECTOR = 2048;
 const ISO_PVD_AT = 16 * ISO_SECTOR;
 export const FILE_MOST = 16 << 20;
 const CUE_MOST = 1 << 16;
-
-// Safari and Firefox may still be reading the last URL when the next click comes.
-let held = null;
-
-export function download(name, data, type) {
-  if (held) URL.revokeObjectURL(held);
-  held = URL.createObjectURL(new Blob([data], { type }));
-  const a = document.createElement("a");
-  a.href = held;
-  a.download = name;
-  document.body.append(a);
-  a.click();
-  a.remove();
-}
-
-export const SLUG_MOST = 60;
-
-export const slug = (title, fallback = "level") =>
-  title
-    .normalize("NFC")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")
-    .slice(0, SLUG_MOST)
-    .replace(/^-+|-+$/g, "") || fallback;
 
 const stem = (name) => name.replace(/\.[^.]*$/, "");
 
