@@ -734,11 +734,63 @@ button.kind:hover {
   font-size: 11.5px;
   white-space: nowrap;
 }
+.drafts .bundle > summary .arrange,
+.yours .card .levels button {
+  display: inline-block;
+  width: auto;
+  text-align: center;
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  border-radius: 5px;
+  padding: 1px 7px;
+  font: inherit;
+  font-size: 11.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.drafts .bundle > summary .arrange:hover,
+.yours .card .levels button:enabled:hover {
+  border-color: var(--accent-dim);
+  color: var(--ink);
+}
 .drafts .members {
   display: flex;
   flex-direction: column;
   gap: 3px;
   margin: 2px 0 6px 8px;
+}
+.drafts .bundle > .card {
+  margin: 4px 0 8px 8px;
+}
+.drafts .bundle > .card .row button {
+  display: inline-block;
+  width: auto;
+  text-align: center;
+}
+.yours .card .levels {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+}
+.yours .card .levels li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.yours .card .levels .name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.yours .card .levels button:disabled,
+.yours .card .row button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 .tiles {
   list-style: none;
@@ -2195,18 +2247,21 @@ body.padded .detail {
   font-size: 12.5px;
 }
 
-/* the paste box and the share box: a level's link, pasted to open it or offered to send it */
+/* the boxes the sidebar and the Level card open over the page */
 #paste .box,
-#share .box {
+#share .box,
+#bundle .box {
   width: 460px;
 }
 #paste p,
-#share p {
+#share p,
+#bundle p {
   margin: 0 0 10px;
   font-size: 12.5px;
 }
 #paste .field,
-#share .field {
+#share .field,
+#bundle .field {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2214,12 +2269,15 @@ body.padded .detail {
   font-size: 12.5px;
 }
 #paste .field > span,
-#share .field > span {
+#share .field > span,
+#bundle .field > span {
   flex: 0 0 44px;
   color: var(--dim);
 }
 #paste input,
-#share input {
+#share input,
+#bundle input,
+#bundle select {
   flex: 1;
   min-width: 0;
   background: #0e1320;
@@ -2231,21 +2289,26 @@ body.padded .detail {
   font-size: 12.5px;
 }
 #paste input:focus-visible,
-#share input:focus-visible {
+#share input:focus-visible,
+#bundle input:focus-visible,
+#bundle select:focus-visible {
   outline: 2px solid var(--accent-dim);
   outline-offset: -1px;
 }
 #paste .says,
-#share .says {
+#share .says,
+#bundle .says {
   color: var(--warn);
   margin: 0;
 }
 #paste .says:empty,
-#share .says:empty {
+#share .says:empty,
+#bundle .says:empty {
   display: none;
 }
 #paste .row,
-#share .row {
+#share .row,
+#bundle .row {
   display: flex;
   gap: 6px;
   margin-top: 10px;
@@ -2254,7 +2317,8 @@ body.padded .detail {
   flex-wrap: wrap;
 }
 #paste .row button,
-#share .row button {
+#share .row button,
+#bundle .row button {
   background: var(--panel-2);
   border: 1px solid var(--line);
   color: var(--ink);
@@ -2265,11 +2329,13 @@ body.padded .detail {
   cursor: pointer;
 }
 #paste .row button:hover,
-#share .row button:hover {
+#share .row button:hover,
+#bundle .row button:hover {
   border-color: var(--accent-dim);
 }
 #paste .row button:disabled,
-#share .row button:disabled {
+#share .row button:disabled,
+#bundle .row button:disabled {
   opacity: 0.4;
   cursor: default;
 }

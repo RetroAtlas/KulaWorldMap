@@ -273,6 +273,26 @@ The card's `save as .json` writes the draft as the map's own file and `save as .
 
 For a level in a bundle the card also offers `save as a bundle`, which writes the bundle, its title, author and notes and its levels in order, as one file named after the bundle's title, after which each of them reads "saved to a file", with a dot on the button while any of its levels has changes since its save.
 
+The card's `add to a bundle…` opens "Add to a bundle", a box that says a bundle is a set of your levels in play order, saved as one file, and offers the bundles this browser holds by title and "a new bundle" with a Title field for it; `add` puts the level last in the bundle chosen, or alone into the new one with the name remembered from Author as the bundle's author, closes the box and says what it did.
+
+For a level already in a bundle the box says which bundle it leaves when it is added to another, offers only the others, and `add` moves the level, saying so.
+
+For a level in a bundle the card also offers `take out of the bundle`, which leaves the level among your levels in no bundle and says so.
+
+A group's line ends in `arrange…`, which opens the bundle's card under its levels, opening the group where it was closed, and puts the card away when pressed again, the group staying as it is.
+
+Closing the group puts the card away too, so `arrange…` then opens the group with the card again.
+
+The bundle's card has Title, Author and Notes, the bundle's own texts, written as typed, the title and the author showing on the group's line as they change, and under them the bundle's levels in play order, each with `up`, `down` and `take out`.
+
+`up` and `down` move a level a place, each saying where the level then stands and keeping the keyboard on the row moved.
+
+`take out` leaves the level among your levels in no bundle, saying so, the keyboard moving to the row that takes its place, or to the card's buttons once no row is left.
+
+The bundle's card offers `save as a bundle` as the Level card does, while the bundle holds a level, since a bundle file with no level would open as nothing.
+
+`take apart` on the bundle's card asks to be pressed again, then forgets the bundle and leaves its levels among your levels, saying so.
+
 `open a file…` takes a bundle too, opening its levels as new levels of your own gathered into a bundle, a set of your levels in play order under the file's title, author and notes, the first shown and how many opened said.
 
 A level of the bundle that names a world the disc has not, or that the game could not load, is left out and said with its reason, and a bundle with no level the map can open is refused.

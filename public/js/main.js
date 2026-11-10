@@ -155,10 +155,11 @@ function showAbout(opener) {
     in play, with Syonyx's Roll Away walkthrough (GameFAQs, 2006) as a guide. The Cutting Room
     Floor's Roll Away page first named most of what the Japanese and PAL releases changed.</p>
     <p>You can make levels of your own: build them block by block on the map, keep them in this
-    browser, save them as files, the map's own or the level the game loads, and put one on the
-    game's disc as a patch an emulator applies. A level can also travel by a link that carries it
-    whole, so it opens on any device. A level is packed for the disc and for its link with pako's
-    deflate, used under <a href="js/vendor/pako-LICENSE.txt">its licence</a>.</p>
+    browser, save them as files, the map's own or the level the game loads, gather them into a
+    bundle saved as one file, and put one on the game's disc as a patch an emulator applies. A
+    level can also travel by a link that carries it whole, so it opens on any device. A level is
+    packed for the disc and for its link with pako's deflate, used under
+    <a href="js/vendor/pako-LICENSE.txt">its licence</a>.</p>
     <p><a href="https://github.com/RetroAtlas/KulaWorldMap">Source and tooling</a> &middot;
     <a href="https://retroatlas.org/">RetroAtlas</a> &middot;
     <a href="mailto:${address()}">Get in touch</a></p>`,

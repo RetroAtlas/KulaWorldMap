@@ -1,5 +1,6 @@
-// The Level card: the form that edits the shown draft, and beside it the
-// name a draft shows, the author it remembers and the press-again confirm.
+// The Level card: the form that edits the shown draft and the box that adds
+// it to a bundle, and beside them the name a draft shows, the author it
+// remembers and the press-again confirm.
 import { $, el } from "../viewer/ui/dom.js";
 import { state } from "../viewer/state.js";
 import {
@@ -15,6 +16,7 @@ import {
 import { BASE, discWord, levelOn, releaseOf, releases, rulesOf } from "../viewer/release.js";
 import { say, describeLevel } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";
+import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { COLOURS, facesOf, levelKey, writeKwl } from "../format/kwl.js";
 import { TEXT_MOST, UNTITLED, setCircuit, setMeta, writeProject } from "../format/project.js";
 import { ERROR, TIME_LIMIT, circuitMembers, playsAs, timeOf, validate } from "../format/checks.js";
@@ -43,6 +45,13 @@ const KEYLESS = [
   ["bonus", "Bonus level"],
   ["simon", "Simon room"],
 ];
+export const UNTITLED_BUNDLE = "Untitled bundle";
+const NEW_BUNDLE = "new";
+const BUNDLE_NOTE = "A bundle is a set of your levels in play order, saved as one file.";
+const ADD_TO = "Add this level to a bundle of your levels, or make one";
+const MOVE_TO = "Move this level to another bundle, or to a new one";
+const GONE = "That bundle is gone from this browser; choose another.";
+const leaves = (level, bundle) => `${level} leaves ${bundle} when it is added to another bundle.`;
 
 // --- the helpers ---------------------------------------------------------------------------
 export const nameOf = (doc) => doc.title || UNTITLED;
@@ -53,9 +62,18 @@ const quietly = (id, next, label, opts) => {
 };
 const keyed = (doc) => doc.blocks.some((b) => facesOf(b).some(([, o]) => o.type === TYPE.KEY));
 const startsOff = (doc, colour) => doc.circuits?.[String(colour)] === "off";
-const some = (n, word, words = `${word}s`) => `${n} ${n === 1 ? word : words}`;
+export const some = (n, word, words = `${word}s`) => `${n} ${n === 1 ? word : words}`;
+/** A labelled control of a card's form. */
+export const field = (text, control) => el("label", {}, el("span", { textContent: text }), control);
 const cut = (text) => [...text].slice(0, TITLE_LENGTH).join("");
 const unsaved = (d) => d.saved === null || d.edits > 0;
+export const bundleName = (b) => b.title || UNTITLED_BUNDLE;
+/** Whether a level of the bundle is unsaved, or has changes since its save. */
+export const bundleUnsaved = (b) =>
+  b.levels.some((l) => {
+    const d = drafts.get(l);
+    return d !== null && unsaved(d);
+  });
 
 /** Make `button` ask to be pressed again within a moment before it does `act`; returns what disarms it. */
 export function twice(button, label, title, act) {
@@ -124,10 +142,10 @@ function saveAs(id, game) {
 /** The bundle the draft is in, with its id, or null where it is in none. */
 const bundleOf = (id) => drafts.bundles().find((b) => b.levels.includes(id)) ?? null;
 
-/** Write the bundle the draft is in to a file, its levels' documents in its order, and mark each of them saved. */
-function saveBundleOf(id) {
+/** Write bundle `bid` to a file, its levels' documents in its order, and mark each of them saved. */
+export function saveBundle(bid) {
   drafts.flush();
-  const b = bundleOf(id);
+  const b = drafts.bundle(bid);
   if (!b) return;
   const { title, author, notes } = b;
   const levels = b.levels.map((l) => drafts.get(l).doc);
@@ -170,7 +188,6 @@ export function buildForm(id, box, { imported, open }) {
     const d = drafts.get(id);
     if (d) quietly(id, setMeta(d.doc, meta), label, { merge });
   };
-  const field = (text, control) => el("label", {}, el("span", { textContent: text }), control);
   /** Typing into `control` writes `key`, the letters of a moment as one step. */
   const typed = (control, key, label, then = () => {}) => {
     control.oninput = () => {
@@ -284,14 +301,17 @@ export function buildForm(id, box, { imported, open }) {
     title: "Save this level as the .kwl file the game loads",
   });
   saveKwl.onclick = () => saveAs(id, true);
-  const saveBundle = el("button", {
+  const saveAsBundle = el("button", {
     id: "draftSaveBundle",
     type: "button",
     textContent: "save as a bundle",
     title: "Save the bundle this level is in, every level of it in order, as one file",
     hidden: true,
   });
-  saveBundle.onclick = () => saveBundleOf(id);
+  saveAsBundle.onclick = () => {
+    const b = bundleOf(id);
+    if (b) saveBundle(b.id);
+  };
   const patch = el("button", {
     id: "draftPatch",
     type: "button",
@@ -312,6 +332,28 @@ export function buildForm(id, box, { imported, open }) {
     hidden: true,
   });
   let noteTimer = 0;
+
+  const toBundle = el("button", {
+    id: "draftBundle",
+    type: "button",
+    textContent: "add to a bundle…",
+    title: ADD_TO,
+  });
+  toBundle.onclick = () => addToBundle(id);
+  const unbundle = el("button", {
+    id: "draftUnbundle",
+    type: "button",
+    textContent: "take out of the bundle",
+    title: "Take this level out of its bundle; the level stays",
+    hidden: true,
+  });
+  unbundle.onclick = () => {
+    const b = bundleOf(id);
+    if (!b) return;
+    toBundle.focus();
+    drafts.updateBundle(b.id, { levels: b.levels.filter((l) => l !== id) });
+    say(`Took ${nameOf(drafts.get(id).doc)} out of ${bundleName(b)}.`);
+  };
 
   const duplicate = el("button", {
     type: "button",
@@ -344,7 +386,8 @@ export function buildForm(id, box, { imported, open }) {
     circuits.box,
     plays,
     errors,
-    el("div", { className: "row" }, saveJson, saveKwl, saveBundle, share, patch, note),
+    el("div", { className: "row" }, saveJson, saveKwl, saveAsBundle, share, patch, note),
+    el("div", { className: "row" }, toBundle, unbundle),
     el("div", { className: "row" }, duplicate, del),
   );
 
@@ -375,8 +418,10 @@ export function buildForm(id, box, { imported, open }) {
       errors.textContent = n ? `${n} error${n === 1 ? "" : "s"}, listed under the level line` : "";
       saveJson.classList.toggle("unsaved", unsaved(d));
       const b = bundleOf(id);
-      saveBundle.hidden = !b;
-      saveBundle.classList.toggle("unsaved", !!b && b.levels.some((l) => unsaved(drafts.get(l))));
+      saveAsBundle.hidden = !b;
+      saveAsBundle.classList.toggle("unsaved", b !== null && bundleUnsaved(b));
+      toBundle.title = b ? MOVE_TO : ADD_TO;
+      unbundle.hidden = !b;
     },
     wrote() {
       note.hidden = false;
@@ -388,6 +433,124 @@ export function buildForm(id, box, { imported, open }) {
       clearTimeout(noteTimer);
     },
   };
+}
+
+// --- the add-to-a-bundle box ---------------------------------------------------------------
+let adding = null;
+
+function buildAdd() {
+  const x = el("button", {
+    className: "x",
+    type: "button",
+    title: "Close (Esc)",
+    textContent: "×",
+  });
+  x.setAttribute("aria-label", "Close");
+  const u = {
+    pick: el("select", { id: "bundlePick", title: "The bundle to add this level to" }),
+    title: el("input", {
+      id: "bundleTitle",
+      type: "text",
+      placeholder: UNTITLED_BUNDLE,
+      maxLength: TITLE_LENGTH,
+      autocomplete: "off",
+      spellcheck: false,
+      title: "The new bundle's title",
+    }),
+    says: el("p", { id: "bundleSays", className: "says" }),
+    add: el("button", { id: "bundleAdd", type: "button", textContent: "add" }),
+    cancel: el("button", { id: "bundleCancel", type: "button", textContent: "cancel" }),
+    titleRow: null,
+    id: 0,
+  };
+  u.titleRow = el("label", { className: "field" }, el("span", { textContent: "Title" }), u.title);
+  u.says.setAttribute("aria-live", "polite");
+  u.pick.onchange = () => (u.titleRow.hidden = u.pick.value !== NEW_BUNDLE);
+  u.add.onclick = () => addTo(u);
+  u.cancel.onclick = closeDialog;
+  const enter = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addTo(u);
+    }
+  };
+  u.pick.onkeydown = enter;
+  u.title.onkeydown = enter;
+  const box = el(
+    "div",
+    { className: "box settings bundle" },
+    x,
+    el("h3", { id: "bundleHeading", textContent: "Add to a bundle" }),
+    el("p", { id: "bundleNote", textContent: BUNDLE_NOTE }),
+    el("label", { className: "field" }, el("span", { textContent: "Bundle" }), u.pick),
+    u.titleRow,
+    u.says,
+    el("div", { className: "row" }, u.add, u.cancel),
+  );
+  u.overlay = el("div", { id: "bundle", className: "modal", hidden: true }, box);
+  u.overlay.setAttribute("role", "dialog");
+  u.overlay.setAttribute("aria-modal", "true");
+  u.overlay.setAttribute("aria-labelledby", "bundleHeading");
+  document.body.append(u.overlay);
+  return u;
+}
+
+/** Offer the bundles the level is not in, by title, and a new bundle, whose title field shows while it is the choice. */
+function offer(u, own) {
+  const others = drafts.bundles().filter((b) => b.id !== own?.id);
+  u.pick.replaceChildren(
+    ...others.map((b) => el("option", { value: String(b.id), textContent: bundleName(b) })),
+    el("option", { value: NEW_BUNDLE, textContent: "a new bundle" }),
+  );
+  u.pick.selectedIndex = 0;
+  u.titleRow.hidden = u.pick.value !== NEW_BUNDLE;
+}
+
+/** Open the box for draft `id`: which bundle to add it to, or the title of a new one, saying which bundle it leaves where it is in one. */
+function addToBundle(id) {
+  const d = drafts.get(id);
+  if (!d) return;
+  adding ??= buildAdd();
+  const u = adding;
+  u.id = id;
+  const own = bundleOf(id);
+  offer(u, own);
+  u.title.value = "";
+  u.says.textContent = own ? leaves(nameOf(d.doc), bundleName(own)) : "";
+  openDialog(u.overlay, $("draftBundle"));
+  (u.titleRow.hidden ? u.pick : u.title).focus();
+}
+
+// The level goes last in the bundle chosen, or alone into a fresh one with the
+// remembered name as its author, and leaves the bundle it is in.
+function addTo(u) {
+  const d = drafts.get(u.id);
+  if (!d) {
+    closeDialog();
+    return;
+  }
+  const from = bundleOf(u.id);
+  const fresh = u.pick.value === NEW_BUNDLE;
+  let to = fresh ? null : drafts.bundle(Number(u.pick.value));
+  if (fresh) {
+    const bid = drafts.createBundle({
+      title: cut(u.title.value),
+      author: rememberedAuthor(),
+      levels: [u.id],
+    });
+    to = bid === null ? null : drafts.bundle(bid);
+  } else if (to) {
+    drafts.updateBundle(Number(u.pick.value), { levels: [...to.levels, u.id] });
+  } else {
+    offer(u, from);
+    u.says.textContent = GONE;
+    return;
+  }
+  closeDialog();
+  if (!to) return;
+  const name = nameOf(d.doc);
+  const into = fresh ? `a new bundle, ${bundleName(to)}` : bundleName(to);
+  say(from ? `Moved ${name} from ${bundleName(from)} to ${into}.` : `Added ${name} to ${into}.`);
 }
 
 // --- the circuits --------------------------------------------------------------------------

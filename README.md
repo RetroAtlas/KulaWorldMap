@@ -20,7 +20,7 @@ The hourglass scores 1190 at most on the North American disc, 990 on the PAL dis
 
 The map is an editor as well. Make a level of your own, or copy a shipped one and change it: lay blocks against faces or across the floor, put the game's objects on them, run platforms and lasers between two cells, and have the game's own rules refuse what it could not load.
 
-Drafts stay in the browser until they are saved, as the map's own file or as the level the game loads, and drafts can be written onto the game's disc, one or several as one patch for an emulator. [docs/editor.md](docs/editor.md) is the specification of the file format and says how the writers are held to the disc.
+Drafts stay in the browser until they are saved, as the map's own file or as the level the game loads; several of them can be gathered into a bundle saved as one file, and drafts can be written onto the game's disc, one or several as one patch for an emulator. [docs/editor.md](docs/editor.md) is the specification of the file format and says how the writers are held to the disc.
 
 A draft can also be shared by a link that carries the level whole, so it opens on any device.
 

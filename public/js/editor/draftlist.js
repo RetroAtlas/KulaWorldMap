@@ -14,7 +14,8 @@ import { readLevelText } from "./files.js";
 import { pasteLevelLink } from "./importdialog.js";
 import { draftsOf, openedFrom, readLevel, readsOf } from "./intake.js";
 import { heldImage } from "./patchdialog.js";
-import { buildForm, nameOf, signed, twice } from "./levelcard.js";
+import { buildForm, bundleName, nameOf, signed, twice } from "./levelcard.js";
+import { buildBundleCard } from "./bundlecard.js";
 import { SORTS, grouping, matches, ordering } from "./draftsort.js";
 import * as drafts from "./drafts.js";
 
@@ -131,7 +132,7 @@ function openRead(read, name) {
 const VIEW_KEY = "kula.tiles";
 const VIEWS = ["list", "tiles"];
 const NO_MATCH = "Nothing matches.";
-const UNTITLED_BUNDLE = "Untitled bundle";
+const ARRANGE = "Set the bundle's title, author and notes, and the order of its levels";
 // The view and the sort chosen here, kept across visits; one not chosen takes its default.
 const chosen = {};
 // The tiles of the levels in no bundle while the view is tiles, and the levels built for the
@@ -262,10 +263,12 @@ function layout(box, groups, loose) {
     g.fold.hidden = hidden;
     if (box.children[i] !== g.fold) box.insertBefore(g.fold, box.children[i] ?? null);
     fill(g, kept, asTiles);
+    g.form?.sync(b);
   });
   for (const [id, g] of folds)
     if (!drafts.bundle(id)) {
       g.grid?.destroy();
+      g.form?.drop();
       g.fold.remove();
       folds.delete(id);
     }
@@ -285,27 +288,70 @@ function layout(box, groups, loose) {
   if (focused) box.querySelector(`[data-id="${focused}"]`)?.focus();
 }
 
-/** The group of bundle `b`, made once and worded afresh: its title, its author and how many levels it holds, opened as it comes to hold the level on screen. */
+/** The group of bundle `b`, made once and worded afresh: its title, its author and how many levels it holds, with the button that opens its card, and opened as it comes to hold the level on screen. */
 function foldOf(b) {
   let g = folds.get(b.id);
   if (!g) {
     const name = el("span", { className: "name" });
     const by = el("span", { className: "by" });
     const n = el("span", { className: "n" });
+    const arrange = el("button", {
+      className: "arrange",
+      type: "button",
+      textContent: "arrange…",
+      title: ARRANGE,
+    });
+    arrange.setAttribute("aria-expanded", "false");
     const members = el("div", { className: "members" });
-    const fold = el("details", { className: "bundle" }, el("summary", {}, name, by, n), members);
+    const card = el("div", { className: "card", hidden: true });
+    const fold = el(
+      "details",
+      { className: "bundle" },
+      el("summary", {}, name, by, n, arrange),
+      members,
+      card,
+    );
     fold.dataset.bundle = b.id;
-    folds.set(b.id, (g = { fold, name, by, n, members, grid: null, levels: [] }));
+    g = { fold, name, by, n, members, card, form: null, grid: null, levels: [] };
+    arrange.onclick = (e) => {
+      e.preventDefault();
+      toggleCard(g, b.id, arrange);
+    };
+    fold.addEventListener("toggle", () => {
+      if (!fold.open) putAway(g, arrange);
+    });
+    folds.set(b.id, g);
   }
   const shown = state.lvl?.draft;
   if (shown !== undefined && b.levels.includes(shown) && !g.levels.includes(shown))
     g.fold.open = true;
   g.levels = [...b.levels];
-  g.name.textContent = b.title || UNTITLED_BUNDLE;
+  g.name.textContent = bundleName(b);
   g.by.textContent = b.author;
   g.by.hidden = !b.author;
   g.n.textContent = `${b.levels.length} level${b.levels.length === 1 ? "" : "s"}`;
   return g;
+}
+
+/** Show the bundle's card under its levels, built on the first press and the group opened with it, or put it away again. */
+function toggleCard(g, id, button) {
+  const b = drafts.bundle(id);
+  if (!b) return;
+  if (!g.card.hidden) {
+    putAway(g, button);
+    return;
+  }
+  g.form ??= buildBundleCard(id, g.card);
+  g.form.sync(b);
+  g.card.hidden = false;
+  button.setAttribute("aria-expanded", "true");
+  g.fold.open = true;
+}
+
+/** Put the card away, as the group's closing does too, since the card lives inside the fold. */
+function putAway(g, button) {
+  g.card.hidden = true;
+  button.setAttribute("aria-expanded", "false");
 }
 
 /** Put the levels the filter keeps inside the group, as tiles or as rows. */
