@@ -4,8 +4,16 @@ import { readProject, writeProject } from "./project.js";
 import { draftShaped, idOf } from "./held.js";
 
 export const VERSION = 1;
+const KNOWN = new Set(["version", "next", "drafts"]);
 
-export const empty = () => ({ version: VERSION, next: 1, drafts: {} });
+export const empty = () => ({ version: VERSION, next: 1, drafts: {}, unknown: table() });
+
+/** A table whose keys are text alone, a key in two sources taking the later source's value. */
+function table(...sources) {
+  const out = Object.create(null);
+  for (const source of sources) for (const [key, value] of Object.entries(source)) out[key] = value;
+  return out;
+}
 
 function entryOf(raw) {
   let project;
@@ -24,7 +32,7 @@ function entryOf(raw) {
   };
 }
 
-/** The store `text` holds, and the entries of it that could not be read. */
+/** The store `text` holds, every key of it this version does not know kept as it is, and the entries of it that could not be read. */
 export function parse(text) {
   const out = empty();
   const left = Object.create(null);
@@ -34,7 +42,7 @@ export function parse(text) {
   } catch {
     raw = null;
   }
-  if (!raw || typeof raw !== "object") return { store: out, unread: left };
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { store: out, unread: left };
   if (Number.isInteger(raw.version) && raw.version > VERSION) out.version = raw.version;
   const drafts = raw.drafts && typeof raw.drafts === "object" ? raw.drafts : {};
   const ids = [];
@@ -46,12 +54,18 @@ export function parse(text) {
     else left[key] = d;
   }
   out.next = Math.max(Number.isInteger(raw.next) ? raw.next : 1, 1, ...ids.map((id) => id + 1));
+  for (const [key, value] of Object.entries(raw)) if (!KNOWN.has(key)) out.unknown[key] = value;
   return { store: out, unread: left };
 }
 
-/** The text a store is written as, the entries that could not be read carried as they are. */
+/** The text a store is written as, the entries that could not be read and the keys not known carried as they are. */
 export const serialize = (store, unread) =>
-  JSON.stringify({ ...store, drafts: { ...unread, ...store.drafts } });
+  JSON.stringify({
+    version: store.version,
+    next: store.next,
+    drafts: { ...unread, ...store.drafts },
+    ...store.unknown,
+  });
 
 // Of two copies of a draft the later change stands, and at one time the larger
 // text, so that two tabs settle on the same one; copies that are the same are
@@ -70,7 +84,7 @@ const textOf = (d) => JSON.stringify([writeProject(d.doc), d.saved, d.edits]);
 const later = (a, b) =>
   a.updated > b.updated || (a.updated === b.updated && (alike(a, b) || textOf(a) >= textOf(b)));
 
-/** Another tab's copy folded into this one under the marks of what changed here, which follow a moved draft. */
+/** Another tab's copy folded into this one under the marks of what changed here, which follow a moved draft; of a key this version does not know, theirs stands where both carry it. */
 export function merge(mine, theirs, { dirty, deleted, handed }) {
   const drafts = {};
   const taken = [];
@@ -98,7 +112,12 @@ export function merge(mine, theirs, { dirty, deleted, handed }) {
   for (const [from, to] of moved)
     for (const set of [dirty, handed]) if (set.delete(from)) set.add(to);
   return {
-    store: { version: Math.max(mine.version, theirs.version), next, drafts },
+    store: {
+      version: Math.max(mine.version, theirs.version),
+      next,
+      drafts,
+      unknown: table(mine.unknown, theirs.unknown),
+    },
     taken,
     moved,
   };

@@ -310,6 +310,8 @@ The link that carries a level whole is the other way out of the browser, which t
 
 Ids are whole numbers taken from `next`, which only ever grows and is never taken past the largest integer the language holds exactly; a store that has reached it makes no more levels and says so.
 
+A key at the top of the store beside `version`, `next` and `drafts`, which a newer version of the page may keep there, is read as it is, written back as it is and taken from the other tab's copy by a merge where both tabs carry it, since a tab never changes what it does not know, so a table a newer page adds survives a write from an older one.
+
 The reading, writing and merging of the store's text is `public/js/format/store.js`, which touches neither the page nor storage, and `public/js/format/held.js` holds the store's key and the shape an entry has to have to count as a draft, an object whose `doc` carries the format's marker and a list of blocks, which the store's reader uses as its first gate and the page's boot reads off the store's text, without the editor, to decide whether the editor loads at the start.
 
 ### A draft as a level

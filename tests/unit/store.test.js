@@ -47,6 +47,7 @@ test("a store reads back its drafts, each document through the file's reader and
     version: 1,
     next: 3,
     drafts: { 2: { doc: readProject(doc).project, updated: 5, saved: 4, edits: 2 } },
+    unknown: Object.create(null),
   });
   assert.deepEqual(Object.keys(unread), []);
 });
@@ -60,7 +61,7 @@ test("an entry's times and count that are not numbers read as none", () => {
 });
 
 test("text that is not a store is an empty one", () => {
-  for (const t of [null, undefined, "", "not json", "[]", "7", "null", "true"]) {
+  for (const t of [null, undefined, "", "not json", "[]", "[1,2]", "7", "null", "true"]) {
     const { store, unread } = parse(t);
     assert.deepEqual(store, empty(), String(t));
     assert.deepEqual(Object.keys(unread), [], String(t));
@@ -107,6 +108,7 @@ test("a write carries the drafts and what could not be read, under the store's v
   const raw = { ...mixed(), version: 7 };
   const { store, unread } = parse(text(raw));
   const again = JSON.parse(serialize(store, unread));
+  assert.deepEqual(Object.keys(again), ["version", "next", "drafts"]);
   assert.deepEqual(Object.keys(again.drafts).sort(), Object.keys(raw.drafts).sort());
   assert.deepEqual([again.version, again.next], [7, 7]);
   assert.deepEqual(again.drafts[1], store.drafts[1]);
@@ -125,6 +127,14 @@ test("next is the largest of what is written, one, and one past every id named",
   assert.equal(parse(text({ next: "x", drafts: {} })).store.next, 1);
   assert.equal(parse(text({ next: 4, drafts: 5 })).store.next, 4);
   assert.equal(parse(text({ next: 0, drafts: { a: null } })).store.next, 1);
+});
+
+test("the page's cheap test reads the drafts of a store carrying keys it does not know, as the reader does", () => {
+  const t = `{"version":1,"next":2,"bundles":{"1":{"levels":[1]}},"__proto__":{"drafts":{"9":${text(entry(good()))}}},"drafts":{"1":${text(entry(good()))}}}`;
+  assert.deepEqual(heldIn(t), { named: [1], shaped: [1] });
+  const { store } = parse(t);
+  assert.deepEqual(Object.keys(store.drafts), ["1"]);
+  assert.deepEqual(Object.keys(store.unknown).sort(), ["__proto__", "bundles"]);
 });
 
 test("the page's cheap test and the reader agree: every draft read is counted, every id named is read or kept", () => {
@@ -150,7 +160,12 @@ const marks = (m = {}) => ({
   handed: new Set(m.handed),
 });
 const at = (title, updated) => entry(good("HIRO", { title }), { updated });
-const table = (drafts, next = 10) => ({ version: VERSION, next, drafts });
+const table = (drafts, next = 10) => ({
+  version: VERSION,
+  next,
+  drafts,
+  unknown: Object.create(null),
+});
 
 test("per draft the later change wins, and theirs taking over clears the mark here", () => {
   const m = marks({ dirty: [1, 2] });
@@ -251,18 +266,73 @@ test("a draft handed out here that theirs has not seen stays where it is", () =>
 });
 
 test("next and version are the larger of the two, whichever side holds it", () => {
-  const low = { version: 1, next: 3, drafts: {} };
-  const high = { version: 7, next: 9, drafts: {} };
+  const low = table({}, 3);
+  const high = { ...table({}, 9), version: 7 };
   assert.deepEqual(merge(low, high, marks()).store, high);
   assert.deepEqual(merge(high, low, marks()).store, high);
 });
 
 test("a merge returns a new table and leaves the two it was given as they were", () => {
   const mine = table({ 1: at("Mine", 5) });
+  mine.unknown.tags = { 3: { title: "Mine" } };
   const theirs = table({ 1: at("Theirs", 9), 2: at("New", 1) });
+  theirs.unknown.tags = { 3: { title: "Theirs" } };
+  theirs.unknown.later = 1;
   const [before, after] = [text(mine), text(theirs)];
   const out = merge(mine, theirs, marks());
   assert.notEqual(out.store, mine);
   assert.notEqual(out.store.drafts, mine.drafts);
+  assert.notEqual(out.store.unknown, mine.unknown);
+  assert.notEqual(out.store.unknown, theirs.unknown);
   assert.deepEqual([text(mine), text(theirs)], [before, after]);
+});
+
+test("a key the store does not know survives a parse, a write and a merge, a reserved name included", () => {
+  const t = `{"version":1,"next":2,"drafts":{"1":${text(entry(good()))}},"bundles":{"3":{"title":"Set"}},"__proto__":{"polluted":true},"constructor":"text"}`;
+  const { store, unread } = parse(t);
+  assert.deepEqual(Object.keys(store.unknown), ["bundles", "__proto__", "constructor"]);
+  assert.deepEqual(store.unknown.bundles, { 3: { title: "Set" } });
+  assert.deepEqual(store.unknown["__proto__"], { polluted: true });
+  assert.equal(store.unknown.constructor, "text");
+  assert.equal(Object.getPrototypeOf(store.unknown), null);
+  assert.equal(Object.getPrototypeOf(store), Object.prototype);
+  assert.equal(Object.hasOwn(Object.prototype, "polluted"), false);
+  const again = JSON.parse(serialize(store, unread));
+  assert.deepEqual(Object.keys(again), [
+    "version",
+    "next",
+    "drafts",
+    "bundles",
+    "__proto__",
+    "constructor",
+  ]);
+  assert.deepEqual(again.bundles, { 3: { title: "Set" } });
+  assert.ok(Object.hasOwn(again, "__proto__"));
+  assert.deepEqual(again["__proto__"], { polluted: true });
+  assert.equal(again.constructor, "text");
+  const theirs = parse(
+    '{"version":1,"next":2,"drafts":{},"bundles":{"3":{"title":"Theirs"}},"later":1}',
+  ).store;
+  const out = merge(store, theirs, marks());
+  assert.deepEqual(Object.keys(out.store.unknown).sort(), [
+    "__proto__",
+    "bundles",
+    "constructor",
+    "later",
+  ]);
+  assert.deepEqual(out.store.unknown.bundles, { 3: { title: "Theirs" } });
+  assert.equal(out.store.unknown.later, 1);
+  assert.deepEqual(out.store.unknown["__proto__"], { polluted: true });
+  assert.equal(out.store.unknown.constructor, "text");
+  assert.equal(Object.getPrototypeOf(out.store.unknown), null);
+  assert.deepEqual(Object.keys(JSON.parse(serialize(out.store, unread))).sort(), [
+    "__proto__",
+    "bundles",
+    "constructor",
+    "drafts",
+    "later",
+    "next",
+    "version",
+  ]);
+  assert.equal(Object.hasOwn(Object.prototype, "polluted"), false);
 });
