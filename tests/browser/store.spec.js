@@ -61,8 +61,8 @@ test("a draft in the store that cannot be read is kept as it is, under the store
   expect(out).toMatchObject({ li: -1, draft: 1, theme: "MARS", time: 50 });
   expect(out.chip).toContain("Good");
   await expect(page.locator("#draftRows button")).toHaveCount(1);
-  await expect(page.locator("#draftRows button .state")).toHaveText(
-    "not saved to a file · 2 changes",
+  await expect(page.locator("#draftRows button .line")).toHaveText(
+    "MARS · not saved to a file · 2 changes",
   );
   expect((await toasts(page)).filter((t) => t.includes("could not be read"))).toEqual([
     "3 drafts in this browser could not be read and are kept as they are.",

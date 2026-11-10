@@ -110,9 +110,9 @@ test("a change that leaves the draft as it stands takes no step and counts no ch
 }) => {
   const errors = trackErrors(page);
   await fresh(page);
-  const row = page.locator("#draftRows button .state");
+  const row = page.locator("#draftRows button .line");
   await click(page, await plusX(page, START));
-  await expect(row).toHaveText("not saved to a file · 1 change");
+  await expect(row).toHaveText("HIRO · not saved to a file · 1 change");
   const took = await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
     const [{ state }, { get }, { edit }] = await Promise.all(
@@ -123,7 +123,7 @@ test("a change that leaves the draft as it stands takes no step and counts no ch
   });
   expect(took).toBe(false);
   expect(await steps(page)).toEqual({ past: 1, future: 0 });
-  await expect(row).toHaveText("not saved to a file · 1 change");
+  await expect(row).toHaveText("HIRO · not saved to a file · 1 change");
 
   // a time typed as the seconds the clock starts at already lands as nothing
   const time = page.locator("#draftTime");
@@ -131,7 +131,7 @@ test("a change that leaves the draft as it stands takes no step and counts no ch
   await time.blur();
   await expect(time).toHaveValue("99");
   expect(await steps(page)).toEqual({ past: 1, future: 0 });
-  await expect(row).toHaveText("not saved to a file · 1 change");
+  await expect(row).toHaveText("HIRO · not saved to a file · 1 change");
   await page.locator("#cv").focus();
   await page.keyboard.press("Control+z");
   expect(await cells(page)).toEqual([START]);
@@ -195,8 +195,8 @@ test("a pause of a second between letters starts a new title step", async ({ pag
   await title.pressSequentially("al");
   await expect(title).toHaveValue("Spiral");
   expect(await steps(page)).toEqual({ past: 2, future: 0 });
-  await expect(page.locator("#draftRows button .state")).toHaveText(
-    "not saved to a file · 2 changes",
+  await expect(page.locator("#draftRows button .line")).toHaveText(
+    "HIRO · not saved to a file · 2 changes",
   );
   await page.locator("#cv").focus();
   await page.keyboard.press("Control+z");
@@ -211,9 +211,9 @@ test("letters typed and taken back within a second leave no step and count no ch
 }) => {
   const errors = trackErrors(page);
   await fresh(page);
-  const row = page.locator("#draftRows button .state");
+  const row = page.locator("#draftRows button .line");
   await click(page, await plusX(page, START));
-  await expect(row).toHaveText("not saved to a file · 1 change");
+  await expect(row).toHaveText("HIRO · not saved to a file · 1 change");
   await page.evaluate(() => {
     const now = performance.now();
     performance.now = () => now;
@@ -224,12 +224,12 @@ test("letters typed and taken back within a second leave no step and count no ch
   await title.pressSequentially("xy");
   await expect(page.locator("#chipLine b")).toHaveText("Untitled levelxy");
   expect(await steps(page)).toEqual({ past: 2, future: 0 });
-  await expect(row).toHaveText("not saved to a file · 2 changes");
+  await expect(row).toHaveText("HIRO · not saved to a file · 2 changes");
   await page.keyboard.press("Backspace");
   await page.keyboard.press("Backspace");
   await expect(page.locator("#chipLine b")).toHaveText("Untitled level");
   expect(await steps(page)).toEqual({ past: 1, future: 0 });
-  await expect(row).toHaveText("not saved to a file · 1 change");
+  await expect(row).toHaveText("HIRO · not saved to a file · 1 change");
   await page.evaluate(() => {
     delete performance.now;
   });
@@ -282,16 +282,16 @@ test("the row's count of changes follows undo and redo, counts a typed title onc
 }) => {
   const errors = trackErrors(page);
   await fresh(page);
-  const row = page.locator("#draftRows button .state");
+  const row = page.locator("#draftRows button .line");
   await click(page, await plusX(page, START));
   await click(page, await plusX(page, [18, 17, 17]));
-  await expect(row).toHaveText("not saved to a file · 2 changes");
+  await expect(row).toHaveText("HIRO · not saved to a file · 2 changes");
   await page.keyboard.press("Control+z");
-  await expect(row).toHaveText("not saved to a file · 1 change");
+  await expect(row).toHaveText("HIRO · not saved to a file · 1 change");
   await page.keyboard.press("Control+z");
-  await expect(row).toHaveText("not saved to a file");
+  await expect(row).toHaveText("HIRO · not saved to a file");
   await page.keyboard.press("Control+Shift+z");
-  await expect(row).toHaveText("not saved to a file · 1 change");
+  await expect(row).toHaveText("HIRO · not saved to a file · 1 change");
 
   await page.evaluate(() => {
     const now = performance.now();
@@ -301,20 +301,20 @@ test("the row's count of changes follows undo and redo, counts a typed title onc
   await title.selectText();
   await title.pressSequentially("Spiral");
   await expect(page.locator("#chipLine b")).toHaveText("Spiral");
-  await expect(row).toHaveText("not saved to a file · 2 changes");
+  await expect(row).toHaveText("HIRO · not saved to a file · 2 changes");
   expect(await steps(page)).toEqual({ past: 2, future: 0 });
   await page.evaluate(() => {
     delete performance.now;
   });
 
   await Promise.all([page.waitForEvent("download"), page.locator("#draftSaveJson").click()]);
-  await expect(row).toHaveText("saved to a file");
+  await expect(row).toHaveText("HIRO · saved to a file");
   await page.locator("#cv").focus();
   await page.keyboard.press("Control+z");
   await expect(page.locator("#say")).toHaveText("Undid changed the title");
-  await expect(row).toHaveText("saved to a file");
+  await expect(row).toHaveText("HIRO · saved to a file");
   await page.keyboard.press("Control+Shift+z");
-  await expect(row).toHaveText("saved to a file · 1 change since");
+  await expect(row).toHaveText("HIRO · saved to a file · 1 change since");
   expect(errors).toEqual([]);
 });
 

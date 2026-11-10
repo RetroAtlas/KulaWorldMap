@@ -111,8 +111,8 @@ test("the Level card edits the draft as the game would load it, keeping the view
   await afar.check();
   expect((await shown(page)).time).toBe(45);
   await expect(page.locator("#chipLine")).toContainText("time 38");
-  await expect(page.locator("#draftRows button .state")).toHaveText(
-    /^not saved to a file · \d+ changes$/,
+  await expect(page.locator("#draftRows button .line")).toHaveText(
+    /^INCA · not saved to a file · \d+ changes$/,
   );
   await written(page, (s) => s?.drafts[id]?.doc).toMatchObject({
     title: "Spiral II",

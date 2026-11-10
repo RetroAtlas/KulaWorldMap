@@ -18,6 +18,8 @@ One spec runs with its name after the command, `npm run test:browser -- play-hud
 
 `npm run pixels` renders the working tree and a ref, `HEAD` unless one is given, over the matrix in `tests/pixels/cases.js` with the clock held still, the ball stood on a level for the play cases, and names every capture that differs; it proves a change meant to draw as before, a move or a re-wiring, and is not run for one meant to draw differently.
 
+The matrix runs with the editor absent and again with it loaded by a level kept in storage, that side working Your levels open and scrolled into view so the level's tile paints before every capture, and a still paint that left the frame's view or its switches swapped would show in the map's hashes.
+
 The matrix also stands levels on the other discs, such a case naming its disc in its id, `A/B1/jp/v1`, which the harness sets through the release model before it selects the level and puts back once the case is captured, so a ref from before that model runs those cases on the US disc.
 
 `npm run frame` and `npm run boot` are measurements, not checks: where a frame's time goes, and when the page's first frames land over a throttled network.

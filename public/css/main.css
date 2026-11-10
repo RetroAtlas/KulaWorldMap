@@ -621,6 +621,33 @@ button.kind:hover {
   font-size: 12px;
   margin: 8px 0 0;
 }
+.yours .view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.yours .view .scope {
+  margin: 0;
+}
+.yours .view select,
+.yours .view input[type="search"] {
+  flex: 1 1 110px;
+  min-width: 0;
+  background: #0e1320;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12px;
+}
+.yours .view select:focus-visible,
+.yours .view input[type="search"]:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -1px;
+}
 .drafts {
   display: flex;
   flex-direction: column;
@@ -696,6 +723,10 @@ button.kind:hover {
 .tiles .tile[aria-current="true"] {
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px var(--accent);
+}
+.tiles .tile[aria-current="true"] .line {
+  color: inherit;
+  opacity: 0.8;
 }
 .tiles .thumb {
   display: block;

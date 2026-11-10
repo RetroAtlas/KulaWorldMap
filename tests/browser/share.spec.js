@@ -124,7 +124,7 @@ test("save the file instead downloads the map's file, marks the draft saved and 
   const text = readFileSync(await download.path(), "utf8");
   expect(readProject(text).project).toEqual(await docOf(page, id));
   await expect(box).toBeHidden();
-  await expect(page.locator("#draftRows button .state")).toHaveText("saved to a file");
+  await expect(page.locator("#draftRows button .line")).toHaveText("HIRO · saved to a file");
   expect(errors).toEqual([]);
 });
 

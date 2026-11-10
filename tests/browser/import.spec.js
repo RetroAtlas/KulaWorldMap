@@ -164,7 +164,7 @@ test("a pack asks which level to open, and opens it under its name in the world 
   expect(entry.doc).toMatchObject({ title: "LEVEL 2", world: "MARS", time: 99 });
   expect(entry.doc.blocks).toEqual(blocksOf(synthetic(2, "LEVEL 2"), "MARS"));
   expect(entry.saved).toBeGreaterThan(0);
-  await expect(rows.locator(".state")).toHaveText("saved to a file");
+  await expect(rows.locator(".line")).toHaveText("MARS · saved to a file");
   expect(await toasts(page)).toEqual([]);
   expect(errors).toEqual([]);
 });
@@ -724,7 +724,7 @@ test("the sidebar's paste a link… makes a draft of the shared level", async ({
   expect(entry.doc).toMatchObject({ title: "Shared level", world: "MARS", time: own.time });
   expect(entry.doc.blocks).toEqual(own.blocks);
   expect(entry.saved).toBeGreaterThan(0);
-  await expect(rows.locator(".state")).toHaveText("saved to a file");
+  await expect(rows.locator(".line")).toHaveText("MARS · saved to a file");
   expect(await toasts(page)).toEqual([]);
   expect(errors).toEqual([]);
 });

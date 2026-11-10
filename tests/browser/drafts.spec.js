@@ -46,6 +46,31 @@ const drawnAs = (page) =>
     };
   });
 
+/** The picture on the tile of draft `id`: how many of its pixels are not the background, and a
+    digest of them all; nothing where the tile has not been painted. */
+const picture = (page, id) =>
+  page.evaluate(async (id) => {
+    const cv = document.querySelector(`#draftRows .tile[data-key="${id}"] canvas`);
+    if (!cv?.width) return { drawn: 0, hash: "" };
+    const px = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
+    let drawn = 0;
+    for (let i = 0; i < px.length; i += 4)
+      if (px[i + 3] && (px[i] !== 0x11 || px[i + 1] !== 0x17 || px[i + 2] !== 0x25)) drawn++;
+    const digest = await crypto.subtle.digest("SHA-256", px);
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+    return { drawn, hash };
+  }, id);
+const painted = (page, id) => expect.poll(async () => (await picture(page, id)).drawn);
+const kept = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("kula.tiles")));
+/** A new level titled `title`, in `world` where one is named. */
+async function made(page, title, world) {
+  await page.locator("#draftNew").click();
+  await page.locator("#draftTitle").fill(title);
+  if (world) await page.selectOption("#draftWorld", world);
+  await expect(page.locator("#chipLine b")).toHaveText(title);
+  return (await shown(page)).draft;
+}
+
 // what stands where on the level on screen, as the game stores it
 const standing = (page) =>
   page.evaluate(async () => {
@@ -124,7 +149,7 @@ test("new makes a draft, shown and kept in this browser, which a reload brings b
   await expect(row).toHaveAttribute("aria-current", "true");
   await expect(row.locator(".name")).toHaveText("Untitled level");
   await expect(row.locator(".tag")).toHaveText("Draft");
-  await expect(row.locator(".state")).toHaveText("not saved to a file");
+  await expect(row.locator(".line")).toHaveText("HIRO · not saved to a file");
   await expect(page.locator("#draftEmpty")).toBeHidden();
   await expect(page.locator("#chipLine b")).toHaveText("Untitled level");
   await expect(page.locator("#chipLine .tag")).toHaveText("Draft");
@@ -363,5 +388,164 @@ test("duplicate opens a copy of the shown draft, saying so and which level is th
   expect(await docOf(page, copy.draft)).toMatchObject({ title: "Spiral" });
   await expect(page.locator("#say")).toContainText("Copied the level. Draft, Spiral,");
   await written(page, (s) => Object.keys(s?.drafts ?? {}).length).toBe(2);
+  expect(errors).toEqual([]);
+});
+
+test("a level's tile carries a picture of the level, painted as the tile shows", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  const tile = page.locator("#draftRows ul.tiles[role=list] > li > button.tile");
+  await expect(tile).toHaveCount(1);
+  const id = (await shown(page)).draft;
+  await expect(tile).toHaveAttribute("data-key", String(id));
+  await expect(tile.locator("canvas.thumb")).toHaveAttribute("aria-hidden", "true");
+  await painted(page, id).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
+test("list and tiles switch the view once this browser holds two levels, and the choice is kept across a reload", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows .tile")).toHaveCount(1);
+  const bar = page.locator("#draftView");
+  await expect(bar).toBeHidden();
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows .tile")).toHaveCount(2);
+  await expect(bar).toBeVisible();
+  const pressed = bar.locator(".scope button[aria-pressed='true']");
+  await expect(pressed).toHaveText("tiles");
+  await bar.getByRole("button", { name: "list" }).click();
+  const rows = page.locator("#draftRows > button");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.locator(".state")).toHaveText(["not saved to a file", "not saved to a file"]);
+  await expect(rows.first()).toHaveAttribute("aria-current", "true");
+  await expect(page.locator("#draftRows .tile")).toHaveCount(0);
+  await expect(pressed).toHaveText("list");
+  await expect(pressed).toBeFocused();
+  expect(await kept(page)).toEqual({ view: "list" });
+  await page.reload();
+  await settle(page);
+  await expect(rows).toHaveCount(2);
+  await expect(bar.locator(".scope button[aria-pressed='true']")).toHaveText("list");
+  await bar.getByRole("button", { name: "tiles" }).click();
+  await expect(page.locator("#draftRows .tile")).toHaveCount(2);
+  await expect(rows).toHaveCount(0);
+  expect(await kept(page)).toEqual({ view: "tiles" });
+  expect(errors).toEqual([]);
+});
+
+test("the sort orders your levels by the last change, by title, by world in the game's order or with those not saved to a file first, and is kept", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await made(page, "Alpha");
+  await made(page, "Beta", "MARS");
+  const gamma = await made(page, "Gamma", "INCA");
+  const names = page.locator("#draftRows .tile .name");
+  await expect(names).toHaveText(["Gamma", "Beta", "Alpha"]);
+  const sort = page.locator("#draftSort");
+  await expect(sort).toHaveValue("changed");
+  await sort.selectOption("title");
+  await expect(names).toHaveText(["Alpha", "Beta", "Gamma"]);
+  await sort.selectOption("world");
+  await expect(names).toHaveText(["Alpha", "Gamma", "Beta"]);
+  await page.evaluate(async (id) => {
+    const { markSaved } = await import(new URL("js/editor/drafts.js", location.href).href);
+    markSaved(id);
+  }, gamma);
+  await sort.selectOption("unsaved");
+  await expect(names).toHaveText(["Beta", "Alpha", "Gamma"]);
+  expect(await kept(page)).toEqual({ sort: "unsaved" });
+  await page.reload();
+  await settle(page);
+  await expect(names).toHaveText(["Beta", "Alpha", "Gamma"]);
+  await expect(sort).toHaveValue("unsaved");
+  expect(errors).toEqual([]);
+});
+
+test("the filter keeps the levels whose title or world holds its text, whatever the case, says when none does, and starts empty on every visit", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await made(page, "Alpha");
+  await made(page, "Beta", "MARS");
+  const names = page.locator("#draftRows .tile .name");
+  const filter = page.locator("#draftFilter");
+  const empty = page.locator("#draftEmpty");
+  await expect(names).toHaveText(["Beta", "Alpha"]);
+  await filter.fill("ALP");
+  await expect(names).toHaveText(["Alpha"]);
+  await expect(page.locator("#yoursCount")).toHaveText("2");
+  await filter.fill("mars");
+  await expect(names).toHaveText(["Beta"]);
+  await filter.fill("zzz");
+  await expect(names).toHaveCount(0);
+  await expect(empty).toBeVisible();
+  await expect(empty).toHaveText("Nothing matches.");
+  await filter.fill("");
+  await expect(names).toHaveText(["Beta", "Alpha"]);
+  await expect(empty).toBeHidden();
+  await filter.fill("beta");
+  await expect(names).toHaveText(["Beta"]);
+  await page.reload();
+  await settle(page);
+  await expect(names).toHaveText(["Beta", "Alpha"]);
+  await expect(filter).toHaveValue("");
+  expect(errors).toEqual([]);
+});
+
+test("a tile's picture is painted again when its level changes", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await textured(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows .tile")).toHaveCount(1);
+  const id = (await shown(page)).draft;
+  await painted(page, id).toBeGreaterThan(0);
+  const before = (await picture(page, id)).hash;
+  await laid(page, [19, 17, 17], { kind: 0 });
+  await expect(page.locator("#chipLine")).toContainText("2 blocks");
+  await expect.poll(async () => (await picture(page, id)).hash).not.toBe(before);
+  expect(errors).toEqual([]);
+});
+
+test("a tile's picture is flat until its world's textures land, and painted again with them", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  let held = null;
+  await page.route("**/tex/MARS.png", (route) => {
+    held = route;
+  });
+  await page.goto(EDIT);
+  await settle(page);
+  await textured(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows .tile")).toHaveCount(1);
+  const id = (await shown(page)).draft;
+  await painted(page, id).toBeGreaterThan(0);
+  const hiro = (await picture(page, id)).hash;
+  await page.selectOption("#draftWorld", "MARS");
+  const line = page.locator(`#draftRows .tile[data-key="${id}"] .line`);
+  await expect(line).toHaveText("MARS · not saved to a file · 1 change");
+  const flat = (await picture(page, id)).hash;
+  expect(flat).not.toBe(hiro);
+  await expect.poll(() => held !== null).toBe(true);
+  await held.continue();
+  await textured(page);
+  expect((await picture(page, id)).hash).not.toBe(flat);
   expect(errors).toEqual([]);
 });

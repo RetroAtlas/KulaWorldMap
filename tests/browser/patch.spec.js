@@ -607,7 +607,7 @@ test("the box keeps its levels and the image once closed, a card's opening adds 
   const status = dialog.locator("#patchStatus");
   /** Show the draft and open the box from its card. */
   const openFrom = async (id) => {
-    await page.locator(`#draftRows button[data-id="${id}"]`).click();
+    await page.locator(`#draftRows button[data-key="${id}"]`).click();
     await expect.poll(() => shownDraft(page)).toBe(id);
     await page.locator("#draftPatch").click();
     await expect(dialog).toBeVisible();
@@ -643,7 +643,7 @@ test("the box keeps its levels and the image once closed, a card's opening adds 
   await expect(dialog).toBeHidden();
 
   // a level deleted while the box was closed is gone from the rows without a word
-  await page.locator(`#draftRows button[data-id="${tower}"]`).click();
+  await page.locator(`#draftRows button[data-key="${tower}"]`).click();
   await expect.poll(() => shownDraft(page)).toBe(tower);
   const del = page.locator("#draftCard button", { hasText: /^delete/ });
   await del.click();

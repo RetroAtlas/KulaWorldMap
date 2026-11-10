@@ -1,14 +1,15 @@
 // Renders the map from the working tree and from a git ref, HEAD unless one
 // is given, over the matrix in cases.js with the page's clock held still,
 // with the editor absent and again with it loaded by a draft kept in storage,
-// and names every capture that differs: the map canvas, the pick canvas, the
-// hit test over a grid of points, the cell and the face it finds, whether the
-// frame goes on redrawing, and whether a world's atlas redraws the map when it
-// lands. A case that names a disc is drawn as that disc ships it where the
-// side has the release model, and on the US disc where it has not. The play
-// captures stand the ball on a level and hash the frame, the strip and the
-// HUD at held game frames. A change that is to draw exactly as before passes
-// with nothing named.
+// Your levels open and the draft's tile painted, and names every capture that
+// differs: the map canvas, the pick canvas, the hit test over a grid of
+// points, the cell and the face it finds, whether the frame goes on
+// redrawing, and whether a world's atlas redraws the map when it lands. A
+// case that names a disc is drawn as that disc ships it where the side has
+// the release model, and on the US disc where it has not. The play captures
+// stand the ball on a level and hash the frame, the strip and the HUD at held
+// game frames. A change that is to draw exactly as before passes with nothing
+// named.
 //
 //     npm run pixels -- [<ref>] [--save <dir>] [--all]
 //
@@ -112,6 +113,11 @@ async function open(page, base, store) {
     while (!up()) {
       if (Date.now() > deadline) throw new Error("the map did not load");
       await new Promise((r) => setTimeout(r, 20));
+    }
+    // the draft's tile paints as it comes into view, before any capture
+    if (seeded) {
+      document.getElementById("yoursFold").open = true;
+      document.getElementById("draftRows").scrollIntoView();
     }
     await new Promise((r) => setTimeout(r, 600));
     window.__defaults = { ...state.show };

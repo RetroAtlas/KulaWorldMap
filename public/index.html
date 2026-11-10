@@ -233,6 +233,27 @@
               paste a link…
             </button>
           </div>
+          <div id="draftView" class="view" hidden>
+            <span class="scope" role="group" aria-label="Show your levels as">
+              <button type="button" data-view="list" aria-pressed="false">list</button>
+              <button type="button" data-view="tiles" aria-pressed="true">tiles</button>
+            </span>
+            <label class="sr" for="draftSort">Sort your levels by</label>
+            <select id="draftSort" title="The order of your levels">
+              <option value="changed">last changed</option>
+              <option value="title">title</option>
+              <option value="world">world</option>
+              <option value="unsaved">not saved first</option>
+            </select>
+            <label class="sr" for="draftFilter">Filter your levels</label>
+            <input
+              id="draftFilter"
+              type="search"
+              placeholder="filter by title or world"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
           <div id="draftRows" class="drafts"></div>
           <p id="draftEmpty" class="sub">
             Nothing yet. Make a level of your own, or copy this one to start from.

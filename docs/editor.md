@@ -300,7 +300,7 @@ HIDDEN 10 comes to 766 by that count, and one more plain block in the open takes
 
 ## The drafts a browser keeps
 
-The browser store is a convenience and the exported file is the record; the viewer's "Your levels" says so under its rows.
+The browser store is a convenience and the exported file is the record; the viewer's "Your levels" says so under its levels.
 
 The link that carries a level whole is the other way out of the browser, which the same sentence names beside the file.
 
@@ -360,7 +360,7 @@ The steps a draft took, which undo and redo walk, live in the editor's memory al
 
 A draft saves as `<slug>.kula.json`, the project file `writeProject` writes, or as `<slug>.kwl`, the canonical level `writeKwl` writes; the slug is the title composed to NFC and in lower case, with every run of anything but letters, their marks and digits as one hyphen, cut to 60 characters, trimmed of hyphens, and `level` where nothing is left, so a copy of `LEVEL 1` saves as `level-1.kwl`.
 
-Either save flushes the store first and then marks the draft saved, `saved` the time and `edits` 0, so its row counts the changes since.
+Either save flushes the store first and then marks the draft saved, `saved` the time and `edits` 0, so its line among your levels counts the changes since.
 
 `public/js/editor/files.js` opens a file by what it holds, never by its name, in the order "Levels from elsewhere" below gives:
 

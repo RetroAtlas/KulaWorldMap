@@ -742,6 +742,20 @@ test.describe("editing on a phone", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
   });
 
+  test("your levels start as a list on a phone, nothing of the view kept", async ({ page }) => {
+    await page.goto(EDIT);
+    await settle(page);
+    await page.keyboard.press("s");
+    await page.locator("#draftNew").click();
+    await page.locator("#draftNew").click();
+    const rows = page.locator("#draftRows > button");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.locator(".state")).toHaveText(["not saved to a file", "not saved to a file"]);
+    await expect(page.locator("#draftRows .tile")).toHaveCount(0);
+    await expect(page.locator("#draftView .scope button[aria-pressed='true']")).toHaveText("list");
+    expect(await page.evaluate(() => localStorage.getItem("kula.tiles"))).toBe(null);
+  });
+
   test("a mouse still places on one click", async ({ page }) => {
     await editFresh(page);
     const side = await plusX(page, START);

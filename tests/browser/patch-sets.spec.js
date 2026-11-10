@@ -322,7 +322,9 @@ test("a level added from a file is a saved draft of Your levels and a row on the
   await expect(add.locator("option")).toHaveText([ADD, FILE]);
   await expect(add).toBeFocused();
   await expect(yours).toHaveCount(2);
-  await expect(yours.filter({ hasText: "Tower" }).locator(".state")).toHaveText("saved to a file");
+  await expect(yours.filter({ hasText: "Tower" }).locator(".line")).toHaveText(
+    "HIRO · saved to a file",
+  );
   const tower = (await listed(page)).find((d) => d.title === "Tower");
   expect(tower).toMatchObject({ into: "/HIRO/HIRO.PAK#2", edits: 0 });
   expect(tower.saved).toBeGreaterThan(0);

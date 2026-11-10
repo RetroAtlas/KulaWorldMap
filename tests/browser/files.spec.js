@@ -68,12 +68,12 @@ test("a draft saves as the map's file and as the game's file, and the row counts
   await page.locator("#draftNew").click();
   await page.locator("#draftTitle").fill("Spiral Two");
   const id = (await shown(page)).draft;
-  const row = page.locator("#draftRows button .state");
+  const row = page.locator("#draftRows button .line");
   const saveJson = page.locator("#draftSaveJson");
   const saveKwl = page.locator("#draftSaveKwl");
   await expect(saveJson).toHaveText("save as .json");
   await expect(saveKwl).toHaveText("save as .kwl");
-  await expect(row).toHaveText("not saved to a file · 1 change");
+  await expect(row).toHaveText("HIRO · not saved to a file · 1 change");
   await expect(saveJson).toHaveClass(/unsaved/);
 
   const asMap = await saved(page, saveJson);
@@ -83,12 +83,12 @@ test("a draft saves as the map's file and as the game's file, and the row counts
   expect(readProject(MAP_FILE).project).toEqual(entry.doc);
   expect(entry.saved).toBeGreaterThan(0);
   expect(entry.edits).toBe(0);
-  await expect(row).toHaveText("saved to a file");
+  await expect(row).toHaveText("HIRO · saved to a file");
   await expect(saveJson).not.toHaveClass(/unsaved/);
 
   await page.locator("#draftTime").fill("45");
   await page.locator("#draftTime").blur();
-  await expect(row).toHaveText("saved to a file · 1 change since");
+  await expect(row).toHaveText("HIRO · saved to a file · 1 change since");
   await expect(saveJson).toHaveClass(/unsaved/);
   const note = page.locator("#draftCard .note");
   await expect(note).toBeVisible();
@@ -105,7 +105,7 @@ test("a draft saves as the map's file and as the game's file, and the row counts
   expect(back.project.blocks).toEqual(doc.blocks);
   expect(back.project.time).toBe(45);
   expect(back.report).toEqual([]);
-  await expect(row).toHaveText("saved to a file");
+  await expect(row).toHaveText("HIRO · saved to a file");
 
   // the row above holds the four openers alone, so the saves are on the card
   const actions = page.locator("#yours .actions button");
@@ -139,7 +139,7 @@ test("opening a file makes a saved draft out of what it holds, or refuses it wit
   expect(entry.doc).toEqual(project);
   expect(entry.saved).toBeGreaterThan(0);
   expect(entry.edits).toBe(0);
-  await expect(rows.locator(".state")).toHaveText("saved to a file");
+  await expect(rows.locator(".line")).toHaveText("MARS · saved to a file");
   await expect(page.locator("#say")).toContainText("Opened Opened one. Draft, Opened one");
   await expect(page.locator("#draftCard .report")).toHaveCount(0);
   expect(await toasts(page)).toEqual([]);
