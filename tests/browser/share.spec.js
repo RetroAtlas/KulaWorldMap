@@ -19,13 +19,28 @@ const SEND_NOTE =
 const GATE = "Give the level an author first, so it can be credited.";
 const PASTE =
   "This link is too long to fill the form in by itself, so copy it and paste it into the form's Link field.";
+const KIN = (title) =>
+  `This level still holds much of the game's ${title}, so it cannot be sent in. The community levels take levels of your own. The link and the file work as they are.`;
 
-/** Open the page at `hash`, make a new level titled `title`, by `author` where one is given, and open its share box. */
-async function sharing(page, { hash = EDIT, title = "Shared one", author = "" } = {}) {
+/** Give the shown draft the blocks `blocks` through the model. */
+const shaped = (page, blocks) =>
+  page.evaluate(async (blocks) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ state }, { get, update }] = await Promise.all(
+      ["viewer/state.js", "editor/drafts.js"].map(at),
+    );
+    update(state.lvl.draft, { ...get(state.lvl.draft).doc, blocks });
+  }, blocks);
+/** Open the page at `hash`, make a new level titled `title`, by `author` where one is given and of `blocks` where they are given, and open its share box. */
+async function sharing(
+  page,
+  { hash = EDIT, title = "Shared one", author = "", blocks = null } = {},
+) {
   await page.goto(hash);
   await settle(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(1);
+  if (blocks) await shaped(page, blocks);
   await page.locator("#draftTitle").fill(title);
   if (author) await page.locator("#draftAuthor").fill(author);
   const id = (await shown(page)).draft;
@@ -288,6 +303,7 @@ test("send it in by email opens a message to the map's makers carrying the title
   await expect(box.locator("#shareSendNote")).toBeVisible();
   await expect(box.locator("#shareSendNote")).toHaveText(SEND_NOTE);
   await expect(box.locator("#shareGate")).toBeHidden();
+  await expect(box.locator("#shareKin")).toBeHidden();
   await expect(box.locator("#shareSendPaste")).toBeHidden();
   await expect(box.locator("#shareSend .row button:visible")).toHaveText([
     "send it in by email",
@@ -362,6 +378,69 @@ test("a level with no author is asked for one in place of the ways to send it in
   await expect(box.locator("#shareSendNote")).toHaveText(SEND_NOTE);
   await expect(box.locator("#shareSendMail")).toBeVisible();
   await expect(box.locator("#shareSendIssue")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("a copy of one of the game's levels is told it cannot be sent in, in place of the offer, once it names an author, while the link and its ways stand", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftCopy").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await expect(page.locator("#draftFrom")).toHaveText("Copied from LEVEL 1");
+  await page.locator("#draftShare").click();
+  const box = page.locator("#share");
+  await expect(box).toBeVisible();
+  await expect(box.locator("#shareGate")).toHaveText(GATE);
+  await expect(box.locator("#shareKin")).toBeHidden();
+  await box.locator("#shareCancel").click();
+  await expect(box).toBeHidden();
+  await page.locator("#draftAuthor").fill("Ada");
+  await page.locator("#draftShare").click();
+  await expect(box).toBeVisible();
+  await expect(box.locator("#shareSend h4")).toHaveText("Send it to the community levels");
+  await expect(box.locator("#shareKin")).toHaveText(KIN("LEVEL 1"));
+  await expect(box.locator("#shareGate")).toBeHidden();
+  await expect(box.locator("#shareSendNote")).toBeHidden();
+  await expect(box.locator("#shareSendPaste")).toBeHidden();
+  await expect(box.locator("#shareSendMail")).toBeHidden();
+  await expect(box.locator("#shareSendIssue")).toBeHidden();
+  await expect(box.locator("#shareSays")).toBeEmpty();
+  await expect(box.locator("#shareNote")).toHaveText(NOTE);
+  const field = box.locator("#shareLink");
+  await expect(field).toBeVisible();
+  const link = await field.inputValue();
+  expect(carriesLevel(link.slice(link.indexOf("#")))).toBe(true);
+  await expect(ways(box)).toHaveText([
+    "copy the link",
+    "email it to someone",
+    "save the file instead",
+    "cancel",
+  ]);
+  await box.locator("#shareCancel").click();
+  await expect(box).toBeHidden();
+  expect(await toasts(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("a level that only resembles one of the game's levels is offered the send-in as any other", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const slab = [];
+  for (let x = 17; x <= 20; x++)
+    for (let y = 17; y <= 20; y++) slab.push({ cell: [x, y, 17], kind: 0 });
+  slab[0].faces = { 0: { type: 30, facing: 3 } };
+  const { box } = await sharing(page, { title: "Slab", author: "Ada", blocks: slab });
+  await expect(box.locator("#shareSend h4")).toHaveText("Send it to the community levels");
+  await expect(box.locator("#shareKin")).toBeHidden();
+  await expect(box.locator("#shareGate")).toBeHidden();
+  await expect(box.locator("#shareSendNote")).toHaveText(SEND_NOTE);
+  await expect(box.locator("#shareSendMail")).toBeVisible();
+  await expect(box.locator("#shareSendIssue")).toBeVisible();
+  expect(await toasts(page)).toEqual([]);
   expect(errors).toEqual([]);
 });
 

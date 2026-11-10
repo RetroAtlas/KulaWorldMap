@@ -6,23 +6,23 @@ import { state } from "../viewer/state.js";
 import {
   NAMES,
   worldName,
-  levelTitle,
   markerColour,
   skinsTable,
   circuitPhrase,
   theCircuit,
   levelClock,
 } from "../viewer/data.js";
-import { BASE, discWord, levelOn, releaseOf, releases, rulesOf } from "../viewer/release.js";
+import { releases, rulesOf } from "../viewer/release.js";
 import { say, describeLevel } from "../viewer/chrome/a11y.js";
 import { toast } from "../viewer/ui/toast.js";
 import { closeDialog, openDialog } from "../viewer/ui/dialog.js";
 import { download, slug } from "../viewer/ui/download.js";
-import { COLOURS, facesOf, levelKey, writeKwl } from "../format/kwl.js";
+import { COLOURS, facesOf, writeKwl } from "../format/kwl.js";
 import { TEXT_MOST, UNTITLED, setCircuit, setMeta, writeProject } from "../format/project.js";
 import { ERROR, TIME_LIMIT, circuitMembers, playsAs, timeOf, validate } from "../format/checks.js";
 import { UNTITLED_BUNDLE, writeBundle } from "../format/bundle.js";
 import { shareLevel } from "./sharedialog.js";
+import { slotName } from "./shipped.js";
 import { readWith } from "./intake.js";
 import { openPatchDialog } from "./patchdialog.js";
 import { edit as step } from "./trail.js";
@@ -158,13 +158,8 @@ export function saveBundle(bid) {
 
 /** What a copy's card says of its source: the level its slot holds on the disc it was read from. */
 function copiedFrom(doc) {
-  const slot = state.data.levels.find((l) => levelKey(l.pack, l.index) === doc.from);
-  if (!slot) return "";
-  const disc = releaseOf(doc.fromRelease) ? doc.fromRelease : BASE;
-  const title = levelTitle(levelOn(slot, disc));
-  return disc === BASE
-    ? `Copied from ${title}`
-    : `Copied from ${title} on the ${discWord(disc)} disc`;
+  const name = slotName(doc.from, doc.fromRelease);
+  return name && `Copied from ${name}`;
 }
 
 function reportFold({ lines, repairs }) {

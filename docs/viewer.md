@@ -269,6 +269,10 @@ Under the row the box's second part, "Send it to the community levels", says tha
 
 Where the level names no author, or a name of spaces alone, the part reads "Give the level an author first, so it can be credited." in place of the offer, since the name in the Author field is the name the level is credited to.
 
+Where the level names an author but is a copy of one of the game's levels, by the rule [community.md](community.md) states under "Adding a level by hand", the part reads "This level still holds much of the game's <title>, so it cannot be sent in. The community levels take levels of your own. The link and the file work as they are." in place of the offer, the title the one the map shows for the level the copy came from with its disc where it is not the US one, as the card names the source of a copy, and the link, its ways and the file stand as for any level.
+
+A level that only resembles one of the game's levels, or kept a fifth or more but under a half of the level it was copied from, is offered the send-in as any other, since the catalogue's tool notes it for the person who adds it.
+
 Where the link is too long to fill the form in, the part says to copy the link and paste it into the form's Link field, the issue opens the form empty and the box stays up for the copy.
 
 Where the checks find errors the box opens refusing: no link is made, one sentence says a level with errors has no link until they are fixed and that the level line's note lists them, and the row offers the file and `cancel`.

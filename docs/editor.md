@@ -444,6 +444,10 @@ The share box of the Level card writes the link through `shareLink` in `public/j
 
 The box's second part sends the level in to the community levels by the addresses `mailtoFor` and `issueFor` in `public/js/editor/sendlink.js` compose, with no DOM, as [community.md](community.md) says under "Sending a level in".
 
+The part tells a copy of one of the game's levels, one whose `from` names the level and which the rule refuses, that it cannot be sent in through `kinName` in `public/js/editor/shipped.js`, which holds the shapes of every level of the three discs, built once from the levels the map holds and keyed as `tools/community.js` keys them, and names the level as the Level card names the source of a copy, by the title the map shows with its disc where that is not the US one.
+
+`kinName` gives null for a level the rule only notes, one that resembles one of the game's levels or kept a fifth or more but under a half of the level its `from` names, which the part offers the send-in as any other, since the catalogue's tool notes it for the person who adds it.
+
 The box offers the link only for a draft the checks find no error in.
 
 The box leads with the file where the link would pass 8,000 characters, the bound `LINK_MOST`, which no shipped level's link reaches.

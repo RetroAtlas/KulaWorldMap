@@ -174,6 +174,12 @@ A level is sent in from the share box of its card, whose second part, "Send it t
 
 The name the level is credited to is the name in its Author field, so where that field is empty, or holds spaces alone, the part reads "Give the level an author first, so it can be credited." in place of the offer.
 
+Where the level names an author but is a copy of one of the game's levels by the rule "Adding a level by hand" states, its `from` naming the level and its share of blocks with it a half or more, the part reads "This level still holds much of the game's <title>, so it cannot be sent in. The community levels take levels of your own. The link and the file work as they are." in place of the offer, the title the one the map shows for the level the copy came from, with its disc where that is not the US one, so a sender hears it before the level is sent.
+
+The box speaks for a copy the rule refuses alone: a level that resembles one of the game's levels, or kept a fifth or more but under a half of the level its `from` names, is offered the send-in as any other, since either is the tool's note for the person who adds it, as "Adding a level by hand" says.
+
+The box judges the level through the same `kinOf` the tool calls, over the shapes of every level of the three discs, built once from the levels the map holds when the box first weighs a level against them and keyed as the tool keys them, `pack#index` and `pack#index@release` for another disc's variant, a unit test holding the two keyings to each other.
+
 A box that opens refusing, for a level the checks find errors in, has no second part, since there is no link to send.
 
 The part says in one sentence that a level sent in is shared under CC BY 4.0 with credit to its author and that a person looks at every level before it appears, the look "Adding a level by hand" describes.
@@ -214,7 +220,7 @@ Taking a level down deletes its record and lists its id under `retired` in `cata
 
 A level that is an edit of one of the game's levels cannot be granted under CC BY 4.0 by the player who edited it, so the catalogue takes levels of a player's own, while sharing such a level by its link stays as it is.
 
-Whether a level is such an edit is judged by its blocks through `kinOf` in `public/js/format/kinship.js`, which the tool calls, and not by the `from` key alone, since a player may copy a shipped level as scaffolding and rebuild it from nothing.
+Whether a level is such an edit is judged by its blocks through `kinOf` in `public/js/format/kinship.js`, which the tool and the share box call, and not by the `from` key alone, since a player may copy a shipped level as scaffolding and rebuild it from nothing.
 
 A level's shape is its blocks, each as its cell and kind, and the blocks two levels hold in common are counted at the best alignment of the one over the other, every offset between a block of each with the same kind tried, so a copy shifted by a cell, or with a block added at any corner, still holds every block of its source.
 

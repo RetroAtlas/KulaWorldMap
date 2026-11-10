@@ -1,6 +1,6 @@
 // The box that shares a level of your own: the link that carries it whole, with the ways to send
 // it and the ways to send it in to the community levels, or the file alone where the checks find
-// errors.
+// errors; a copy of one of the game's levels is told it cannot be sent in.
 import { $, el } from "../viewer/ui/dom.js";
 import { NAMES, skinsTable } from "../viewer/data.js";
 import { address } from "../viewer/ui/address.js";
@@ -12,6 +12,7 @@ import { ERROR, validate } from "../format/checks.js";
 import { UNTITLED } from "../format/project.js";
 import { LINK_MOST, shareLink } from "./sharelink.js";
 import { ISSUE_FORM, issueFor, mailtoFor } from "./sendlink.js";
+import { kinName } from "./shipped.js";
 import * as drafts from "./drafts.js";
 
 const NOTE =
@@ -24,6 +25,8 @@ const UNCOPIED = "The link could not be copied. Select it in the field and copy 
 const SEND_NOTE =
   "A level sent in is shared under CC BY 4.0 with credit to its author, and a person looks at every level before it appears.";
 const GATE = "Give the level an author first, so it can be credited.";
+const KIN = (title) =>
+  `This level still holds much of the game's ${title}, so it cannot be sent in. The community levels take levels of your own. The link and the file work as they are.`;
 const PASTE =
   "This link is too long to fill the form in by itself, so copy it and paste it into the form's Link field.";
 
@@ -92,6 +95,7 @@ function build() {
       title: "Open the repository's form for sending a level in",
     }),
     gate: el("p", { id: "shareGate", textContent: GATE }),
+    kin: el("p", { id: "shareKin" }),
     sendRow: el("div", { className: "row" }),
     send: null,
     field: null,
@@ -123,6 +127,7 @@ function build() {
     u.sendPaste,
     u.sendRow,
     u.gate,
+    u.kin,
   );
   const box = el(
     "div",
@@ -189,7 +194,8 @@ function sendIssue() {
  * Open the box for the draft `id`: its link, with the ways to send it, where the checks find no
  * error, the file leading where the link would run past the bound; the file alone, with the
  * sentence that says why, where they find one. `save` writes the draft as the card's save does.
- * Under the link, the ways to send the level in stand once it names an author.
+ * Under the link, the ways to send the level in stand once it names an author, unless it is a
+ * copy of one of the game's levels, which is told so in their place.
  */
 export function shareLevel(id, save) {
   const d = drafts.get(id);
@@ -218,10 +224,14 @@ export function shareLevel(id, save) {
     u.row.replaceChildren(...ways, u.cancel);
     u.issue = issueFor({ title: u.title, link: u.url });
     const gated = !u.author;
-    u.sendNote.hidden = gated;
-    u.sendPaste.hidden = gated || u.issue !== ISSUE_FORM;
-    u.sendRow.hidden = gated;
+    const kin = gated ? null : kinName(d.doc);
+    const offered = !gated && kin === null;
+    u.sendNote.hidden = !offered;
+    u.sendPaste.hidden = !offered || u.issue !== ISSUE_FORM;
+    u.sendRow.hidden = !offered;
     u.gate.hidden = !gated;
+    u.kin.hidden = kin === null;
+    u.kin.textContent = kin === null ? "" : KIN(kin);
   }
   u.send.hidden = refused;
   u.note.hidden = refused;

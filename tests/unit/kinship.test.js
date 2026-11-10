@@ -13,6 +13,8 @@ import {
   start,
 } from "./project-doc.js";
 import { fromLevel, moveBlocks } from "../../public/js/format/project.js";
+import { kinName, shippedEntries } from "../../public/js/editor/shipped.js";
+import { shippedShapes } from "../../tools/community.js";
 import {
   FLOOR,
   FROM_NOTE,
@@ -219,6 +221,18 @@ test("from names the variant of fromRelease where that disc's level is keyed, el
   assert.ok(shareOf(shapeOf(edited), shipped.get(FIRST)) < FROM_NOTE);
   for (const from of ["/NOWHERE/NOWHERE.PAK#0", FIRST, 7, null, ["/INCA/INCA.PAK#11"]])
     assert.deepEqual(kinOf({ ...edited, from }, shipped), alike(SLOT, share));
+});
+
+test("the editor keys the shipped levels' shapes as the catalogue's tool does, so the share box and the tool judge a level against one table", () => {
+  const editor = shapesOf(shippedEntries(mapData.levels, releases));
+  assert.deepEqual(editor, shipped);
+  assert.deepEqual(editor, shippedShapes());
+});
+
+test("kinName names the shipped level a draft is a copy of where the rule refuses it, and gives null for a level the rule only notes, one that kept part of the level its from names or resembles one of the game's levels", () => {
+  assert.equal(kinName(nudged(template, 3)), "LEVEL 42");
+  assert.equal(kinName(rebuilt(template, Math.ceil(n / 3))), null);
+  assert.equal(kinName(slabOf(4)), null);
 });
 
 test("every shipped level's template is its own slot's copy, whole, the variants under their disc", () => {
