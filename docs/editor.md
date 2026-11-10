@@ -306,11 +306,19 @@ The link that carries a level whole is the other way out of the browser, which t
 
 ### The store
 
-`public/js/editor/drafts.js` keeps the drafts under `localStorage["kula.drafts"]` as `{ "version": 1, "next": n, "drafts": { id: { "doc", "updated", "saved", "edits" } } }`: `version` is 1 in this version, or the higher number the store was found with, `doc` is a project as the file holds it, `updated` the time of the last change, `saved` the time of the last save to a file or null, `edits` the changes since that save, counted as below.
+`public/js/editor/drafts.js` keeps the drafts under `localStorage["kula.drafts"]` as `{ "version": 1, "next": n, "drafts": { id: { "doc", "updated", "saved", "edits" } }, "bundles": { id: { "title", "author", "notes", "levels", "updated" } } }`: `version` is 1 in this version, or the higher number the store was found with, `doc` is a project as the file holds it, `updated` the time of the last change, `saved` the time of the last save to a file or null, `edits` the changes since that save, counted as below.
 
 Ids are whole numbers taken from `next`, which only ever grows and is never taken past the largest integer the language holds exactly; a store that has reached it makes no more levels and says so.
 
-A key at the top of the store beside `version`, `next` and `drafts`, which a newer version of the page may keep there, is read as it is, written back as it is and taken from the other tab's copy by a merge where both tabs carry it, since a tab never changes what it does not know, so a table a newer page adds survives a write from an older one.
+A bundle is a set of the browser's levels in play order under a title, an author and notes: `levels` lists its drafts' ids in that order and `updated` is the time of its last change, and its id is taken from `next` as a draft's id is, so a bundle and a draft may share a number and nothing relies on their not doing so.
+
+A draft is in at most one bundle: where two list it, the one changed last keeps it and the lower id at a tie, a rule the reader applies and every merge applies again, and a list that names a draft twice names it once.
+
+Deleting a draft takes it out of its bundle, also where the deletion arrives in another tab's copy.
+
+Deleting a bundle leaves its drafts where they are.
+
+A key at the top of the store beside `version`, `next`, `drafts` and `bundles`, which a newer version of the page may keep there, is read as it is, written back as it is and taken from the other tab's copy by a merge where both tabs carry it, since a tab never changes what it does not know, so a table a newer page adds survives a write from an older one.
 
 The reading, writing and merging of the store's text is `public/js/format/store.js`, which touches neither the page nor storage, and `public/js/format/held.js` holds the store's key and the shape an entry has to have to count as a draft, an object whose `doc` carries the format's marker and a list of blocks, which the store's reader uses as its first gate and the page's boot reads off the store's text, without the editor, to decide whether the editor loads at the start.
 
@@ -338,6 +346,14 @@ The store is read once at boot, through the same `readProject` the file importer
 
 One of them whose key is such a number and that has a draft's shape, the format's marker and a list of blocks, still makes the editor load at the start, since the boot reads the keys and the shapes and not the readers, and any other does not; such entries are counted into one toast per browser session, and into a row of "Your levels" that offers to remove them, which asks to be pressed again, a removal the next write carries and another tab's copy arriving before it does not undo.
 
+A bundle's `title`, `author` and `notes` are read under the caps of a level file's title, author and notes.
+
+An id in `levels` that is not a positive whole number naming a draft the store holds is dropped from the list, and an `updated` that is not a finite number reads as 0.
+
+An entry of `bundles` that is not an object listing its levels stays in storage as it is, under its own key, as a draft that could not be read does, its key kept out of `next`'s way.
+
+Such an entry is not counted into the toast or the row, which count the drafts alone, and the row's removal, where an unreadable draft raises the row, takes it along.
+
 A repair the reader makes to a stored document at boot is silent and the draft's saved mark stands, where the importer says what it repaired.
 
 A store whose `version` is higher than this version's number is read for what this version knows and written back under that version, with the entries this version does not know.
@@ -350,7 +366,15 @@ Writes wait 300 ms after the last change and are flushed on `pagehide`, on `visi
 
 A `storage` event for the key from another tab merges that tab's copy: per draft the later `updated` wins, and at one `updated` the larger text, the document as the project writer writes it with the save time and the count, so that two tabs settle on the same copy.
 
+The same copy is merged per bundle, the later `updated` winning and at one `updated` the larger text, the title, the author, the notes and the list in that order.
+
+A copy with no `bundles` table at all, written by a page from before them, is taken as saying nothing of them, so this tab's bundles stand.
+
+After the merge every bundle lists only drafts the merged store holds, a draft moved to a fresh id is followed into its bundle's list, and a draft two bundles list is settled again as the reader settles it.
+
 A draft changed here since the last write is kept until that write, one deleted here is not taken back unless it never reached storage, in which case it is simply forgotten and a level of theirs under its id is taken as theirs, and a draft of theirs under an id this tab handed out and never wrote is a level of its own, so this tab's draft moves to a fresh id with its steps and, where it is on screen, the view, and a toast says so, or, where the store has no id left to give, the two are settled by the later change like any other pair.
+
+A bundle changed here since the last write is kept until that write, one deleted here is not taken back unless it never reached storage, and two bundles made under one id in two tabs are settled by the later change like any other pair, as drafts are where the store has no id left to give.
 
 ### Changes and steps
 

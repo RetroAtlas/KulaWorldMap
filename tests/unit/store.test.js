@@ -47,6 +47,7 @@ test("a store reads back its drafts, each document through the file's reader and
     version: 1,
     next: 3,
     drafts: { 2: { doc: readProject(doc).project, updated: 5, saved: 4, edits: 2 } },
+    bundles: null,
     unknown: Object.create(null),
   });
   assert.deepEqual(Object.keys(unread), []);
@@ -108,7 +109,7 @@ test("a write carries the drafts and what could not be read, under the store's v
   const raw = { ...mixed(), version: 7 };
   const { store, unread } = parse(text(raw));
   const again = JSON.parse(serialize(store, unread));
-  assert.deepEqual(Object.keys(again), ["version", "next", "drafts"]);
+  assert.deepEqual(Object.keys(again), ["version", "next", "drafts", "bundles"]);
   assert.deepEqual(Object.keys(again.drafts).sort(), Object.keys(raw.drafts).sort());
   assert.deepEqual([again.version, again.next], [7, 7]);
   assert.deepEqual(again.drafts[1], store.drafts[1]);
@@ -130,11 +131,14 @@ test("next is the largest of what is written, one, and one past every id named",
 });
 
 test("the page's cheap test reads the drafts of a store carrying keys it does not know, as the reader does", () => {
-  const t = `{"version":1,"next":2,"bundles":{"1":{"levels":[1]}},"__proto__":{"drafts":{"9":${text(entry(good()))}}},"drafts":{"1":${text(entry(good()))}}}`;
+  const t = `{"version":1,"next":2,"bundles":{"1":{"levels":[1]}},"tags":{"1":["set"]},"__proto__":{"drafts":{"9":${text(entry(good()))}}},"drafts":{"1":${text(entry(good()))}}}`;
   assert.deepEqual(heldIn(t), { named: [1], shaped: [1] });
   const { store } = parse(t);
   assert.deepEqual(Object.keys(store.drafts), ["1"]);
-  assert.deepEqual(Object.keys(store.unknown).sort(), ["__proto__", "bundles"]);
+  assert.deepEqual(store.bundles, {
+    1: { title: "", author: "", notes: "", levels: [1], updated: 0 },
+  });
+  assert.deepEqual(Object.keys(store.unknown).sort(), ["__proto__", "tags"]);
 });
 
 test("the page's cheap test and the reader agree: every draft read is counted, every id named is read or kept", () => {
@@ -164,6 +168,7 @@ const table = (drafts, next = 10) => ({
   version: VERSION,
   next,
   drafts,
+  bundles: {},
   unknown: Object.create(null),
 });
 
@@ -274,8 +279,10 @@ test("next and version are the larger of the two, whichever side holds it", () =
 
 test("a merge returns a new table and leaves the two it was given as they were", () => {
   const mine = table({ 1: at("Mine", 5) });
+  mine.bundles = { 4: set([1]) };
   mine.unknown.tags = { 3: { title: "Mine" } };
   const theirs = table({ 1: at("Theirs", 9), 2: at("New", 1) });
+  theirs.bundles = { 4: set([1, 2], { updated: 9 }) };
   theirs.unknown.tags = { 3: { title: "Theirs" } };
   theirs.unknown.later = 1;
   const [before, after] = [text(mine), text(theirs)];
@@ -284,14 +291,16 @@ test("a merge returns a new table and leaves the two it was given as they were",
   assert.notEqual(out.store.drafts, mine.drafts);
   assert.notEqual(out.store.unknown, mine.unknown);
   assert.notEqual(out.store.unknown, theirs.unknown);
+  assert.notEqual(out.store.bundles, theirs.bundles);
+  assert.notEqual(out.store.bundles[4], theirs.bundles[4]);
   assert.deepEqual([text(mine), text(theirs)], [before, after]);
 });
 
 test("a key the store does not know survives a parse, a write and a merge, a reserved name included", () => {
-  const t = `{"version":1,"next":2,"drafts":{"1":${text(entry(good()))}},"bundles":{"3":{"title":"Set"}},"__proto__":{"polluted":true},"constructor":"text"}`;
+  const t = `{"version":1,"next":2,"drafts":{"1":${text(entry(good()))}},"tags":{"3":{"title":"Set"}},"__proto__":{"polluted":true},"constructor":"text"}`;
   const { store, unread } = parse(t);
-  assert.deepEqual(Object.keys(store.unknown), ["bundles", "__proto__", "constructor"]);
-  assert.deepEqual(store.unknown.bundles, { 3: { title: "Set" } });
+  assert.deepEqual(Object.keys(store.unknown), ["tags", "__proto__", "constructor"]);
+  assert.deepEqual(store.unknown.tags, { 3: { title: "Set" } });
   assert.deepEqual(store.unknown["__proto__"], { polluted: true });
   assert.equal(store.unknown.constructor, "text");
   assert.equal(Object.getPrototypeOf(store.unknown), null);
@@ -303,24 +312,25 @@ test("a key the store does not know survives a parse, a write and a merge, a res
     "next",
     "drafts",
     "bundles",
+    "tags",
     "__proto__",
     "constructor",
   ]);
-  assert.deepEqual(again.bundles, { 3: { title: "Set" } });
+  assert.deepEqual(again.tags, { 3: { title: "Set" } });
   assert.ok(Object.hasOwn(again, "__proto__"));
   assert.deepEqual(again["__proto__"], { polluted: true });
   assert.equal(again.constructor, "text");
   const theirs = parse(
-    '{"version":1,"next":2,"drafts":{},"bundles":{"3":{"title":"Theirs"}},"later":1}',
+    '{"version":1,"next":2,"drafts":{},"tags":{"3":{"title":"Theirs"}},"later":1}',
   ).store;
   const out = merge(store, theirs, marks());
   assert.deepEqual(Object.keys(out.store.unknown).sort(), [
     "__proto__",
-    "bundles",
     "constructor",
     "later",
+    "tags",
   ]);
-  assert.deepEqual(out.store.unknown.bundles, { 3: { title: "Theirs" } });
+  assert.deepEqual(out.store.unknown.tags, { 3: { title: "Theirs" } });
   assert.equal(out.store.unknown.later, 1);
   assert.deepEqual(out.store.unknown["__proto__"], { polluted: true });
   assert.equal(out.store.unknown.constructor, "text");
@@ -332,7 +342,211 @@ test("a key the store does not know survives a parse, a write and a merge, a res
     "drafts",
     "later",
     "next",
+    "tags",
     "version",
   ]);
   assert.equal(Object.hasOwn(Object.prototype, "polluted"), false);
+});
+
+// --- the bundles --------------------------------------------------------------------
+
+const set = (levels, more = {}) => ({
+  title: "Set",
+  author: "me",
+  notes: "n",
+  levels,
+  updated: 1,
+  ...more,
+});
+const two = () => ({ 1: entry(good()), 2: entry(good()) });
+const read = (bundles, drafts = two(), more = {}) =>
+  parse(text({ version: 1, next: 3, drafts, bundles, ...more }));
+const bundled = (drafts, bundles, next = 10) => ({ ...table(drafts, next), bundles });
+const bmarks = (m = {}) => ({
+  ...marks(),
+  bundles: { dirty: new Set(m.dirty), deleted: new Set(m.deleted), handed: new Set(m.handed) },
+});
+
+test("a bundle reads back with its texts, its levels in order and its time, writes as it was read and survives a merge", () => {
+  const raw = set([2, 1], { updated: 5 });
+  const { store, unread, unreadBundles } = read({ 4: raw });
+  assert.deepEqual(store.bundles, { 4: raw });
+  assert.deepEqual([Object.keys(unread), Object.keys(unreadBundles)], [[], []]);
+  assert.equal(store.next, 5);
+  const again = JSON.parse(serialize(store, unread, unreadBundles));
+  assert.deepEqual(Object.keys(again), ["version", "next", "drafts", "bundles"]);
+  assert.deepEqual(again.bundles, { 4: raw });
+  const copy = parse(serialize(store, unread, unreadBundles)).store;
+  assert.deepEqual(merge(store, copy, bmarks()).store.bundles, { 4: raw });
+});
+
+test("an empty store writes an empty table of bundles, a text without one reads as saying nothing of them, and one that is no table as none", () => {
+  assert.deepEqual(empty().bundles, {});
+  assert.deepEqual(JSON.parse(serialize(empty(), {})).bundles, {});
+  const { store } = parse(text({ version: 1, next: 1, drafts: {} }));
+  assert.equal(store.bundles, null);
+  assert.deepEqual(JSON.parse(serialize(store, {})).bundles, {});
+  for (const bundles of [null, 5, "text", true])
+    assert.deepEqual(parse(text({ drafts: {}, bundles })).store.bundles, {}, String(bundles));
+});
+
+test("a bundle's texts are read under the level file's caps and a time that is not a number as none, and its list keeps the drafts the store holds, once each and in order", () => {
+  const { store } = read(
+    {
+      4: set([2, 7, "1", 0, -1, 1.5, "__proto__", 3, 1, 2, Number.MAX_SAFE_INTEGER + 1], {
+        title: "a".repeat(81),
+        author: 5,
+        notes: "c".repeat(2001),
+        updated: "x",
+      }),
+    },
+    { ...two(), 3: null },
+  );
+  assert.deepEqual(store.bundles[4], {
+    title: "a".repeat(80),
+    author: "",
+    notes: "c".repeat(2000),
+    levels: [2, 1],
+    updated: 0,
+  });
+  assert.deepEqual(Object.keys(store.drafts), ["1", "2"]);
+});
+
+test("a draft listed in two bundles stays in the one changed last, and in the lower id where both changed at one time", () => {
+  const { store } = read({ 3: set([1, 2], { updated: 5 }), 4: set([1], { updated: 9 }) });
+  assert.deepEqual([store.bundles[3].levels, store.bundles[4].levels], [[2], [1]]);
+  const tie = read({ 4: set([1], { updated: 5 }), 3: set([2, 1], { updated: 5 }) }).store;
+  assert.deepEqual([tie.bundles[3].levels, tie.bundles[4].levels], [[2, 1], []]);
+  assert.deepEqual(Object.keys(tie.bundles), ["3", "4"]);
+  // past the ids the language orders itself, the keys come as written, so the id decides
+  const high = read({
+    4294967296: set([1], { updated: 5 }),
+    4294967295: set([1], { updated: 5 }),
+  }).store;
+  assert.deepEqual([high.bundles[4294967295].levels, high.bundles[4294967296].levels], [[1], []]);
+  assert.equal(high.next, 4294967297);
+});
+
+test("what cannot be read as a bundle stays under its key, a reserved name included, and keeps next past its id", () => {
+  const t = `{"version":1,"next":1,"drafts":{"1":${text(entry(good()))}},"bundles":{"__proto__":{"levels":[1]},"constructor":5,"a":{"levels":[]},"2":{"title":"no list"},"3":null,"9":"text","4":{"levels":[1]}}}`;
+  const { store, unread, unreadBundles } = parse(t);
+  assert.deepEqual(Object.keys(store.bundles), ["4"]);
+  assert.deepEqual(Object.keys(unreadBundles).sort(), [
+    "2",
+    "3",
+    "9",
+    "__proto__",
+    "a",
+    "constructor",
+  ]);
+  assert.ok(Object.hasOwn(unreadBundles, "__proto__"));
+  assert.deepEqual(unreadBundles["__proto__"], { levels: [1] });
+  assert.equal(Object.getPrototypeOf(unreadBundles), null);
+  assert.deepEqual(Object.keys(unread), []);
+  assert.equal(store.next, 10);
+  const again = JSON.parse(serialize(store, unread, unreadBundles));
+  assert.deepEqual(Object.keys(again.bundles).sort(), [
+    "2",
+    "3",
+    "4",
+    "9",
+    "__proto__",
+    "a",
+    "constructor",
+  ]);
+  assert.deepEqual(again.bundles["__proto__"], { levels: [1] });
+  assert.equal(again.bundles.constructor, 5);
+  assert.deepEqual(again.bundles[4], { title: "", author: "", notes: "", levels: [1], updated: 0 });
+  assert.deepEqual(heldIn(t), { named: [1], shaped: [1] });
+  assert.equal(Object.hasOwn(Object.prototype, "levels"), false);
+});
+
+test("next passes every bundle's id as it passes every draft's id, read or not, where what is written is behind", () => {
+  assert.equal(read({ 9: set([]) }, { 1: entry(good()) }, { next: 2 }).store.next, 10);
+  assert.equal(read({ 12: null }, {}, { next: undefined }).store.next, 13);
+  assert.equal(read({ 12: set([]) }, {}, { next: 20 }).store.next, 20);
+});
+
+test("per bundle the later change wins and theirs taking over clears the mark here, one deleted here is not taken back, one changed here is kept though theirs lacks it, and one neither goes", () => {
+  const m = bmarks({ dirty: [1, 2, 4], deleted: [3] });
+  const drafts = { 1: at("A", 1) };
+  const out = merge(
+    bundled(drafts, {
+      1: set([], { title: "Mine", updated: 5 }),
+      2: set([], { title: "Mine", updated: 5 }),
+      4: set([], { title: "Kept" }),
+      5: set([], { title: "Gone" }),
+    }),
+    bundled(drafts, {
+      1: set([], { title: "Theirs", updated: 6 }),
+      2: set([], { title: "Theirs", updated: 4 }),
+      3: set([], { title: "Deleted" }),
+    }),
+    m,
+  );
+  assert.deepEqual(
+    Object.entries(out.store.bundles).map(([id, b]) => [id, b.title]),
+    [
+      ["1", "Theirs"],
+      ["2", "Mine"],
+      ["4", "Kept"],
+    ],
+  );
+  assert.deepEqual([[...m.bundles.dirty], [...m.bundles.deleted]], [[2, 4], [3]]);
+});
+
+test("two bundles changed at one time settle on the larger text, whichever side holds it, and the same copy keeps this tab's copy with its mark", () => {
+  const drafts = { 1: at("A", 1) };
+  const alpha = set([1], { title: "Alpha", updated: 5 });
+  const beta = set([1], { title: "Beta", updated: 5 });
+  const m = bmarks({ dirty: [1] });
+  assert.equal(
+    merge(bundled(drafts, { 1: alpha }), bundled(drafts, { 1: beta }), m).store.bundles[1].title,
+    "Beta",
+  );
+  assert.deepEqual([...m.bundles.dirty], []);
+  const n = bmarks({ dirty: [1] });
+  assert.equal(
+    merge(bundled(drafts, { 1: beta }), bundled(drafts, { 1: alpha }), n).store.bundles[1].title,
+    "Beta",
+  );
+  assert.deepEqual([...n.bundles.dirty], [1]);
+  const o = bmarks({ dirty: [1] });
+  const same = merge(bundled(drafts, { 1: set([1]) }), bundled(drafts, { 1: set([1]) }), o);
+  assert.deepEqual(same.store.bundles[1], set([1]));
+  assert.deepEqual([...o.bundles.dirty], [1]);
+});
+
+test("a draft deleted in another tab leaves the bundle's list, and a copy without a table of bundles leaves this tab's bundles as they stand, where an empty table takes them", () => {
+  const mine = bundled({ 1: at("A", 1), 2: at("B", 1) }, { 4: set([1, 2]) });
+  const out = merge(mine, bundled({ 1: at("A", 1) }, { 4: set([1, 2]) }), bmarks());
+  assert.deepEqual(Object.keys(out.store.drafts), ["1"]);
+  assert.deepEqual(out.store.bundles, { 4: set([1]) });
+  assert.deepEqual(merge(mine, bundled({ 1: at("A", 1) }, null), bmarks()).store.bundles, {
+    4: set([1]),
+  });
+  assert.deepEqual(merge(mine, bundled({ 1: at("A", 1) }, {}), bmarks()).store.bundles, {});
+  const older = parse(text({ version: 1, next: 10, drafts: { 1: at("A", 1) } })).store;
+  assert.equal(older.bundles, null);
+  assert.deepEqual(merge(mine, older, bmarks()).store.bundles, { 4: set([1]) });
+});
+
+test("a draft moved to a fresh id is followed into this tab's bundle and not into theirs, and a draft two bundles list is settled again after the merge", () => {
+  const m = bmarks({ dirty: [7] });
+  m.dirty.add(3);
+  m.handed.add(3);
+  const out = merge(
+    bundled({ 3: at("Mine", 5) }, { 7: set([3], { updated: 9 }) }, 4),
+    bundled({ 3: at("Theirs", 9) }, { 8: set([3], { updated: 5 }) }, 4),
+    m,
+  );
+  assert.deepEqual(out.moved, [[3, 4]]);
+  assert.deepEqual([out.store.bundles[7].levels, out.store.bundles[8].levels], [[4], [3]]);
+  const drafts = { 1: at("A", 1) };
+  const twice = merge(
+    bundled(drafts, { 7: set([1], { updated: 9 }) }),
+    bundled(drafts, { 8: set([1], { updated: 5 }) }),
+    bmarks({ dirty: [7] }),
+  );
+  assert.deepEqual([twice.store.bundles[7].levels, twice.store.bundles[8].levels], [[1], []]);
 });

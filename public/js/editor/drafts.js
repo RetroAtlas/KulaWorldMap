@@ -1,10 +1,10 @@
-// The levels of your own this browser keeps, written to localStorage a moment
-// after each change.
+// The levels of your own this browser keeps, and the bundles they are gathered
+// in, written to localStorage a moment after each change.
 import { emit } from "../viewer/ui/dom.js";
 import { toast } from "../viewer/ui/toast.js";
 import { UNTITLED } from "../format/project.js";
 import { KEY } from "../format/held.js";
-import { empty, merge, parse, serialize } from "../format/store.js";
+import { empty, heldLevels, merge, parse, serialize } from "../format/store.js";
 
 const SAID = "kula.drafts.said";
 const SETTLE = 300;
@@ -24,6 +24,7 @@ const displaced = (name) =>
 let store = empty();
 // Entries that could not be read, written back as they are until removed here.
 let unread = Object.create(null);
+let unreadBundles = Object.create(null);
 let forgotten = false;
 let memoryOnly = false;
 let timer = 0;
@@ -32,10 +33,11 @@ let refused = false;
 let known = null;
 // What changed here since the last write, which another tab's copy may lack:
 // the drafts changed, the ids deleted, and the ids handed out, which another
-// tab may hand out too until they reach storage.
+// tab may hand out too until they reach storage; the bundles keep the same marks.
 const dirty = new Set();
 const deleted = new Set();
 const handed = new Set();
+const bundleMarks = { dirty: new Set(), deleted: new Set(), handed: new Set() };
 
 /** Read the store once, saying what could not be kept. */
 export function load() {
@@ -50,7 +52,9 @@ export function load() {
   known = text;
   const read = parse(text);
   store = read.store;
+  store.bundles ??= {};
   unread = read.unread;
+  unreadBundles = read.unreadBundles;
   const n = unreadCount();
   if (n && !saidBefore())
     toast(
@@ -75,6 +79,7 @@ export const unreadCount = () => Object.keys(unread).length;
 export function removeUnread() {
   if (!unreadCount()) return;
   unread = Object.create(null);
+  unreadBundles = Object.create(null);
   forgotten = true;
   changed();
 }
@@ -118,11 +123,13 @@ export function markSaved(id) {
   touched(id);
 }
 
+/** Forget a draft, taking it out of its bundle. */
 export function remove(id) {
   if (!store.drafts[id]) return;
   delete store.drafts[id];
   dirty.delete(id);
   if (!handed.delete(id)) deleted.add(id);
+  takeOut([id]);
   changed();
 }
 
@@ -134,6 +141,75 @@ function touched(id) {
   deleted.delete(id);
   changed();
 }
+
+// --- bundles -------------------------------------------------------------------
+
+/** Every bundle, the lowest id first, each with its id. */
+export const bundles = () =>
+  Object.entries(store.bundles)
+    .map(([id, b]) => ({ id: Number(id), ...b }))
+    .sort((a, b) => a.id - b.id);
+
+export const bundle = (id) => store.bundles[id] ?? null;
+
+/** A new bundle's id, or null where the store has none left to give; its levels leave any other bundle. */
+export function createBundle({ title = "", author = "", notes = "", levels = [] } = {}) {
+  if (!Number.isSafeInteger(store.next)) {
+    toast(NUMBERED_OUT);
+    return null;
+  }
+  const id = store.next++;
+  store.bundles[id] = { title, author, notes, levels: claimed(id, levels), updated: Date.now() };
+  bundleMarks.handed.add(id);
+  touchedBundle(id);
+  return id;
+}
+
+/** Give the bundle the title, author, notes or levels `patch` carries; a level added leaves any other bundle. */
+export function updateBundle(id, patch) {
+  const b = store.bundles[id];
+  if (!b) return;
+  for (const key of ["title", "author", "notes"]) if (patch[key] !== undefined) b[key] = patch[key];
+  if (patch.levels !== undefined) b.levels = claimed(id, patch.levels);
+  b.updated = Date.now();
+  touchedBundle(id);
+}
+
+/** Forget a bundle; its levels stay. */
+export function removeBundle(id) {
+  if (!store.bundles[id]) return;
+  delete store.bundles[id];
+  bundleMarks.dirty.delete(id);
+  if (!bundleMarks.handed.delete(id)) bundleMarks.deleted.add(id);
+  changed();
+}
+
+/** `levels` as bundle `id` keeps them: each a draft the store holds, named once and in no other bundle. */
+function claimed(id, levels) {
+  const kept = heldLevels(store.drafts, levels);
+  takeOut(kept, id);
+  return kept;
+}
+
+/** Take `levels` out of every bundle but `keeping`, marking each that loses one. */
+function takeOut(levels, keeping = null) {
+  for (const [key, b] of Object.entries(store.bundles)) {
+    const id = Number(key);
+    if (id === keeping || !b.levels.some((l) => levels.includes(l))) continue;
+    b.levels = b.levels.filter((l) => !levels.includes(l));
+    b.updated = Date.now();
+    bundleMarks.dirty.add(id);
+    bundleMarks.deleted.delete(id);
+  }
+}
+
+function touchedBundle(id) {
+  bundleMarks.dirty.add(id);
+  bundleMarks.deleted.delete(id);
+  changed();
+}
+
+// --- the write -----------------------------------------------------------------
 
 function changed() {
   clearTimeout(timer);
@@ -148,7 +224,7 @@ function write() {
   let text = null;
   try {
     if (absorb(localStorage.getItem(KEY))) emit("drafts-changed");
-    text = serialize(store, unread);
+    text = serialize(store, unread, unreadBundles);
     localStorage.setItem(KEY, text);
   } catch (e) {
     if (!refused) toast(!noRoom(e) ? REFUSED : known === null ? NO_ROOM : FULL);
@@ -157,14 +233,13 @@ function write() {
   }
   known = text;
   refused = false;
-  dirty.clear();
-  deleted.clear();
-  handed.clear();
+  for (const set of [dirty, deleted, handed, ...Object.values(bundleMarks)]) set.clear();
   forgotten = false;
   emit("drafts-written");
 }
 
-const waiting = () => dirty.size > 0 || deleted.size > 0 || forgotten;
+const pending = (marks) => marks.dirty.size > 0 || marks.deleted.size > 0;
+const waiting = () => pending({ dirty, deleted }) || pending(bundleMarks) || forgotten;
 
 /** Write what waits now, a write the browser refused included. */
 export function flush() {
@@ -179,8 +254,11 @@ function absorb(text) {
   if (text === known) return false;
   known = text;
   const read = parse(text);
-  if (!forgotten) unread = read.unread;
-  const out = merge(store, read.store, { dirty, deleted, handed });
+  if (!forgotten) {
+    unread = read.unread;
+    unreadBundles = read.unreadBundles;
+  }
+  const out = merge(store, read.store, { dirty, deleted, handed, bundles: bundleMarks });
   store = out.store;
   if (out.moved.length) emit("drafts-moved", out.moved);
   emit("drafts-merged", out.taken);
