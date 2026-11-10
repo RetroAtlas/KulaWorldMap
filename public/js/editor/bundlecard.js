@@ -4,16 +4,8 @@
 import { $, el } from "../viewer/ui/dom.js";
 import { say } from "../viewer/chrome/a11y.js";
 import { TEXT_MOST, TITLE_MOST } from "../format/project.js";
-import {
-  UNTITLED_BUNDLE,
-  bundleName,
-  bundleUnsaved,
-  field,
-  nameOf,
-  saveBundle,
-  some,
-  twice,
-} from "./levelcard.js";
+import { UNTITLED_BUNDLE } from "../format/bundle.js";
+import { bundleName, bundleUnsaved, field, nameOf, saveBundle, some, twice } from "./levelcard.js";
 import * as drafts from "./drafts.js";
 
 const levelName = (l) => nameOf(drafts.get(l).doc);

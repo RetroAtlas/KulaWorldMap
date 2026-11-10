@@ -21,7 +21,7 @@ import { download, slug } from "../viewer/ui/download.js";
 import { COLOURS, facesOf, levelKey, writeKwl } from "../format/kwl.js";
 import { TEXT_MOST, UNTITLED, setCircuit, setMeta, writeProject } from "../format/project.js";
 import { ERROR, TIME_LIMIT, circuitMembers, playsAs, timeOf, validate } from "../format/checks.js";
-import { writeBundle } from "../format/bundle.js";
+import { UNTITLED_BUNDLE, writeBundle } from "../format/bundle.js";
 import { shareLevel } from "./sharedialog.js";
 import { readWith } from "./intake.js";
 import { openPatchDialog } from "./patchdialog.js";
@@ -45,7 +45,6 @@ const KEYLESS = [
   ["bonus", "Bonus level"],
   ["simon", "Simon room"],
 ];
-export const UNTITLED_BUNDLE = "Untitled bundle";
 const NEW_BUNDLE = "new";
 const BUNDLE_NOTE = "A bundle is a set of your levels in play order, saved as one file.";
 const ADD_TO = "Add this level to a bundle of your levels, or make one";

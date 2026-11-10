@@ -19,6 +19,7 @@ import {
 } from "./project.js";
 
 export const BUNDLE_FORMAT = "kula-world-bundle";
+export const UNTITLED_BUNDLE = "Untitled bundle";
 /** The most levels a bundle holds: as many as the disc has slots. */
 export const BUNDLE_MOST = WORLDS.length * (WORLD_SLOTS + FINAL_SLOTS) + COPYCAT_SLOTS;
 
