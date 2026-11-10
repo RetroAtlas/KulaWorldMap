@@ -1,11 +1,9 @@
 import { $, on, emit } from "../ui/dom.js";
-import { state, BLOCK, depth, facing, screen, sliceZ, effectFrame } from "../state.js";
-import { cellKey, FACE_NORMAL, KIND } from "../../format/lattice.js";
+import { state, screen, sliceZ, effectFrame } from "../state.js";
 import {
   worldTint,
   motionTable,
   skinsTable,
-  platformCells,
   litNow,
   settleCircuits,
   markerDestination,
@@ -14,15 +12,17 @@ import {
 } from "../data.js";
 import { frameAt } from "../motion.js";
 import { slotOf } from "../permalink.js";
-import { walkers, probe, advance, place, under, dice } from "../travel.js";
+import { walkers, probe, advance, place, dice } from "../travel.js";
 import { lookOf } from "../skins.js";
-import { drawBeams } from "./beams.js";
 import { atlasFor } from "./atlas.js";
-import { drawBlock, cube, outline, covers, faceAt } from "./blocks.js";
-import { drawRails, drawBase, drawCamera, drawScale, drawLink } from "./overlays.js";
-import { drawThing, quietAmongModels, thingDisc } from "./things.js";
+import { cube, outline, covers, faceAt } from "./blocks.js";
+import { visible, reaches, paintCells } from "./cells.js";
+import { drawBase, drawCamera, drawScale, drawLink } from "./overlays.js";
+import { drawThing, thingDisc } from "./things.js";
 import { drawCompass } from "./compass.js";
 import { deviceLights } from "./lights.js";
+
+// --- the canvases --------------------------------------------------------------------------
 
 const cv = $("cv");
 const ctx = cv.getContext("2d");
@@ -55,10 +55,13 @@ export const pointing = (on) => {
 // through its near one.
 const layerCv = document.createElement("canvas");
 const layer = layerCv.getContext("2d");
+const THROUGH = 0.35;
 
 export const invalidatePick = () => {
   pickStale = true;
 };
+
+// --- the hooks and the movers --------------------------------------------------------------
 
 // What draws over the map from outside it: an under hook runs before any
 // block, where the ground grid is drawn, and skips the grid by returning true;
@@ -83,6 +86,8 @@ export const movingWith = (fn) => {
   movers.push(fn);
 };
 const merged = (into, more) => (more?.size ? new Map([...(into ?? []), ...more]) : into);
+
+// --- the size, the density and the atlas ---------------------------------------------------
 
 export function resize() {
   const dpr = Math.min(devicePixelRatio || 1, 2);
@@ -131,79 +136,7 @@ on("atlas-loaded", (world) => {
   draw();
 });
 
-const THROUGH = 0.35;
-const away = (face) => face !== null && face !== undefined && !facing(FACE_NORMAL[face]);
-
-/** What to draw, back to front. */
-function visible(idx, moving) {
-  const out = [];
-  for (const cells of [idx.cells, idx.beamCells, idx.railCells]) {
-    for (const c of cells.values()) {
-      if (c.z < sliceZ() && !state.show.hidden) continue;
-      const key = cellKey(c.x, c.y, c.z);
-      const r = c.v >= state.data.firstRecord ? idx.records.get(key)?.[0] : null;
-      if (r?.kind !== KIND.PLATFORM) {
-        const size = cells === idx.cells ? idx.breaking?.get(key) : undefined;
-        out.push(size === undefined ? c : { ...c, size });
-        // A thing on a face turned away from the view sorts as the cell it
-        // stands in, behind its block, so the block hides only what it covers.
-        if (cells !== idx.cells) continue;
-        for (const m of idx.markers.get(key) || []) {
-          if (!away(m.face)) continue;
-          const n = FACE_NORMAL[m.face];
-          const d = depth(c.x + n[0], c.y + n[1], c.z + n[2]);
-          out.push({ x: c.x + n[0], y: c.y + n[1], z: c.z + n[2], d: d + 1e-6, home: c, mark: m });
-        }
-        continue;
-      }
-      const offset = moving?.get(`${key}/null`)?.offset || [0, 0, 0];
-      platformCells(r).forEach(([x, y, z], k) =>
-        out.push({
-          ...c,
-          x: x + offset[0],
-          y: y + offset[1],
-          z: z + offset[2],
-          home: c,
-          k,
-          body: [x, y, z],
-        }),
-      );
-    }
-  }
-  // A travelling thing sorts just in front of the nearest block it stands
-  // over, so neither the block it leaves nor the one it rolls onto paints over
-  // it. On a face turned away from the view it sorts behind the furthest, so
-  // every block it stands over comes in front. One that hands the frame a
-  // depth of its own sorts at that.
-  if (moving) {
-    for (const going of moving.values()) {
-      const { w, offset } = going;
-      if (w.face === undefined) continue;
-      const at = [w.c.x, w.c.y, w.c.z].map((v, i) => v + 0.5 + offset[i]);
-      out.push({
-        x: at[0],
-        y: at[1],
-        z: at[2],
-        d: going.depth ?? sortDepth(idx, w, offset),
-        home: w.c,
-        thing: going,
-      });
-    }
-  }
-  const far = (e) => e.d ?? depth(e.x, e.y, e.z);
-  out.sort((a, b) => far(b) - far(a));
-  return out;
-}
-
-function sortDepth(idx, w, offset) {
-  const cells = under(w, offset);
-  const blocks = cells.filter((c) => idx.cells.has(cellKey(...c)));
-  // over no block, it sorts as if one were under its middle
-  const below = (blocks.length ? blocks : cells.slice(0, 1)).map((c) => depth(...c));
-  return away(w.face)
-    ? Math.max(...below) + depth(...FACE_NORMAL[w.face]) + 1e-6
-    : Math.min(...below) - 1e-6;
-}
+// --- the run and what travels --------------------------------------------------------------
 
 // The level's clock starts at its first frame as the level opens or motion is
 // turned on, as play's clock does, and stands there while motion is off, and while
@@ -297,6 +230,8 @@ function travelling(l, idx, frame, given) {
   return out;
 }
 
+// --- the draw ------------------------------------------------------------------------------
+
 export function draw() {
   const { w, h } = state.view;
   ctx.clearRect(0, 0, w, h);
@@ -358,54 +293,16 @@ export function draw() {
     lights: lights?.lit,
     seeing: given?.seeing ?? false,
   };
-  const through = [];
   const chosen = state.selected?.key;
-  const put = (...t) => {
-    if (drawThing(ctx, ...t)) spinning = true;
-    const [m, , , , home, going] = t;
-    const covered =
-      away(m.face) && (state.show.through || cellKey(home.x, home.y, home.z) === chosen);
-    if (going?.through) through.push([...t.slice(0, 5), { ...going, shadow: false }]);
-    else if (covered) through.push(t);
-  };
-  const mark = (m, c, home, key) => {
-    if (moving?.has(`${key}/${m.face}`)) return;
-    if (state.show.models && quietAmongModels(m, !!atlas, key === chosen)) return;
-    put(m, c, l, frame, home);
-  };
-
-  for (const c of cells) {
-    if (!reaches(screen(c.x, c.y, c.z), view)) continue;
-    const home = c.home || c;
-    const ghost = home.z < sliceZ();
-    if (c.beams) {
-      if (drawBeams(ctx, c, ghost, effect)) spinning = true;
-      continue;
-    }
-    if (c.rails) {
-      if (state.show.outlines) drawRails(ctx, c, ghost, moving);
-      continue;
-    }
-    if (c.thing) {
-      if (state.show.objects && !ghost) put(c.thing.w.m, home, l, frame, home, c.thing);
-      continue;
-    }
-    const key = cellKey(home.x, home.y, home.z);
-    if (c.mark) {
-      if (state.show.objects && !ghost) mark(c.mark, home, home, key);
-      continue;
-    }
-    const sel = state.selected?.key === key;
-    const hov = state.hover?.key === key;
-    if (drawBlock(ctx, c, home, key, ghost, sel, hov, scene)) spinning = true;
-    for (const fn of overlays.block) fn(ctx, c, home, key, ghost, scene);
-
-    if (state.show.objects && !ghost && !c.k) {
-      for (const m of idx.markers.get(key) || []) if (!away(m.face)) mark(m, c, home, key);
-    }
-    if (sel || hov) outline(ctx, c, idx, sel ? "#ffffff" : "#ffffffb0");
-    for (const fn of overlays.cell) fn(ctx, c, home, key, ghost, scene);
-  }
+  const { live, through } = paintCells(ctx, scene, cells, {
+    view,
+    moving,
+    hooks: overlays,
+    chosen,
+    selectedKey: chosen,
+    hoverKey: state.hover?.key,
+  });
+  if (live) spinning = true;
 
   if (through.length) {
     if (layerCv.width !== cv.width || layerCv.height !== cv.height) {
@@ -435,6 +332,8 @@ export function draw() {
   if ((spinning && state.show.motion) || again) animate();
 }
 
+// --- the redraw ----------------------------------------------------------------------------
+
 // Set by a draw with anything moving on screen, which then asks for the next
 // frame.
 let spinning = false;
@@ -463,12 +362,7 @@ export function drawSoon() {
   if (!queuedFrame) draw();
 }
 
-/** Whether a block at the projected corner can reach into the area, which a
-    whole cube about its corner is well within twice its side of. */
-function reaches([px, py], area) {
-  const r = BLOCK * state.cam.zoom * 2;
-  return px >= area.x0 - r && px <= area.x1 + r && py >= area.y0 - r && py <= area.y1 + r;
-}
+// --- the pick ------------------------------------------------------------------------------
 
 /** Paint the pick from the last draw's cells, within `area`. Every cell takes
     its place in the list whether painted or not, so a colour read means the

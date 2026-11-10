@@ -678,9 +678,11 @@ A level under the drafts' pack carries its store id as `draft` beside the tag, t
 
 ### Drawing the frame
 
-`js/viewer/draw/render.js` draws the frame: it puts the cells in the painter's order, keeps the pick canvas that turns a point on the screen into a cell, lays what shows through the blocks over the map, and draws again while anything moves.
+`js/viewer/draw/render.js` draws the frame: it keeps the pick canvas that turns a point on the screen into a cell, lays what shows through the blocks over the map, and draws again while anything moves.
 
-It draws the blocks through `js/viewer/draw/blocks.js`, which lays each world's textures from `js/viewer/draw/atlas.js` and the light a device casts on them from `js/viewer/draw/lights.js`, which casts a light a module hands it through `lightsWith` as it casts a device's light, from a cell and a face in a colour of the module's own, on the faces a device there would light and at the same levels, so that nothing on the blocks changes until a module hands one.
+`js/viewer/draw/cells.js` puts the cells in the painter's order, back to front, and paints them in it, each block with what stands on it and the frame's block and cell hooks run on it, handing back what is to show through the blocks and whether anything it drew is moving, so the one loop can paint a level into any canvas.
+
+The frame draws the blocks through `js/viewer/draw/blocks.js`, which lays each world's textures from `js/viewer/draw/atlas.js` and the light a device casts on them from `js/viewer/draw/lights.js`, which casts a light a module hands it through `lightsWith` as it casts a device's light, from a cell and a face in a colour of the module's own, on the faces a device there would light and at the same levels, so that nothing on the blocks changes until a module hands one.
 
 `js/viewer/draw/atlas.js` keeps its atlases by disc and world, a disc's atlas of a world being the US atlas with that disc's sheets drawn over it at the origin in the order its file names them, built once all have landed and said with `atlas-loaded` as the atlas's own landing is, so `js/viewer/draw/blocks.js` and whatever else paints a face asks for the world's atlas alone and carries no branch for the disc.
 
