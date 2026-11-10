@@ -22,6 +22,8 @@ The map is an editor as well. Make a level of your own, or copy a shipped one an
 
 Drafts stay in the browser until they are saved, as the map's own file or as the level the game loads, and drafts can be written onto the game's disc, one or several as one patch for an emulator. [docs/editor.md](docs/editor.md) is the specification of the file format and says how the writers are held to the disc.
 
+A draft can also be shared by a link that carries the level whole, so it opens on any device.
+
 ## What the disc stores
 
 Every level is one compressed record inside a pack: a fixed 34 x 34 x 34 lattice of cells, each empty, one of five kinds of block, or a block carrying a record, and a table of records, a block's record being its kind and six slots that are its six faces, with an object standing on any face whose slot is filled.

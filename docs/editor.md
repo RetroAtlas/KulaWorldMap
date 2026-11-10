@@ -302,6 +302,8 @@ HIDDEN 10 comes to 766 by that count, and one more plain block in the open takes
 
 The browser store is a convenience and the exported file is the record; the viewer's "Your levels" says so under its rows.
 
+The link that carries a level whole is the other way out of the browser, which the same sentence names beside the file.
+
 ### The store
 
 `public/js/editor/drafts.js` keeps the drafts under `localStorage["kula.drafts"]` as `{ "version": 1, "next": n, "drafts": { id: { "doc", "updated", "saved", "edits" } } }`: `version` is 1 in this version, or the higher number the store was found with, `doc` is a project as the file holds it, `updated` the time of the last change, `saved` the time of the last save to a file or null, `edits` the changes since that save, counted as below.
