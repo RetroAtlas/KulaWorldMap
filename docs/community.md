@@ -142,7 +142,25 @@ The panel fetches the index at `INDEX_URL`, `community/index.json`, with a null 
 
 Each entry is a tile through `public/js/viewer/ui/tiles.js`, keyed by its id, its picture painted by `paintLevel` from the level `toLevel` makes of the entry's document under `COMMUNITY_PACK` with the tag `Community`, built once and kept with its index for the pictures and the links; the tiles stand newest first, the highest id first, and `public/js/community/sort.js` holds the row's four sorts and its filter over the title, the author and the world as the map names it.
 
+A bundle entry is one tile too, keyed by its id, its picture painted from its first level and its line the author with how many levels the bundle holds, `by Ada · 12 levels`, in place of a world; choosing it shows the first level, the slot `<id>-1`.
+
+A bundle entry's `world`, the world of its first level, still orders and filters it.
+
+An entry with no title is shown as `UNTITLED` of `public/js/format/project.js`, "Untitled level", or for a bundle as `UNTITLED_BUNDLE` of `public/js/format/bundle.js`, "Untitled bundle", the names the editor gives them.
+
 Choosing a tile shows the level through `showLevel` with the document attached to the level as `project`, which is what `copy this level` under the level line clones into a draft, author and notes kept and no `from` set, and what `save the file` writes through `writeProject`, named by the title's slug.
+
+For a level of a bundle the note adds the level's place, `Level 3 of 12 in <title>`, and a `details` whose summary is the count of levels and whose list links to every level of the bundle, `#COMMUNITY/<id>-<n>` in the record's order, the one on screen marked `aria-current`.
+
+The fold is open where the sidebar has a column of its own and closed where it overlays the map, `sidebarOverlays` of `public/js/viewer/chrome/sidebar.js`, as a draft's overview folds.
+
+Once opened or closed by hand the fold stays so for the visit, as the overview's fold does.
+
+The list is capped at three tenths of the window's height and scrolls, as the overview's findings are.
+
+A link of the list holding the focus hands it to the marked link once the level it names is on screen, since the note is built afresh for every level.
+
+For a level of a bundle `save the file` writes the whole bundle through `documentOf` and `writeBundle`, named by the slug of the bundle's title with `.kula-bundle.json`, as the Level card's `save as a bundle` names one.
 
 The panel answers a link's slot through `provideLevels`: `COMMUNITY/<id>` with a level entry's document and `COMMUNITY/<id>-<n>` with the level at place `n` of a bundle entry's list, both read by one regular expression and `Number`, from the catalogue held.
 

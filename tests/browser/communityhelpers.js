@@ -1,7 +1,13 @@
 import { expect } from "@playwright/test";
 import { mapData } from "../unit/fixtures.js";
-import { fromLevel, setMeta } from "../../public/js/format/project.js";
-import { LICENCE, entryOf, writeCatalogue } from "../../public/js/format/catalogue.js";
+import { blank, fromLevel, setMeta } from "../../public/js/format/project.js";
+import { BUNDLE_FORMAT } from "../../public/js/format/bundle.js";
+import {
+  BUNDLE_IN_CATALOGUE_MOST,
+  LICENCE,
+  entryOf,
+  writeCatalogue,
+} from "../../public/js/format/catalogue.js";
 
 // The index the page reads the community levels from, served in the page's place by a route.
 export const INDEX_PATH = "/community/index.json";
@@ -24,6 +30,27 @@ const INCA = mapData.levels.findIndex((l) => l.pack === "/INCA/INCA.PAK" && l.in
 export const SPIRAL = template(0, { title: "Spiral", author: "Ada", notes: "Mind the gap." });
 export const TOWER = template(INCA, { title: "Tower", author: "", notes: "" });
 
+/** A bundle document under `head` of `n` blank levels of HIRO titled `<name> 1` on, each credited as the bundle is. */
+const bundleOf = (head, name, n) => ({
+  format: BUNDLE_FORMAT,
+  version: 1,
+  ...head,
+  levels: Array.from({ length: n }, (_, i) =>
+    setMeta(blank("HIRO"), { title: `${name} ${i + 1}`, author: head.author }),
+  ),
+});
+// a campaign of twelve, and one as long as the catalogue takes, by no one
+export const CAMPAIGN = bundleOf(
+  { title: "Spiral campaign", author: "Ada", notes: "Twelve up the wall." },
+  "Spiral",
+  12,
+);
+export const LONG = bundleOf(
+  { title: "Long haul", author: "", notes: "" },
+  "Haul",
+  BUNDLE_IN_CATALOGUE_MOST,
+);
+
 /** The index's text over `records`, each a document under its id, with the ids retired. */
 export const indexOf = (records, retired = []) =>
   writeCatalogue({
@@ -33,6 +60,8 @@ export const indexOf = (records, retired = []) =>
     retired,
   });
 export const TWO = indexOf({ 1: SPIRAL, 2: TOWER });
+export const BUNDLED = indexOf({ 1: SPIRAL, 2: CAMPAIGN });
+export const HAUL = indexOf({ 1: SPIRAL, 2: LONG });
 
 /** Serve `text` as the index, or `status` with no body where one is given, counting the page's
     requests for it in `n`. */

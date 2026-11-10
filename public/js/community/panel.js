@@ -4,11 +4,13 @@ import { $, el, on } from "../viewer/ui/dom.js";
 import { tiles } from "../viewer/ui/tiles.js";
 import { download, slug } from "../viewer/ui/download.js";
 import { state } from "../viewer/state.js";
-import { index, loadJson, skinsTable, worldName } from "../viewer/data.js";
+import { counted, index, loadJson, skinsTable, worldName } from "../viewer/data.js";
 import { paintLevel } from "../viewer/draw/still.js";
-import { parseHash } from "../viewer/permalink.js";
+import { parseHash, slotOf } from "../viewer/permalink.js";
 import { noteWith, provideLevels, showLevel } from "../viewer/chrome/navigate.js";
-import { COMMUNITY_PACK, readCatalogue } from "../format/catalogue.js";
+import { sidebarOverlays } from "../viewer/chrome/sidebar.js";
+import { COMMUNITY_PACK, documentOf, readCatalogue } from "../format/catalogue.js";
+import { UNTITLED_BUNDLE, writeBundle } from "../format/bundle.js";
 import { UNTITLED, toLevel, writeProject } from "../format/project.js";
 import { SORTS, matches, ordering } from "./sort.js";
 
@@ -33,6 +35,8 @@ let grid = null;
 let sort = SORTS[0];
 // The empty line's own words, put back once the filter lets a level through again.
 let nothing = "";
+// Whether the visitor has opened or folded a bundle's levels under the line; null until they do.
+let unfolded = null;
 
 // --- the index ---------------------------------------------------------------------------
 /** The catalogue, fetched once and held; null where the index did not arrive, so the next call fetches again. */
@@ -75,11 +79,16 @@ function placeOf(slot) {
   return m && [Number(m[1]), m[2] === undefined ? undefined : Number(m[2])];
 }
 
+const entryAt = (id) => catalogue?.entries.find((e) => e.id === id) ?? null;
+const isBundle = (e) => e.kind === "bundle";
+/** The place an entry opens at: a bundle's first level, and none for a level of its own. */
+const firstOf = (e) => (isBundle(e) ? 1 : undefined);
+
 /** The document of record `id`, or with `n` the level at that place in its bundle; null where the catalogue holds none. */
 function documentAt(id, n) {
-  const entry = catalogue?.entries.find((e) => e.id === id);
+  const entry = entryAt(id);
   if (!entry) return null;
-  if (entry.kind === "bundle") return n === undefined ? null : (entry.levels[n - 1] ?? null);
+  if (isBundle(entry)) return n === undefined ? null : (entry.levels[n - 1] ?? null);
   return n === undefined ? entry.level : null;
 }
 
@@ -98,6 +107,9 @@ function heldAt(id, n) {
 
 const levelAt = (id, n) => heldAt(id, n)?.l ?? null;
 
+/** The record's id and the place of the level on screen, where it is one of the community levels. */
+const shownAt = () => (state.lvl?.pack === COMMUNITY_PACK ? placeOf(slotOf(state.lvl)) : null);
+
 provideLevels((slot) => {
   const at = placeOf(slot);
   return at ? levelAt(...at) : null;
@@ -107,31 +119,31 @@ provideLevels((slot) => {
 /** A level's record for the order and the filter, its world by the name the map shows. */
 const recordOf = (e) => ({
   id: e.id,
-  title: e.title || UNTITLED,
+  title: e.title || (isBundle(e) ? UNTITLED_BUNDLE : UNTITLED),
   author: e.author,
   world: worldName(e.world),
   e,
 });
 
-const onScreen = (id) => state.lvl?.pack === COMMUNITY_PACK && state.lvl.index === id;
+const onScreen = (id) => shownAt()?.[0] === id;
+
+/** What the line says of the record beside its author: a bundle's count of levels, a level's world. */
+const whatOf = (e, world) => (isBundle(e) ? counted(e.levels.length, "level") : world);
 
 const itemOf = ({ e, title, author, world }) => ({
   key: e.id,
   stamp: 0,
   title,
   tag: TAG,
-  line: author ? `by ${author} · ${world}` : world,
+  line: author ? `by ${author} · ${whatOf(e, world)}` : whatOf(e, world),
   current: onScreen(e.id),
-  open: () => {
-    const l = levelAt(e.id);
-    if (l) showLevel(l, { push: true });
-  },
-  paint: (canvas) => paint(canvas, e.id),
+  open: () => showLevel(levelAt(e.id, firstOf(e)), { push: true }),
+  paint: (canvas) => paint(canvas, e),
 });
 
-/** Paint the record's picture, flat until its world's textures have landed; whether they were drawn. */
-function paint(canvas, id) {
-  const held = heldAt(id);
+/** Paint the record's picture, for a bundle its first level, flat until its world's textures have landed; whether they were drawn. */
+function paint(canvas, e) {
+  const held = heldAt(e.id, firstOf(e));
   if (!held) return true;
   return paintLevel(canvas, held.l, held.idx, { textures: !navigator.connection?.saveData })
     .textured;
@@ -177,9 +189,45 @@ on("level-changed", () => {
 });
 
 // --- the note -----------------------------------------------------------------------------
+/** The level's place in its bundle, and the bundle's levels as links to each under their count,
+    open where the sidebar has a column of its own, closed where it overlays the map, and as the
+    visitor last left it; a link of the list holding the focus hands it to the marked one, since
+    the note is built afresh for the level a link opens. */
+function placeIn(bundle, n) {
+  const fold = el("details", { className: "more", open: unfolded ?? !sidebarOverlays() });
+  const summary = el("summary", { textContent: counted(bundle.levels.length, "level") });
+  summary.onclick = () => {
+    unfolded = !fold.open;
+  };
+  const list = el(
+    "ul",
+    { className: "members" },
+    bundle.levels.map((p, i) => {
+      const a = el("a", {
+        href: `#COMMUNITY/${bundle.id}-${i + 1}`,
+        textContent: p.title || UNTITLED,
+      });
+      a.setAttribute("aria-current", i + 1 === n ? "true" : "false");
+      return el("li", {}, a);
+    }),
+  );
+  fold.append(summary, list);
+  if (document.activeElement?.closest("#chipNote .members a"))
+    queueMicrotask(() => list.querySelector('a[aria-current="true"]')?.focus());
+  return [
+    el("p", {
+      textContent: `Level ${n} of ${bundle.levels.length} in ${bundle.title || UNTITLED_BUNDLE}.`,
+    }),
+    fold,
+  ];
+}
+
 noteWith((l) => {
   if (l.pack !== COMMUNITY_PACK || !l.project) return null;
   const { title, author, notes } = l.project;
+  const [id, n] = placeOf(slotOf(l)) ?? [];
+  const entry = entryAt(id);
+  const bundle = entry && isBundle(entry) ? entry : null;
   const copy = el("button", {
     type: "button",
     className: "linkish",
@@ -191,15 +239,28 @@ noteWith((l) => {
     type: "button",
     className: "linkish",
     textContent: "save the file",
-    title: "Save this level as the map's own .json file",
+    title: bundle
+      ? "Save the bundle this level is in as the map's own bundle file"
+      : "Save this level as the map's own .json file",
   });
   save.onclick = () =>
-    download(`${slug(title || UNTITLED)}.kula.json`, writeProject(l.project), "application/json");
+    bundle
+      ? download(
+          `${slug(bundle.title, "bundle")}.kula-bundle.json`,
+          writeBundle(documentOf(bundle)),
+          "application/json",
+        )
+      : download(
+          `${slug(title || UNTITLED)}.kula.json`,
+          writeProject(l.project),
+          "application/json",
+        );
   return el(
     "div",
     { className: "shared" },
     author ? el("p", { textContent: `By ${author}.` }) : [],
     notes ? el("p", { className: "notes", textContent: notes }) : [],
+    bundle ? placeIn(bundle, n) : [],
     el("p", {}, "One of the community levels, not kept in this browser. ", copy, " · ", save),
   );
 });

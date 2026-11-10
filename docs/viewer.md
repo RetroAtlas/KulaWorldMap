@@ -365,23 +365,35 @@ Opening it from any level's card adds a row for that level under the others, whe
 
 ## Community levels
 
-The sidebar's "Community levels", after Your levels, lists the levels players made and sent in, folded under its heading as Your levels is, with how many there are beside the name once they are read and a chevron: the fold is closed on a first visit, opens by itself when one of its levels comes on screen, and otherwise stays as it was last left, across visits and reloads.
+The sidebar's "Community levels", after Your levels, lists the levels players made and sent in, folded under its heading as Your levels is, with how many levels and bundles there are beside the name once they are read, a bundle counting as one, and a chevron: the fold is closed on a first visit, opens by itself when one of its levels comes on screen, and otherwise stays as it was last left, across visits and reloads.
 
 The levels are read from this site when the fold is first opened, or once the map has drawn where the fold was left open, or at the start where the link names one of them, and never on a plain visit; nothing of them is kept in this browser until one is copied.
 
 Each is a tile as a level of your own is, its picture, its title, "Community" and a line with its author and its world, `by Ada · HIRO`, or the world alone where it names no author, newest first; choosing one shows it, marked "Community" on the level line, and its tile is marked as the one on screen.
 
+A bundle of levels stands among them as one tile, with the picture of its first level, its title, "Community" and a line with its author and how many levels it holds, `by Ada · 12 levels`, or the count alone where it names no author; choosing it shows its first level, and its tile is marked as the one on screen while any level of it is.
+
 Once there are two or more, a row above them offers a sort, newest first, by title, by author with the levels naming none last or by world in the game's order, and a filter.
 
-The filter keeps the levels whose title, author or world holds its text, whatever the case, "Nothing matches." standing where it keeps none.
+The filter keeps the levels whose title, author or world holds its text, whatever the case, a bundle answering to the world of its first level, "Nothing matches." standing where it keeps none.
 
 The sort and the filter start afresh on every visit.
 
 Under the level line the note names the author, "By Ada.", gives the notes as written and offers `copy this level`, which makes a level of your own out of it with its author and notes kept, as the sidebar's `copy this level` does, and `save the file`, which saves it as the map's own file named by its title.
 
+Under a level of a bundle the note also says where the level stands, "Level 3 of 12 in Spiral campaign.", "Untitled bundle" standing for a bundle with no title, and lists the bundle's levels as links under a line with their count, the one on screen marked, so the rest of the bundle is a step away wherever the level was opened from.
+
+That list stands open where the sidebar has a column of its own and closed on a phone until it is opened, as a draft's counts and findings do, and then stays as it was left while the page lives.
+
+A long list scrolls within three tenths of the screen's height, so a bundle of sixty levels never pushes the note off the screen.
+
+For a level of a bundle `save the file` saves the whole bundle as the map's own bundle file, named by the bundle's title, as `save as a bundle` on the Level card does.
+
 Where there is no level yet the fold says "Nothing here yet.", and where the levels could not be read it says so and asks to open the panel again, which reads them once more.
 
 A link to a community level (`#COMMUNITY/17/...`) opens it on any device, the levels read before the link is; a link to a level taken down says "That level was taken down.", one to a level the catalogue does not hold says the community levels hold no such level, and one that arrives while the levels could not be read says so, each giving way to the view on screen as a link the map cannot honour does, whether it opens the page or arrives while the page is up.
+
+A link to a level of a bundle (`#COMMUNITY/17-3/...`) opens that level, the third of record 17, which is what the links under the line are, so one of them copied is a link to that level.
 
 The levels are their authors' work, shared under CC BY 4.0 with credit to the name in the Author field, which the fold's sentence and the About say, and [community.md](community.md) has the catalogue they are read from and how a level is added to it.
 

@@ -1095,12 +1095,6 @@ body:not(.sidebar-open) .menu-btn .cross {
 .chip .overview p {
   margin: 0;
 }
-.chip .overview .more {
-  margin-top: 2px;
-}
-.chip .overview .more > summary {
-  cursor: pointer;
-}
 .chip .overview .counts {
   margin-top: 2px;
 }
@@ -1132,6 +1126,13 @@ body:not(.sidebar-open) .menu-btn .cross {
   text-underline-offset: 2px;
   cursor: pointer;
 }
+/* a fold in the note, whichever note it stands in */
+.chip .more {
+  margin-top: 2px;
+}
+.chip .more > summary {
+  cursor: pointer;
+}
 /* the note of a level from elsewhere: who made it, their words and the ways to keep it */
 .chip .shared p {
   margin: 0;
@@ -1140,6 +1141,21 @@ body:not(.sidebar-open) .menu-btn .cross {
   white-space: pre-line;
   max-height: 30vh;
   overflow: auto;
+}
+.chip .shared .members {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  max-height: 30vh;
+  overflow: auto;
+}
+.chip .shared .members a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+.chip .shared .members a[aria-current="true"] {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .readout {
