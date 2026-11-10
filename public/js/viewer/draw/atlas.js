@@ -45,12 +45,13 @@ function sheet(path, img) {
 }
 
 const sheetsOf = (disc, world) => releaseOf(disc)?.art?.sheets?.[world] ?? [];
+const discKey = (disc, world) => `${disc}/${world}`;
 
 /** The disc's atlas of `world`, drawn once the base atlas and every sheet
     have landed, the sheets over the base in the order the disc names them,
     and failed where any of them fails. */
 function composite(disc, world, base, paths, image = () => new Image()) {
-  const key = `${disc}/${world}`;
+  const key = discKey(disc, world);
   let c = ATLAS.discs.get(key);
   if (c) return c;
   const parts = [base, ...paths.map((path) => ATLAS.sheets.get(path) ?? sheet(path, image()))];
@@ -79,6 +80,16 @@ export function atlasFor(world) {
   const paths = sheetsOf(disc, world);
   const a = paths.length ? composite(disc, world, base, paths) : base;
   return a.ready ? a : null;
+}
+
+/** Whether the atlas of `world` on the disc shown is ready to draw from, asked
+    without starting a fetch, so a world never asked for answers false. */
+export function landed(world) {
+  const disc = current();
+  const a = sheetsOf(disc, world).length
+    ? ATLAS.discs.get(discKey(disc, world))
+    : ATLAS.worlds.get(world);
+  return a?.ready ?? false;
 }
 
 /** Fetch the atlases of `worlds` ahead of their levels, one at a time and

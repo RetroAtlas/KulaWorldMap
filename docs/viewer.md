@@ -662,6 +662,8 @@ Once that world's textures have landed and the page is idle, the other worlds' t
 
 A disc that draws a world otherwise names sheets of the atlas's size, transparent but for the cells its textures change, which the page does not preload: they are fetched with the world's atlas when a level of that world is first drawn on that disc, or ahead behind the atlas as the other worlds' are, and composited over the atlas once all have landed, while a world the disc names no sheet for draws the atlas itself, with no canvas and no extra fetch.
 
+A module may ask `js/viewer/draw/atlas.js` whether a world's textures have landed on the disc shown, the sheets drawn over them where the disc names any, without starting their fetch, so what paints a world's blocks before its textures arrive can draw them flat and wait on `atlas-loaded` rather than put the atlas ahead of whatever the page asks for itself.
+
 Beside the worlds' atlases under `tex/` the build lays the sheet of the seven sprites the game's effects draw, for play alone, which the page does not preload.
 
 A link that carries a level fetches the community module and what it imports beside the data, since the level comes whole in the link; the page cannot read the world off the segment before the decode, so that world's textures are fetched once the level is decoded, as a draft's textures are.
