@@ -24,3 +24,15 @@ export function matches(record, query) {
   const q = query.trim().toLowerCase();
   return !q || record.title.toLowerCase().includes(q) || record.world.toLowerCase().includes(q);
 }
+
+/** The bundles as groups over `records` by id: each with the records of its levels the filter keeps, in the bundle's order, and whether it hides, which it does with none kept while the filter has text; and the ids of every level in a bundle. */
+export function grouping(bundles, records, query) {
+  const grouped = new Set();
+  const groups = bundles.map((b) => {
+    const levels = b.levels.filter((id) => records.has(id)).map((id) => records.get(id));
+    for (const r of levels) grouped.add(r.id);
+    const kept = levels.filter((r) => matches(r, query));
+    return { b, kept, hidden: !kept.length && query.trim() !== "" };
+  });
+  return { groups, grouped };
+}

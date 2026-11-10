@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { SORTS, matches, ordering } from "../../public/js/editor/draftsort.js";
+import { SORTS, grouping, matches, ordering } from "../../public/js/editor/draftsort.js";
 
 const WORLDS = ["HIRO", "INCA", "ATLANTIS"];
 const record = (id, title, world, updated, { saved = null, edits = 0 } = {}) => ({
@@ -60,6 +60,34 @@ test("the filter holds a level whose title or world holds the text, whatever the
   assert.equal(matches(r, "spiral up the wall"), false);
   assert.equal(matches(r, ""), true);
   assert.equal(matches(r, "   "), true);
+});
+
+test("a bundle's group holds the records of its levels the filter keeps, in the bundle's order, hides with none kept only while the filter has text, and every level in a bundle is grouped", () => {
+  const records = new Map(RECORDS.map((r) => [r.id, r]));
+  const bundles = [
+    { id: 7, levels: [3, 1, 99] },
+    { id: 8, levels: [2] },
+    { id: 9, levels: [99] },
+  ];
+  const kept = (groups) => groups.map((g) => g.kept.map((r) => r.id));
+  const all = grouping(bundles, records, "   ");
+  assert.deepEqual(kept(all.groups), [[3, 1], [2], []]);
+  assert.deepEqual(
+    all.groups.map((g) => g.hidden),
+    [false, false, false],
+  );
+  assert.deepEqual(
+    all.groups.map((g) => g.b),
+    bundles,
+  );
+  assert.deepEqual([...all.grouped].sort(), [1, 2, 3]);
+  const some = grouping(bundles, records, "atlant");
+  assert.deepEqual(kept(some.groups), [[1], [], []]);
+  assert.deepEqual(
+    some.groups.map((g) => g.hidden),
+    [false, true, true],
+  );
+  assert.deepEqual([...some.grouped].sort(), [1, 2, 3]);
 });
 
 test("the sort control offers the sorts the module knows, in its order", () => {

@@ -235,6 +235,16 @@ The row's filter keeps the levels whose title or world holds its text, whatever 
 
 The view and the sort are kept in this browser from one visit to the next, the view starting as tiles, or as the list on a phone, where the sidebar is a drawer over the map, and the filter starts empty on every visit.
 
+A bundle of your levels stands among them as a group, folded under a line with the bundle's title, "Untitled bundle" where it has none, its author and how many levels it holds, its levels inside in the bundle's order, as tiles or as rows as the view is, and the sort leaves that order alone.
+
+The groups stand first, in the order the bundles were made, and the levels in no bundle under them in the row's order.
+
+A group is closed until one of its levels comes on screen, which opens it as a world opens in the Worlds panel for its level, and it otherwise stays as it was left while the page lives; nothing of it is kept across visits, so a reload leaves every group closed but the shown level's group.
+
+A group made around the level on screen, or that comes to hold it, opens as well, so the shown level never disappears into a closed group.
+
+The filter hides a group none of whose levels it keeps while it has text and shows a kept level inside its group, and a group's count counts every level of the bundle, kept or not.
+
 Where this browser holds levels of its own that could not be read, a row under the drafts counts them and offers to remove them, which asks to be pressed again; they are otherwise kept as they are, and said once, the first time a tab finds them, rather than at every reload.
 
 For the shown draft a Level card edits its title, up to eighty characters, its author, up to eighty characters as well, its notes, its world, the time as its file holds it, any whole number from 1 to 32767, a fraction rounded, which says so when it keeps the old value, a line under it saying what the clock starts at on each disc, and whether it plays as a hidden level or shows invisible blocks from afar, each change redrawing the map with the view, the slice, the hidden kinds, the selection, the clock and the switch presses kept; a Plays as choice above Hidden level lets a level with no key play as a bonus level or as a Simon room, one step undo takes back, and shows a level with a key as an arcade level with no choice, since the game decides that from the keys, its tip saying so and that taking every key away opens the choice.

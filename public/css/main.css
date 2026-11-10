@@ -692,6 +692,54 @@ button.kind:hover {
   color: inherit;
   opacity: 0.8;
 }
+.drafts .bundle > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  list-style: none;
+  cursor: pointer;
+}
+.drafts .bundle > summary::-webkit-details-marker {
+  display: none;
+}
+.drafts .bundle > summary:hover {
+  background: var(--panel-2);
+}
+.drafts .bundle > summary::before {
+  content: "";
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  margin: 0 3px 0 1px;
+  border: solid var(--dim);
+  border-width: 0 1.7px 1.7px 0;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+.drafts .bundle[open] > summary::before {
+  margin: -3px 3px 0 1px;
+  transform: rotate(45deg);
+}
+.drafts .bundle > summary .by {
+  color: var(--dim);
+  font-size: 11.5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.drafts .bundle > summary .n {
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.drafts .members {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 2px 0 6px 8px;
+}
 .tiles {
   list-style: none;
   margin: 0;

@@ -13,6 +13,17 @@ const LEVELS = [
   setMeta(blank("HIRO"), { title: "Spiral 3" }),
 ];
 const BUNDLE = writeBundle({ ...HEAD, levels: LEVELS });
+const SHUFFLED = writeBundle({ ...HEAD, levels: [LEVELS[2], LEVELS[0], LEVELS[1]] });
+const TOWER_NAME = "tower-set.kula-bundle.json";
+const TOWER = writeBundle({
+  title: "Tower set",
+  author: "",
+  notes: "",
+  levels: [
+    setMeta(blank("HIRO"), { title: "Tower 1" }),
+    setMeta(blank("HIRO"), { title: "Tower 2" }),
+  ],
+});
 
 /** Every bundle this browser holds, as the editor lists them. */
 const bundles = (page) =>
@@ -24,13 +35,21 @@ const bundles = (page) =>
 /** The drafts this browser holds in the order they were made. */
 const made = async (page) => (await listed(page)).sort((a, b) => a.id - b.id);
 
-/** Open the bundle file through the sidebar's file input, and wait for its levels to be listed. */
+/** Give the bundle file to the sidebar's file input, and wait for your levels to count `total`. */
+async function addBundle(page, name, text, total) {
+  await page.locator("#draftFile").setInputFiles(file(name, text));
+  await expect(page.locator("#draftRows button")).toHaveCount(total);
+}
+
+/** Open the page and the bundle file through the sidebar's file input, and wait for its levels to be listed. */
 async function openedBundle(page, text = BUNDLE, levels = LEVELS.length) {
   await page.goto(EDIT);
   await settle(page);
-  await page.locator("#draftFile").setInputFiles(file(NAME, text));
-  await expect(page.locator("#draftRows button")).toHaveCount(levels);
+  await addBundle(page, NAME, text, levels);
 }
+
+const group = (page) => page.locator("#draftRows details.bundle");
+const isOpen = (fold) => fold.evaluate((d) => d.open);
 
 test("a bundle file opens its levels as drafts marked saved and gathered into a bundle, the first shown, with one toast", async ({
   page,
@@ -150,5 +169,172 @@ test("a level of a bundle the disc cannot show is left out and said, in a toast 
   await expect(fold.locator("li")).toHaveText([line]);
   expect((await made(page)).map((d) => d.title)).toEqual(["Spiral 1", "Spiral 3"]);
   expect((await bundles(page))[0].levels).toHaveLength(2);
+  expect(errors).toEqual([]);
+});
+
+test("a bundle's group opens when one of its levels comes on screen, and otherwise stays as it was left", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await openedBundle(page);
+  const fold = group(page);
+  await expect(fold).toHaveCount(1);
+  expect(await isOpen(fold)).toBe(true);
+  // closed by a press, it stays closed through a change to the shown level and a level in no
+  // bundle coming on screen
+  await fold.locator("summary").click();
+  await expect.poll(() => isOpen(fold)).toBe(false);
+  await page.locator("#draftTitle").fill("Spiral One");
+  await expect(page.locator("#chipLine b")).toHaveText("Spiral One");
+  expect(await isOpen(fold)).toBe(false);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(4);
+  expect(await isOpen(fold)).toBe(false);
+  // one of its levels coming on screen opens it
+  const second = (await made(page))[1].id;
+  await page.evaluate((hash) => (location.hash = hash), `#DRAFT/${second}/45,35/fit/33`);
+  await expect(page.locator("#chipLine b")).toHaveText("Spiral 2");
+  await expect.poll(() => isOpen(fold)).toBe(true);
+  await expect(fold.locator('.tile[aria-current="true"] .name')).toHaveText("Spiral 2");
+  // left open, it stays open while a level in no bundle is shown
+  await page.locator("#draftRows > ul.tiles .tile").click();
+  await expect(page.locator("#chipLine b")).toHaveText("Untitled level");
+  expect(await isOpen(fold)).toBe(true);
+  // nothing of it is kept: a reload leaves it closed while the shown level is in no bundle
+  await page.reload();
+  await settle(page);
+  await expect(page.locator("#draftRows button")).toHaveCount(4);
+  expect(await isOpen(fold)).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test("a bundle made around the level on screen, or coming to hold it, opens around it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await openedBundle(page);
+  const spiral = group(page).nth(0);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(4);
+  await spiral.locator("summary").click();
+  await expect.poll(() => isOpen(spiral)).toBe(false);
+  const id = (await shown(page)).draft;
+  const [b] = await bundles(page);
+  // the shown level entering the bundle opens its group around it
+  await page.evaluate(
+    async ([bid, id]) => {
+      const { bundle, updateBundle } = await import(
+        new URL("js/editor/drafts.js", location.href).href
+      );
+      updateBundle(bid, { levels: [...bundle(bid).levels, id] });
+    },
+    [b.id, id],
+  );
+  await expect(spiral.locator("summary .n")).toHaveText("4 levels");
+  expect(await isOpen(spiral)).toBe(true);
+  await expect(spiral.locator('.tile[aria-current="true"] .name')).toHaveText("Untitled level");
+  await expect(spiral.locator('.tile[aria-current="true"]')).toBeVisible();
+  // taken out again, the group stays as left, and a bundle made around the level opens
+  await page.evaluate(
+    async ([bid, id]) => {
+      const { bundle, updateBundle } = await import(
+        new URL("js/editor/drafts.js", location.href).href
+      );
+      updateBundle(bid, { levels: bundle(bid).levels.filter((l) => l !== id) });
+    },
+    [b.id, id],
+  );
+  await expect(spiral.locator("summary .n")).toHaveText("3 levels");
+  expect(await isOpen(spiral)).toBe(true);
+  await spiral.locator("summary").click();
+  await expect.poll(() => isOpen(spiral)).toBe(false);
+  await page.evaluate(async (id) => {
+    const { createBundle } = await import(new URL("js/editor/drafts.js", location.href).href);
+    createBundle({ title: "Solo", levels: [id] });
+  }, id);
+  const folds = group(page);
+  await expect(folds).toHaveCount(2);
+  await expect(folds.nth(1).locator("summary .name")).toHaveText("Solo");
+  expect(await isOpen(folds.nth(1))).toBe(true);
+  await expect(folds.nth(1).locator('.tile[aria-current="true"] .name')).toHaveText(
+    "Untitled level",
+  );
+  await expect(folds.nth(1).locator('.tile[aria-current="true"]')).toBeVisible();
+  expect(await isOpen(spiral)).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test("the groups stand first in the order the bundles were made, each in its own order under the title sort, and the levels in no bundle under them, as tiles and as rows", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await addBundle(page, NAME, SHUFFLED, 4);
+  await addBundle(page, TOWER_NAME, TOWER, 6);
+  const folds = group(page);
+  await expect(folds).toHaveCount(2);
+  await expect(folds.locator("summary .name")).toHaveText(["Spiral campaign", "Tower set"]);
+  await expect(folds.nth(0).locator("summary .by")).toHaveText("Ada");
+  await expect(folds.nth(1).locator("summary .by")).toHaveAttribute("hidden", "");
+  await expect(folds.locator("summary .n")).toHaveText(["3 levels", "2 levels"]);
+  const tagOf = (locator) => locator.evaluate((e) => `${e.tagName.toLowerCase()}.${e.className}`);
+  expect(await tagOf(page.locator("#draftRows > :first-child"))).toBe("details.bundle");
+  expect(await tagOf(page.locator("#draftRows > :last-child"))).toBe("ul.tiles");
+  const spiral = folds.nth(0).locator(".tile .name");
+  await expect(spiral).toHaveText(["Spiral 3", "Spiral 1", "Spiral 2"]);
+  await expect(folds.nth(1).locator('.tile[aria-current="true"] .name')).toHaveText("Tower 1");
+  await expect(page.locator("#draftRows > ul.tiles .tile .name")).toHaveText(["Untitled level"]);
+  await page.locator("#draftSort").selectOption("title");
+  await expect(spiral).toHaveText(["Spiral 3", "Spiral 1", "Spiral 2"]);
+  await page.locator("#draftView").getByRole("button", { name: "list" }).click();
+  await expect(folds.nth(0).locator(".members > button .name")).toHaveText([
+    "Spiral 3",
+    "Spiral 1",
+    "Spiral 2",
+  ]);
+  await expect(folds.nth(1).locator('.members > button[aria-current="true"] .name')).toHaveText(
+    "Tower 1",
+  );
+  await expect(page.locator("#draftRows > button .name")).toHaveText(["Untitled level"]);
+  expect(await tagOf(page.locator("#draftRows > :first-child"))).toBe("details.bundle");
+  expect(await tagOf(page.locator("#draftRows > :last-child"))).toBe("button.");
+  await expect(page.locator("#draftRows .tile")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("the filter hides a group none of whose levels it keeps, shows a kept level inside its group and leaves the group's count at the whole bundle's count", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await openedBundle(page);
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(4);
+  const fold = group(page);
+  const inside = fold.locator(".tile .name");
+  const loose = page.locator("#draftRows > ul.tiles .tile .name");
+  const filter = page.locator("#draftFilter");
+  const empty = page.locator("#draftEmpty");
+  await filter.fill("inca");
+  await expect(inside).toHaveText(["Spiral 2"]);
+  await expect(fold).toBeVisible();
+  await expect(fold.locator("summary .n")).toHaveText("3 levels");
+  await expect(loose).toHaveCount(0);
+  await expect(empty).toBeHidden();
+  await filter.fill("untitled");
+  await expect(fold).toBeHidden();
+  await expect(loose).toHaveText(["Untitled level"]);
+  await filter.fill("zzz");
+  await expect(fold).toBeHidden();
+  await expect(loose).toHaveCount(0);
+  await expect(empty).toBeVisible();
+  await expect(empty).toHaveText("Nothing matches.");
+  await filter.fill("");
+  await expect(fold).toBeVisible();
+  await expect(inside).toHaveText(["Spiral 1", "Spiral 2", "Spiral 3"]);
+  await expect(loose).toHaveText(["Untitled level"]);
+  await expect(empty).toBeHidden();
   expect(errors).toEqual([]);
 });

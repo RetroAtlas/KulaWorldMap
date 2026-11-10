@@ -15,7 +15,7 @@ import { pasteLevelLink } from "./importdialog.js";
 import { draftsOf, openedFrom, readLevel, readsOf } from "./intake.js";
 import { heldImage } from "./patchdialog.js";
 import { buildForm, nameOf, signed, twice } from "./levelcard.js";
-import { SORTS, matches, ordering } from "./draftsort.js";
+import { SORTS, grouping, matches, ordering } from "./draftsort.js";
 import * as drafts from "./drafts.js";
 
 // --- the state and the wiring --------------------------------------------------------------
@@ -66,6 +66,7 @@ export function wireDrafts() {
       $("yoursFold").open = true;
     shownBefore = true;
     sync();
+    unfold();
   });
   on("level-updated", sync);
   sync();
@@ -130,11 +131,15 @@ function openRead(read, name) {
 const VIEW_KEY = "kula.tiles";
 const VIEWS = ["list", "tiles"];
 const NO_MATCH = "Nothing matches.";
+const UNTITLED_BUNDLE = "Untitled bundle";
 // The view and the sort chosen here, kept across visits; one not chosen takes its default.
 const chosen = {};
-// The tiles while the view is tiles, and the levels built for their pictures, by draft id.
+// The tiles of the levels in no bundle while the view is tiles, and the levels built for the
+// pictures, by draft id.
 let grid = null;
 const built = new Map();
+// Each bundle's group, by the bundle's id, kept through every rebuild so its fold stays as left.
+const folds = new Map();
 // The empty line's own words, put back once the filter lets a level through again.
 let nothing = "";
 
@@ -176,9 +181,12 @@ function wireView() {
   };
   $("draftFilter").oninput = rows;
   on("atlas-loaded", (world) => {
-    if (grid) for (const d of drafts.list()) if (d.doc.world === world) grid.repaint(d.id);
+    for (const d of drafts.list())
+      if (d.doc.world === world) for (const g of grids()) g.repaint(d.id);
   });
 }
+
+const grids = () => [grid, ...[...folds.values()].map((g) => g.grid)].filter(Boolean);
 
 // --- the rows and the card -----------------------------------------------------------------
 // The shown draft is drawn again whenever the store's copy of it is not the
@@ -227,50 +235,114 @@ function rows() {
   for (const b of bar.querySelectorAll(".scope button"))
     b.setAttribute("aria-pressed", String(b.dataset.view === viewNow()));
   $("draftSort").value = sortNow();
+  const query = $("draftFilter").value;
   const worlds = state.data.themes.map((t) => worldName(t.id));
-  const listed = all
-    .map(recordOf)
-    .filter((r) => matches(r, $("draftFilter").value))
+  const records = new Map(all.map((d) => [d.id, recordOf(d)]));
+  const { groups, grouped } = grouping(drafts.bundles(), records, query);
+  const loose = [...records.values()]
+    .filter((r) => !grouped.has(r.id) && matches(r, query))
     .sort(ordering(sortNow(), worlds));
-  const filtered = all.length > 0 && !listed.length;
+  const shown = loose.length + groups.reduce((n, g) => n + g.kept.length, 0);
+  const filtered = all.length > 0 && shown === 0;
   const empty = $("draftEmpty");
   empty.textContent = filtered ? NO_MATCH : nothing;
   empty.hidden = !filtered && (all.length > 0 || unread > 0);
   for (const id of built.keys()) if (!drafts.get(id)) built.delete(id);
-  if (viewNow() === "tiles") tilesOf(box, listed);
-  else rowsOf(box, listed);
+  layout(box, groups, loose);
   $("draftUnread")?.remove();
   if (unread) box.after(unreadRow(unread));
 }
 
-/** The list: a row a level, with a tile's words less its world. */
-function rowsOf(box, listed) {
-  grid?.destroy();
-  grid = null;
+/** Lay the groups out first, in the bundles' order, and the levels in no bundle under them, each as tiles or as rows. */
+function layout(box, groups, loose) {
+  const asTiles = viewNow() === "tiles";
   const focused = box.contains(document.activeElement) ? document.activeElement.dataset.id : null;
-  box.textContent = "";
-  for (const { d, title } of listed) {
-    const b = el("button", { type: "button", title: `Show ${title}` });
-    b.dataset.id = d.id;
-    b.append(
-      el("span", { className: "name", textContent: title }),
-      el("span", { className: "tag", textContent: "Draft" }),
-      el("span", { className: "state", textContent: status(d) }),
-    );
-    b.setAttribute("aria-current", state.lvl?.draft === d.id ? "true" : "false");
-    b.onclick = () => show(d.id, drafts.get(d.id).doc, { push: true });
-    box.append(b);
+  groups.forEach(({ b, kept, hidden }, i) => {
+    const g = foldOf(b);
+    g.fold.hidden = hidden;
+    if (box.children[i] !== g.fold) box.insertBefore(g.fold, box.children[i] ?? null);
+    fill(g, kept, asTiles);
+  });
+  for (const [id, g] of folds)
+    if (!drafts.bundle(id)) {
+      g.grid?.destroy();
+      g.fold.remove();
+      folds.delete(id);
+    }
+  if (asTiles) {
+    const items = loose.map(itemOf);
+    if (grid) grid.update(items);
+    else {
+      for (const row of box.querySelectorAll(":scope > button")) row.remove();
+      grid = tiles(box, items);
+    }
+  } else {
+    grid?.destroy();
+    grid = null;
+    for (const row of box.querySelectorAll(":scope > button")) row.remove();
+    box.append(...loose.map(rowOf));
   }
   if (focused) box.querySelector(`[data-id="${focused}"]`)?.focus();
 }
 
-function tilesOf(box, listed) {
-  const items = listed.map(itemOf);
-  if (grid) grid.update(items);
-  else {
-    box.textContent = "";
-    grid = tiles(box, items);
+/** The group of bundle `b`, made once and worded afresh: its title, its author and how many levels it holds, opened as it comes to hold the level on screen. */
+function foldOf(b) {
+  let g = folds.get(b.id);
+  if (!g) {
+    const name = el("span", { className: "name" });
+    const by = el("span", { className: "by" });
+    const n = el("span", { className: "n" });
+    const members = el("div", { className: "members" });
+    const fold = el("details", { className: "bundle" }, el("summary", {}, name, by, n), members);
+    fold.dataset.bundle = b.id;
+    folds.set(b.id, (g = { fold, name, by, n, members, grid: null, levels: [] }));
   }
+  const shown = state.lvl?.draft;
+  if (shown !== undefined && b.levels.includes(shown) && !g.levels.includes(shown))
+    g.fold.open = true;
+  g.levels = [...b.levels];
+  g.name.textContent = b.title || UNTITLED_BUNDLE;
+  g.by.textContent = b.author;
+  g.by.hidden = !b.author;
+  g.n.textContent = `${b.levels.length} level${b.levels.length === 1 ? "" : "s"}`;
+  return g;
+}
+
+/** Put the levels the filter keeps inside the group, as tiles or as rows. */
+function fill(g, kept, asTiles) {
+  if (asTiles) {
+    const items = kept.map(itemOf);
+    if (g.grid) g.grid.update(items);
+    else {
+      g.members.textContent = "";
+      g.grid = tiles(g.members, items);
+    }
+  } else {
+    g.grid?.destroy();
+    g.grid = null;
+    g.members.replaceChildren(...kept.map(rowOf));
+  }
+}
+
+/** Open the group of the bundle the level on screen is in, as a world's fold opens for its level. */
+function unfold() {
+  const id = state.lvl?.draft;
+  if (id === undefined) return;
+  for (const [bid, g] of folds) if (drafts.bundle(bid)?.levels.includes(id)) g.fold.open = true;
+}
+
+/** A level's row for the list: a tile's words less its world. */
+function rowOf({ d, title }) {
+  const b = el("button", { type: "button", title: `Show ${title}` });
+  b.dataset.id = d.id;
+  b.append(
+    el("span", { className: "name", textContent: title }),
+    el("span", { className: "tag", textContent: "Draft" }),
+    el("span", { className: "state", textContent: status(d) }),
+  );
+  b.setAttribute("aria-current", state.lvl?.draft === d.id ? "true" : "false");
+  b.onclick = () => show(d.id, drafts.get(d.id).doc, { push: true });
+  return b;
 }
 
 // Two changes within a millisecond share a time, so the count of changes tells them apart.
