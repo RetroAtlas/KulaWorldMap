@@ -29,6 +29,7 @@ export default [
       "tests/public.js",
       "tests/browser/**/*.js",
       "tests/pixels/**/*.js",
+      "tests/styles/**/*.js",
       "tests/frame/**/*.js",
       "tests/boot/**/*.js",
       "tools/**/*.js",

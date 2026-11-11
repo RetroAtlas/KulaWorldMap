@@ -9,6 +9,7 @@
     "test": "node --test",
     "test:browser": "playwright test -c tests/browser",
     "pixels": "node tests/pixels/pixels.js",
+    "styles": "node tests/styles/styles.js",
     "frame": "node tests/frame/frame.js",
     "boot": "node tests/boot/boot.js"
   },

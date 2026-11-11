@@ -1,6 +1,6 @@
 # The checks
 
-Every check of the repo lives where what it checks is computed: a unit test for what a module computes, a browser test for what only a browser shows, a pixel capture for a change meant to draw as before, and the Python suite for the tools, with the disc where a reading needs it. [CLAUDE.md](../CLAUDE.md) states the rules under "Where a check lives"; this document says what each suite is, how it runs and how a test is added.
+Every check of the repo lives where what it checks is computed: a unit test for what a module computes, a browser test for what only a browser shows, a pixel capture for a change meant to draw as before, a comparison of computed styles for a change to the stylesheet meant to show as before, and the Python suite for the tools, with the disc where a reading needs it. [CLAUDE.md](../CLAUDE.md) states the rules under "Where a check lives"; this document says what each suite is, how it runs and how a test is added.
 
 ## The suites
 
@@ -25,6 +25,30 @@ The ref is served straight from the repository, each file read as it is asked fo
 The matrix runs with the editor absent and again with it loaded by a level kept in storage, that side working Your levels open and scrolled into view so the level's tile paints before every capture, and a still paint that left the frame's view or its switches swapped would show in the map's hashes.
 
 The matrix also stands levels on the other discs, such a case naming its disc in its id, `A/B1/jp/v1`, which the harness sets through the release model before it selects the level and puts back once the case is captured, so a ref from before that model runs those cases on the US disc.
+
+`npm run styles` opens the page at the working tree and at a ref, `HEAD` unless one is given, in each interface state of `tests/styles/states.js`, and compares the computed style of every element and of every `::before` and `::after` it draws, naming every state in which one differs, with the elements and the properties; it proves a change to the stylesheet meant to show as before, a rule moved or a file cut, and is not run for one meant to show differently.
+
+A state is a size and kind of screen, what is kept in storage or answered for a file before the page loads, what the page is asked to open through its own controls, or through its modules or an event the browser would send where no control serves, and a selector that stands once it is open and is absent from the plain map, so a state that fails to open fails the run; each is opened on a page of its own at both trees, and a new surface earns a state there.
+
+The page's clock is stopped before a state is read and every running animation put at its end, since a toast, an armed button and the note of a save leave by themselves; a state that drives the ball holds the game's clock before its first step, as a browser test of play does.
+
+A state is read only where its selector still stands once the clock has stopped: one whose selector has left by then, as the note of a save has where the machine stalled for a second, is opened again, and fails the run the third time.
+
+Each state is read as it stands under reduced motion, then with motion allowed and every animation held at its first frame, so the transitions and animations reduced motion switches off are compared too, and then with hover, focus and active forced on every element.
+
+Hover, focus and active are forced one at a time and then all at once, the focus both as a click leaves it and with `:focus-visible` as a key gives it: forced alone, a rule under one of them is held wherever its element stands, where forced only together a later rule of equal weight under another would hide it, and forced all at once they show which of their rules stands over the rest.
+
+A property list is sorted by name before it is hashed, since the browser lists custom properties in an order that differs from one load of a page to the next.
+
+`npm run styles -- --unseen` names every rule of the stylesheet that no state puts on screen, a rule that hides its element counting where the element would be drawn without it, `--only` runs the states whose names hold a word, and `--dump` writes each state's reads at both trees to a folder.
+
+`--unseen` counts by rule, and a rule is shown where any one selector of its list is, so after the rules it names every selector of a shown rule that no state puts on screen by the same test, the list cut at its top-level commas alone.
+
+What the proof cannot read is a pseudo-element the browser gives no computed style for, the search box's cancel button and a fold's marker, and a rule whose element no state renders is compared only as far as an element with no box computes.
+
+An animation is compared at one moment alone, at its first frame where reduced motion switches it off and at its end where it does not, so a change to another frame of its keyframes is not seen.
+
+A declaration is compared only in a state where it decides, so one that another rule stands over in every state is compared in none, as the look a toast wears while it fades.
 
 `npm run frame` and `npm run boot` are measurements, not checks: where a frame's time goes, and when the page's first frames land over a throttled network.
 
