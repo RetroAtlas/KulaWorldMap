@@ -1,3 +1,107 @@
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  padding: 16px;
+  background: #05070bcc;
+}
+.modal .box {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  width: 460px;
+  max-width: 100%;
+  max-height: 80%;
+  overflow-y: auto;
+}
+.modal h3 {
+  margin: 0 0 10px;
+  padding-right: 20px;
+}
+.modal h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--dim);
+  margin: 0 0 6px;
+}
+.modal .x {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  background: none;
+  border: 0;
+  color: var(--dim);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.modal .x:hover {
+  color: var(--ink);
+}
+.modal dl {
+  display: grid;
+  grid-template-columns: clamp(136px, 42%, 200px) 1fr;
+  gap: 3px 12px;
+  margin: 0;
+}
+.modal dt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: start;
+  gap: 3px;
+  color: var(--accent);
+}
+.modal dt span {
+  white-space: nowrap;
+}
+.modal dt i {
+  font-style: normal;
+  color: var(--dim);
+}
+.modal dt kbd {
+  margin: 0;
+}
+.modal dt kbd + kbd {
+  margin-left: 3px;
+}
+.modal dd {
+  margin: 0;
+  color: var(--dim);
+}
+.modal p {
+  color: var(--dim);
+}
+#help .box:has(section) {
+  width: 640px;
+}
+#help section + section {
+  margin-top: 14px;
+}
+
+.settings .def {
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.settings .def:empty {
+  display: none;
+}
+.settings .def:not(:empty) + kbd {
+  margin-left: 6px;
+}
+.settings .says {
+  font-size: 12.5px;
+  margin: 0 0 10px 21px;
+}
+
 /* the patch dialog: a draft onto the disc in five steps */
 #patch .box {
   width: 540px;
