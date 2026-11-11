@@ -589,11 +589,12 @@ The partials are named for what they hold, and the page links them in this order
 - `20-sidebar.css` holds the sidebar: its head, its sections, whose class is `.panel`, the small button of a heading and the link-like button, which the count line and the level line's notes wear too, the worlds and their levels, the folds, the switches, the keys' caps, the slice and the legend.
 - `25-search.css` holds the search box, the scope bar, whose look the release's buttons and the palette's tabs wear, the count line and the results.
 - `27-yours.css` holds Your levels, with a level's row, a bundle, the Level card, and the tiles and the row that stands above a list and sorts and filters it, both worn by the community levels too, and the sidebar's foot.
-- `30-map.css` holds the map and its canvas, the menu button, the scrim and the level line with its notes.
+- `30-map.css` holds the map and its canvas.
 - `40-readouts.css` holds the readout, the corner with its buttons and the compass, and the tip.
 - `50-panels.css` holds the panel, which a click on a block opens, and the tags, with the toasts, the rules under reduced motion, the dialogs' shell, the list of the keys, Settings and the first of the rules under a phone's width, the drawer that the sidebar becomes among them.
-- `60-play.css` holds the strips of the editor, the planner and play, the HUD, the bar that play's strip becomes on a phone, the pad and the jump.
+- `60-play.css` holds play's strip, the HUD, the bar that the strip becomes on a phone, the pad and the jump.
 - `65-palette.css` holds the palette.
+- `70-chrome.css` holds the menu button, the scrim, the level line with its notes, the rules the three strips share and the planner's strip.
 - `80-dialogs.css` holds the editor's boxes: the disc box, the import boxes and the paste, share and bundle boxes.
 - `90-narrow.css` holds the panel's form and, on a phone, the sheets that the palette and the panel become and the places of the strips, the pad and the corner.
 
