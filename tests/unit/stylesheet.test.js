@@ -58,9 +58,23 @@ test("the docs list every partial, a bullet a partial, in name order", () => {
   );
 });
 
-test("the page for a missing path links the partials the map links, by paths from the root", () => {
-  assert.deepEqual(
-    linked("404.html"),
-    partials.map((name) => `/css/${name}`),
-  );
+test("the page for a missing path links partials by paths from the root, in name order, that declare every custom property it reads, and no partial it leaves out sets one again", () => {
+  const hrefs = linked("404.html");
+  assert.ok(hrefs.length > 0, "a stylesheet link");
+  for (const href of hrefs)
+    assert.ok(
+      href.startsWith("/css/") && partials.includes(href.slice(5)),
+      `${href} is no partial`,
+    );
+  assert.deepEqual(hrefs, [...new Set(hrefs)].sort(), "each once, in name order");
+  const declared = hrefs.map((href) => text(`public${href}`)).join("\n");
+  const sets = (sheet, name) => new RegExp(`(^|[\\s{;])${name}\\s*:`).test(sheet);
+  for (const [, name] of `${text("public/404.html")}\n${declared}`.matchAll(/var\((--[\w-]+)/g)) {
+    assert.ok(sets(declared, name), `${name} is declared in no partial the page links`);
+    for (const partial of partials)
+      assert.ok(
+        hrefs.includes(`/css/${partial}`) || !sets(text(`public/css/${partial}`), name),
+        `${name} is set again in ${partial}, which the page does not link`,
+      );
+  }
 });

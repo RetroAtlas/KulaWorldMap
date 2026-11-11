@@ -602,7 +602,11 @@ A new rule goes in the partial of the surface it styles, and a rule two surfaces
 
 The rules under reduced motion and under a phone's width stand in `90-narrow.css`, linked last: where one restates a selector another partial writes at the same specificity, the later rule wins.
 
-The page for a missing path links the same partials by paths from the root, since the host answers a missing path at any depth with the page.
+The page for a missing path links `10-base.css` alone, since it draws on the tokens, the reset of box-sizing and the body's rule and on no other rule of the stylesheet.
+
+Its link is a path from the root, since the host answers a missing path at any depth with the page.
+
+A unit test holds every custom property that page reads, in its own rules or through the base, to a partial it links and to none it leaves out.
 
 ### What the page fetches
 
