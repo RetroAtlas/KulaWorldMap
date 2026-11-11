@@ -555,7 +555,7 @@ A segment never changes what it means, and what a link carries grows at its tail
 
 ## How it is built
 
-`public/` is the deploy artifact: dependency-free ES modules, no build step, but for pako's deflate under `js/vendor/`, vendored with its licence, which writes a zlib stream byte for byte as zlib does where the browser's own compressor does not, so that a level fits a slot on the disc the same in every browser.
+`public/` is the deploy artefact: dependency-free ES modules, no build step, but for pako's deflate under `js/vendor/`, vendored with its licence, which writes a zlib stream byte for byte as zlib does where the browser's own compressor does not, so that a level fits a slot on the disc the same in every browser.
 
 `js/main.js` boots, `js/viewer/state.js` holds shared state and the camera, and modules talk through the `emit`/`on` pair in `js/viewer/ui/dom.js` rather than importing each other both ways.
 
