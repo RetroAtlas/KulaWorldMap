@@ -80,7 +80,7 @@ No commit message reports what a test found, a test of its own or any other: eve
 - A rule under reduced motion or under a phone's width goes in `90-narrow.css`, which is linked last so that the rule wins a tie against the rule it narrows.
 - The unit tests hold the blocks under reduced motion and under a phone's width to the partial linked last.
 - A new partial takes a free rank between the partial it must follow and the one that must follow it, a multiple of five where one is free; none is renamed to make room, and no rank is under 10, which leaves room ahead of the base.
-- Every module under `public/js`, partial under `public/css`, spec under `tests/browser`, file under `tests/unit` and tool or test under `tools/` is held under a size by the unit tests: 800 lines for a module, a partial or a spec and 1,000 for a unit test or a tool.
+- Every module under `public/js`, partial under `public/css`, spec under `tests/browser`, file under `tests/unit`, other script under `tests/` and tool or test under `tools/` is held under a size by the unit tests: 1,000 lines for a unit test or a tool and 800 for a module, a partial, a spec or any other script under `tests/`.
 - A file already over its cap stands in the size test's table at its allowance, the next hundred above its size; a commit that shrinks it lowers the row, none raises one, and the commit that brings it under the cap takes its row out.
 - A change that would push a file past its cap or its row splits the file first, in a commit of its own, where its sections join, a subject to a file.
 - A module without section comments gains them before it is split.
