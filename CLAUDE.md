@@ -77,6 +77,8 @@ No commit message reports what a test found, a test of its own or any other: eve
 - A set of kinds or types that more than one layer reads sits beside `KIND` and `TYPE`, so no two modules keep a copy of it.
 - The stylesheet is the partials under `public/css`, each named `NN-word.css`, a two-digit rank and one lowercase word, and linked from `index.html` in name order, which is the cascade; the unit tests hold the page's links to the folder's listing.
 - A new rule goes in the partial of the surface it styles, and a rule two surfaces share stands with the surface it names first; "How it is built" in [docs/viewer.md](docs/viewer.md) lists what each partial holds, and a commit that adds or moves a surface, or adds a partial, brings the list up to date.
+- A rule under reduced motion or under a phone's width goes in `90-narrow.css`, which is linked last so that the rule wins a tie against the rule it narrows.
+- The unit tests hold the blocks under reduced motion and under a phone's width to the partial linked last.
 - A new partial takes a free rank between the partial it must follow and the one that must follow it, a multiple of five where one is free; none is renamed to make room, and no rank is under 10, which leaves room ahead of the base.
 - Every module under `public/js`, partial under `public/css`, spec under `tests/browser`, file under `tests/unit` and tool or test under `tools/` is held under a size by the unit tests: 800 lines for a module, a partial or a spec and 1,000 for a unit test or a tool.
 - A file already over its cap stands in the size test's table at its allowance, the next hundred above its size; a commit that shrinks it lowers the row, none raises one, and the commit that brings it under the cap takes its row out.

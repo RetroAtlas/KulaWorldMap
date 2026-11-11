@@ -100,47 +100,7 @@
 body.playing .chip {
   display: none;
 }
-@media (max-width: 760px) {
-  /* on a phone the strip is a bar at the foot of the screen, over the scale bar's band: one row of
-     text, the line or a notice while one stands, and the buttons sharing one row beneath, so the
-     bar keeps its height as the text changes and the pad above it stays put under a thumb */
-  #play {
-    left: 0;
-    right: 0;
-    bottom: 0;
-    max-width: none;
-    gap: 8px;
-    border-radius: 12px 12px 0 0;
-    padding: 8px 10px 10px;
-  }
-  #play .line {
-    flex-basis: 100%;
-    order: -2;
-    color: var(--dim);
-  }
-  #play .status {
-    order: -1;
-    font-size: 12.5px;
-  }
-  #play:has(.status:not(:empty)) .line {
-    display: none;
-  }
-  #play .controls {
-    flex-basis: 100%;
-    flex-wrap: nowrap;
-  }
-  #play .controls button {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 3px 4px;
-  }
-  .hud {
-    left: 54px;
-    right: 12px;
-    min-width: 0;
-    transform: none;
-  }
-}
+
 /* the pad's arrows at the bottom left, the roll a bar over the two turns, and the jump on a round
    button at the bottom right, level with the pad, so one thumb holds the roll while the other taps
    the jump; both lie over the view */

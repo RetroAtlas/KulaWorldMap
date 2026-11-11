@@ -253,39 +253,3 @@
   font-size: 11px;
   padding: 1px 8px;
 }
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --slide: 0s;
-  }
-  .toast {
-    transition: none;
-  }
-  .toast-bar {
-    display: none;
-  }
-}
-
-@media (max-width: 760px) {
-  :root {
-    --sidebar-w: min(310px, calc(100vw - 58px));
-  }
-  .sidebar {
-    position: absolute;
-    z-index: 25;
-    height: 100%;
-    box-shadow: 0 0 40px #000a;
-  }
-  body.sidebar-open .scrim {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 24;
-    background: #05070b80;
-  }
-  .detail {
-    width: 218px;
-  }
-  .map {
-    --compass-h: 84px;
-  }
-}

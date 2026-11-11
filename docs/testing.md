@@ -14,6 +14,8 @@ The unit tests also hold the repo to its conventions: `imports.test.js` the laye
 
 `stylesheet.test.js` holds the partials under `public/css` to their names, the stylesheet links of the page and of the page for a missing path to them, in name order and after the page's inline script, and the list of partials in `docs/viewer.md` to the folder.
 
+`stylesheet.test.js` holds the blocks under a phone's width and under reduced motion, any `@media` block that names `max-width`, writes `width <` or names `prefers-reduced-motion`, to the partial linked last too, since a rule under either query wins a tie against the rule it narrows by coming later, and leaves a block for a pointer that hovers with its surface.
+
 `npm run test:browser` runs the browser tests under `tests/browser` with Playwright in Chromium, at 1280 by 720, against the site served from `public/` on port 8480; every test opens its own page, so the tests of one file run spread over the workers as the files do.
 
 The site is served over HTTP/1.1, by `tests/browser/serve.py`, so that a page keeps its connections open: at one connection a request, the server's default, a run leaves more connections closing than the machine has ports to open new ones from, and the tests late in it fail to reach the page.

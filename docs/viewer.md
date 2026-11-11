@@ -591,14 +591,16 @@ The partials are named for what they hold, and the page links them in this order
 - `27-yours.css` holds Your levels, with a level's row, a bundle, the Level card, and the tiles and the row that stands above a list and sorts and filters it, both worn by the community levels too, and the sidebar's foot.
 - `30-map.css` holds the map and its canvas.
 - `40-readouts.css` holds the readout, the corner with its buttons and the compass, and the tip.
-- `50-panels.css` holds the panel, which a click on a block opens, and the tags, with the toasts, the rules under reduced motion and the first of the rules under a phone's width, the drawer that the sidebar becomes among them.
-- `60-play.css` holds play's strip, the HUD, the bar that the strip becomes on a phone, the pad and the jump.
+- `50-panels.css` holds the panel, which a click on a block opens, and the tags, with the toasts.
+- `60-play.css` holds play's strip, the HUD, the pad and the jump.
 - `65-palette.css` holds the palette.
 - `70-chrome.css` holds the menu button, the scrim, the level line with its notes, the rules the three strips share and the planner's strip.
 - `80-dialogs.css` holds the dialogs' shell, the list of the keys, Settings and the editor's boxes: the disc box, the import boxes and the paste, share and bundle boxes.
-- `90-narrow.css` holds the panel's form and, on a phone, the sheets that the palette and the panel become and the places of the strips, the pad and the corner.
+- `90-narrow.css` holds the rules under reduced motion and under a phone's width, and the panel's form.
 
 A new rule goes in the partial of the surface it styles, and a rule two surfaces share stands with the surface it names first.
+
+The rules under reduced motion and under a phone's width stand in `90-narrow.css`, linked last: where one restates a selector another partial writes at the same specificity, the later rule wins.
 
 The page for a missing path links the same partials by paths from the root, since the host answers a missing path at any depth with the page.
 

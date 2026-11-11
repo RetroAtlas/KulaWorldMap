@@ -32,6 +32,16 @@ test("a partial is named NN-word.css, its rank first", () => {
   for (const name of partials) assert.match(name, /^\d\d-[a-z]+\.css$/, name);
 });
 
+// A rule under either query wins a tie against the rule it narrows by coming later.
+test("no partial but the one linked last opens a block under a phone's width or under reduced motion", () => {
+  const narrow = (name) =>
+    [...text(`public/css/${name}`).matchAll(/@media\b([^{]*)\{/g)]
+      .map(([, query]) => query.trim())
+      .filter((query) => /max-width|\bwidth\s*<|prefers-reduced-motion/.test(query));
+  assert.ok(narrow(partials.at(-1)).length > 0, "a block under either query in the last partial");
+  for (const name of partials.slice(0, -1)) assert.deepEqual(narrow(name), [], name);
+});
+
 // A script that follows a stylesheet still loading waits for it.
 test("the page links its stylesheet after its inline script", () => {
   const page = text("public/index.html").replace(/<!--[\s\S]*?-->/g, "");

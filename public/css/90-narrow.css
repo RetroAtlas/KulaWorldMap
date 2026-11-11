@@ -1,5 +1,84 @@
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --slide: 0s;
+  }
+  .toast {
+    transition: none;
+  }
+  .toast-bar {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --sidebar-w: min(310px, calc(100vw - 58px));
+  }
+  .sidebar {
+    position: absolute;
+    z-index: 25;
+    height: 100%;
+    box-shadow: 0 0 40px #000a;
+  }
+  body.sidebar-open .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 24;
+    background: #05070b80;
+  }
+  .detail {
+    width: 218px;
+  }
+  .map {
+    --compass-h: 84px;
+  }
+}
+
+@media (max-width: 760px) {
+  /* on a phone play's strip is a bar at the foot of the screen, over the scale bar's band: one row
+     of text, the line or a notice while one stands, and the buttons sharing one row beneath, so the
+     bar keeps its height as the text changes and the pad above it stays put under a thumb */
+  #play {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: none;
+    gap: 8px;
+    border-radius: 12px 12px 0 0;
+    padding: 8px 10px 10px;
+  }
+  #play .line {
+    flex-basis: 100%;
+    order: -2;
+    color: var(--dim);
+  }
+  #play .status {
+    order: -1;
+    font-size: 12.5px;
+  }
+  #play:has(.status:not(:empty)) .line {
+    display: none;
+  }
+  #play .controls {
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+  }
+  #play .controls button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 3px 4px;
+  }
+  .hud {
+    left: 54px;
+    right: 12px;
+    min-width: 0;
+    transform: none;
+  }
+}
+
 /* on a phone the palette and the panel are sheets at the foot of the map, one
-   at a time, and the strip stands above whichever is open */
+   at a time, and the editor's strip stands above whichever is open */
 @media (max-width: 760px) {
   .map {
     --sheet-h: 42vh;
