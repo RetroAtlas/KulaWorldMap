@@ -424,9 +424,7 @@
 #bundle .row button:hover {
   border-color: var(--accent-dim);
 }
-#paste .row button:disabled,
-#share .row button:disabled,
-#bundle .row button:disabled {
+#paste .row button:disabled {
   opacity: 0.4;
   cursor: default;
 }
