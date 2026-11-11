@@ -111,6 +111,12 @@ export const SHELF = kept(
   { 5: { title: "Spiral campaign", author: "Ada", notes: "", levels: [2, 3, 4], updated: 5 } },
 );
 
+// a bundle that holds no level, beside a loose one
+export const EMPTIED = kept(
+  { 1: entry(level("HIRO", "Alpha"), 1) },
+  { 2: { title: "Spiral campaign", author: "Ada", notes: "", levels: [], updated: 2 } },
+);
+
 function startless() {
   const doc = synthetic(6, "No start");
   delete doc.blocks[0].faces;

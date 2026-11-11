@@ -3,6 +3,7 @@ import { TYPE } from "../../public/js/format/lattice.js";
 import { top } from "../browser/playhelpers.js";
 import { indexOf } from "../browser/communityhelpers.js";
 import {
+  EMPTIED,
   FOR_DISC,
   HOME,
   KEYED,
@@ -55,6 +56,12 @@ export const editorStates = [
         await page.click('#draftRows details.bundle > .card .row button:has-text("take apart")');
       },
       stands: "#draftRows details.bundle[open] > .card .row button.warn",
+    },
+    {
+      name: "a bundle with no level in Your levels, its card open",
+      ...EMPTIED,
+      steps: (page) => page.click("#draftRows details.bundle > summary .arrange"),
+      stands: "#draftRows details.bundle[open] > .card .row button:disabled",
     },
     {
       name: "Your levels as a list, a bundle folded and a level that cannot be read, its removal armed",
@@ -232,10 +239,25 @@ export const editorStates = [
       stands: "#paste:not([hidden]) #pasteOpen:disabled",
     },
     {
+      name: "the paste box asked to open with nothing pasted",
+      ...ONE,
+      async steps(page) {
+        await page.click("#draftPaste");
+        await page.click("#pasteOpen");
+      },
+      stands: "#paste:not([hidden]) #pasteSays:not(:empty)",
+    },
+    {
       name: "the share box",
       ...KEYED,
       steps: (page) => page.click("#draftShare"),
       stands: "#share:not([hidden]) #shareSend .row button",
+    },
+    {
+      name: "the share box for a level with errors",
+      ...OVERFULL,
+      steps: (page) => page.click("#draftShare"),
+      stands: "#share:not([hidden]) #shareSays:not(:empty)",
     },
     {
       name: "the bundle box for a level in a bundle",
@@ -246,6 +268,15 @@ export const editorStates = [
         await page.click("#draftBundle");
       },
       stands: "#bundle:not([hidden]) #bundleSays:not(:empty)",
+    },
+    {
+      name: "the bundle box for a level in no bundle",
+      ...SHELF,
+      async steps(page) {
+        await quiet(page);
+        await page.click("#draftBundle");
+      },
+      stands: "#bundle:not([hidden]):has(#bundleSays:empty) #bundleAdd",
     },
   ]),
   ...on(PHONE, [
