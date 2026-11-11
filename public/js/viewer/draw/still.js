@@ -9,14 +9,14 @@ import { deviceLights } from "./lights.js";
 import { stillWith } from "./things.js";
 
 // A still is a level frozen at its first frame and framed as the social card
-// frames it: its turn, a slim margin, the blocks outlined with what stands on
-// them and none of the map's own marks.
+// frames it, its turn, a slim margin, the blocks with what stands on them and
+// none of the map's own marks, but without the outlines the card draws.
 const YAW = 38;
 const PITCH = 30;
 const MARGIN = 6;
 const BACKGROUND = "#111725";
 const LOOK = {
-  outlines: true,
+  outlines: false,
   objects: true,
   models: true,
   labels: false,

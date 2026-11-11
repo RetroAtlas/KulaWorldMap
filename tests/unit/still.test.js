@@ -35,7 +35,7 @@ function framed() {
     frame: [1, 0, 0, 0, 1, 0, 0, 0, 1],
     view: { w: 800, h: 600, dpr: 2 },
     slice: 12,
-    show: { ...state.show, outlines: false, labels: true, base: true, camera: true, through: true },
+    show: { ...state.show, outlines: true, labels: true, base: true, camera: true, through: true },
     hiddenKinds: new Set([3]),
     presses: new Map([["red", 7]]),
     selected: { x: 1, y: 2, z: 3, key: 1 },
@@ -64,8 +64,9 @@ test("inside stilled the frame's fields are a still's own, the whole level in th
   assert.deepEqual(seen.fresh, { ...every(was, false), idx: true });
   assert.equal(seen.frame, null);
   assert.equal(seen.slice, SIDE - 1);
-  for (const k of ["outlines", "objects", "models"]) assert.equal(seen.show[k], true, k);
-  for (const k of ["labels", "base", "camera", "through"]) assert.equal(seen.show[k], false, k);
+  for (const k of ["objects", "models"]) assert.equal(seen.show[k], true, k);
+  for (const k of ["outlines", "labels", "base", "camera", "through"])
+    assert.equal(seen.show[k], false, k);
   assert.equal(seen.hidden, 0);
   assert.equal(seen.presses, 0);
   assert.equal(seen.selected, null);

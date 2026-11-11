@@ -648,7 +648,7 @@ A level under the drafts' pack carries its store id as `draft` beside the tag, t
 
 `js/viewer/draw/still.js` paints a level frozen at its first frame into any canvas through the cell painter, the frame's camera, view, slice, switches, hidden kinds, circuits, selection and hover swapped for the still's own and given back once the paint returns or throws, with the stores and the registrations the frame keeps set aside through the seams, so a tile has a picture and the frame none of the paint.
 
-A still is framed as the social card's levels are, turned to the card's yaw and pitch with a slim margin, the outlines on and the labels, the grid, the camera and see-through off.
+A still is framed as the social card's levels are, turned to the card's yaw and pitch with a slim margin, the labels, the grid, the camera and see-through off, and unlike the card it draws none of the outlines, the lines `b` puts on, since the broken outlines among them lie thick at a tile's size.
 
 A still draws the world's textures where they have landed and the world's flat tint otherwise, never starting a fetch of its own, saying which it drew so what asked can paint again once the textures land.
 
