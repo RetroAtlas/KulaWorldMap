@@ -1,0 +1,328 @@
+/* the patch dialog: a draft onto the disc in five steps */
+#patch .box {
+  width: 540px;
+}
+#patch section + section {
+  margin-top: 14px;
+}
+#patch .name {
+  color: var(--ink);
+  font-weight: 600;
+  margin: 0 0 2px;
+}
+#patch p {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+}
+#patch .sub {
+  color: var(--dim);
+  font-size: 12px;
+}
+#patch .sub:empty {
+  display: none;
+}
+#patch ul {
+  margin: 4px 0 6px;
+  padding-left: 18px;
+  color: var(--dim);
+  font-size: 12.5px;
+}
+#patch ul:empty {
+  display: none;
+}
+#patch .errors,
+#patch .errors ul {
+  color: var(--warn);
+}
+#patch details summary {
+  cursor: pointer;
+  color: var(--warn);
+  font-size: 12.5px;
+}
+#patch .slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 12.5px;
+}
+#patch .slot > span {
+  color: var(--dim);
+}
+#patch select {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  background: #0e1320
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23a3b1c6' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    right 7px center / 12px 12px no-repeat;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 24px 3px 6px;
+  font: inherit;
+  font-size: 12.5px;
+}
+#patch select:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -1px;
+}
+#patch .scope {
+  margin: 0 0 8px;
+}
+#patch .drop,
+#fromPatch .drop {
+  display: block;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 6px 0;
+  color: var(--dim);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+#patch .drop.over,
+#fromPatch .drop.over {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+#patch .drop input,
+#fromPatch .drop input {
+  display: block;
+  margin-top: 6px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+}
+#patch .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+#patch .row button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+#patch .row button:hover {
+  border-color: var(--accent-dim);
+}
+#patch .row button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+#patch .level {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px 2px;
+  margin: 0 0 8px;
+}
+#patch .level .name {
+  padding-right: 72px;
+}
+#patch .out {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  border-radius: 5px;
+  padding: 1px 7px;
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+#patch .out:hover {
+  border-color: var(--accent-dim);
+  color: var(--ink);
+}
+#patch .out:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+#patch .level .out {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+}
+#patch .add {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 6px;
+}
+
+/* the import picker: which level of a pack or a disc image to open */
+#import .box,
+#fromPatch .box {
+  width: 420px;
+}
+#import p,
+#fromPatch p {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+}
+#import .field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 12.5px;
+}
+#import .field > span {
+  flex: 0 0 44px;
+  color: var(--dim);
+}
+#import select {
+  flex: 1;
+  min-width: 0;
+  background: #0e1320;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12.5px;
+}
+#import select:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -1px;
+}
+#import .row,
+#fromPatch .row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+#import .row button,
+#fromPatch .row button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+#import .row button:hover,
+#fromPatch .row button:hover {
+  border-color: var(--accent-dim);
+}
+#fromPatch .row button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+#fromPatch .says {
+  margin: 0 0 10px;
+}
+#fromPatch .says:empty {
+  display: none;
+}
+#fromPatch ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 12.5px;
+}
+
+/* the boxes the sidebar and the Level card open over the page */
+#paste .box,
+#share .box,
+#bundle .box {
+  width: 460px;
+}
+#paste p,
+#share p,
+#bundle p {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+}
+#paste .field,
+#share .field,
+#bundle .field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 12.5px;
+}
+#paste .field > span,
+#share .field > span,
+#bundle .field > span {
+  flex: 0 0 44px;
+  color: var(--dim);
+}
+#paste input,
+#share input,
+#bundle input,
+#bundle select {
+  flex: 1;
+  min-width: 0;
+  background: #0e1320;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12.5px;
+}
+#paste input:focus-visible,
+#share input:focus-visible,
+#bundle input:focus-visible,
+#bundle select:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -1px;
+}
+#paste .says,
+#share .says,
+#bundle .says {
+  color: var(--warn);
+  margin: 0;
+}
+#paste .says:empty,
+#share .says:empty,
+#bundle .says:empty {
+  display: none;
+}
+#paste .row,
+#share .row,
+#bundle .row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+#share .row {
+  flex-wrap: wrap;
+}
+#share section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+#paste .row button,
+#share .row button,
+#bundle .row button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+#paste .row button:hover,
+#share .row button:hover,
+#bundle .row button:hover {
+  border-color: var(--accent-dim);
+}
+#paste .row button:disabled,
+#share .row button:disabled,
+#bundle .row button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

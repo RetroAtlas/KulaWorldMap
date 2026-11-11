@@ -1,0 +1,56 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+
+const root = new URL("../../", import.meta.url);
+const text = (path) => readFileSync(new URL(path, root), "utf8");
+const partials = readdirSync(new URL("public/css/", root))
+  .filter((name) => !name.startsWith("."))
+  .sort();
+
+/** The hrefs of a page's stylesheet links, in the page's order, its comments apart. */
+const linked = (page) =>
+  [
+    ...text(`public/${page}`)
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .matchAll(/<link\b[^>]*>/g),
+  ]
+    .map(([tag]) => tag)
+    .filter((tag) => /\brel="[^"]*\bstylesheet\b/.test(tag))
+    .map((tag) => /\bhref="([^"]*)"/.exec(tag)?.[1] ?? "");
+
+// The link order is the cascade, and the partials' names carry it.
+test("the page links every partial under css/, each once and in name order, and no other stylesheet", () => {
+  assert.ok(partials.length > 0, "a partial under public/css");
+  assert.deepEqual(
+    linked("index.html"),
+    partials.map((name) => `css/${name}`),
+  );
+});
+
+test("a partial is named NN-word.css, its rank first", () => {
+  for (const name of partials) assert.match(name, /^\d\d-[a-z]+\.css$/, name);
+});
+
+// A script that follows a stylesheet still loading waits for it.
+test("the page links its stylesheet after its inline script", () => {
+  const page = text("public/index.html").replace(/<!--[\s\S]*?-->/g, "");
+  const first = page.search(/<link\b[^>]*\brel="[^"]*\bstylesheet\b/);
+  assert.ok(first >= 0 && page.lastIndexOf("</script>", first) >= 0);
+  assert.doesNotMatch(page.slice(first), /<script\b(?![^>]*\bsrc=)/);
+});
+
+test("the docs list every partial, a bullet a partial, in name order", () => {
+  const listed = [...text("docs/viewer.md").matchAll(/^- `(\d\d-[a-z]+\.css)` holds /gm)];
+  assert.deepEqual(
+    listed.map(([, name]) => name),
+    partials,
+  );
+});
+
+test("the page for a missing path links the partials the map links, by paths from the root", () => {
+  assert.deepEqual(
+    linked("404.html"),
+    partials.map((name) => `/css/${name}`),
+  );
+});

@@ -6,8 +6,10 @@
 // the working tree's public/, a round of each in turn, since two runs of the
 // same tree differ by a few per cent. The server here is HTTP/1.1 over six
 // connections, where the host's HTTP/2 carries every request on one, so the
-// modules cost more here than there: the sides compare fairly and the figures
-// are on the conservative side.
+// modules and the stylesheet's partials cost more here than there: the sides
+// compare fairly where they ask for the same files, a change in how many they
+// ask for shows larger here than there, and the figures are on the
+// conservative side.
 //
 //     npm run boot -- [<ref>] [--views a,b] [--net 10000/60] [--rounds 3] [--detail]
 //

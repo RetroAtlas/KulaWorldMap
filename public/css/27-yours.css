@@ -1,0 +1,410 @@
+.yours .actions,
+.yours .card .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.yours .actions {
+  margin-bottom: 8px;
+}
+.yours .actions button,
+.yours .card .row button,
+.yours .card .circuit button,
+.yours .unread button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.yours .actions button:hover,
+.yours .card .row button:hover,
+.yours .card .circuit button:hover,
+.yours .unread button:hover {
+  border-color: var(--accent-dim);
+}
+.yours .card .row .warn,
+.yours .unread .warn {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+.yours .card .row .unsaved::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.yours .card .note {
+  align-self: center;
+  color: var(--dim);
+  font-size: 11.5px;
+}
+.yours .card .report {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+.yours .card .report summary {
+  cursor: pointer;
+  color: var(--warn);
+}
+.yours .card .report ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  color: var(--dim);
+}
+.yours .unread {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  padding: 3px 8px;
+  color: var(--dim);
+  font-size: 11.5px;
+}
+.yours .unread .state {
+  flex: 1;
+  min-width: 0;
+}
+.yours .card .plays,
+.yours .card .errors {
+  margin: 6px 0 0;
+  color: var(--dim);
+  font-size: 12px;
+}
+.yours .card .errors {
+  color: var(--warn);
+}
+.panel .sub {
+  color: var(--dim);
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+.panel .view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.panel .view .scope {
+  margin: 0;
+}
+.panel .view select,
+.panel .view input[type="search"] {
+  flex: 1 1 110px;
+  min-width: 0;
+  background: #0e1320;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12px;
+}
+.panel .view select:focus-visible,
+.panel .view input[type="search"]:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -1px;
+}
+.drafts {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.drafts button {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 6px;
+  width: 100%;
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.drafts button:hover {
+  border-color: var(--accent-dim);
+}
+.drafts button[aria-current="true"] {
+  background: var(--accent);
+  color: #06222f;
+  border-color: var(--accent);
+}
+.drafts .name {
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.drafts .state {
+  flex-basis: 100%;
+  color: var(--dim);
+  font-size: 11.5px;
+}
+.drafts button[aria-current="true"] .state,
+.drafts button[aria-current="true"] .tag {
+  color: inherit;
+  opacity: 0.8;
+}
+.drafts .bundle > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  list-style: none;
+  cursor: pointer;
+}
+.drafts .bundle > summary::-webkit-details-marker {
+  display: none;
+}
+.drafts .bundle > summary:hover {
+  background: var(--panel-2);
+}
+.drafts .bundle > summary::before {
+  content: "";
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  margin: 0 3px 0 1px;
+  border: solid var(--dim);
+  border-width: 0 1.7px 1.7px 0;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+.drafts .bundle[open] > summary::before {
+  margin: -3px 3px 0 1px;
+  transform: rotate(45deg);
+}
+.drafts .bundle > summary .by {
+  color: var(--dim);
+  font-size: 11.5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.drafts .bundle > summary .n {
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.drafts .bundle > summary .arrange,
+.yours .card .levels button {
+  display: inline-block;
+  width: auto;
+  text-align: center;
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  border-radius: 5px;
+  padding: 1px 7px;
+  font: inherit;
+  font-size: 11.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.drafts .bundle > summary .arrange:hover,
+.yours .card .levels button:enabled:hover {
+  border-color: var(--accent-dim);
+  color: var(--ink);
+}
+.drafts .members {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 2px 0 6px 8px;
+}
+.drafts .bundle > .card {
+  margin: 4px 0 8px 8px;
+}
+.drafts .bundle > .card .row button {
+  display: inline-block;
+  width: auto;
+  text-align: center;
+}
+.yours .card .levels {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+}
+.yours .card .levels li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.yours .card .levels .name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.yours .card .levels button:disabled,
+.yours .card .row button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 6px;
+}
+.tiles .tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 5px;
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.tiles .tile:hover,
+.tiles .tile:focus-visible {
+  border-color: var(--accent-dim);
+}
+.tiles .tile[aria-current="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.tiles .tile[aria-current="true"] .line {
+  color: inherit;
+  opacity: 0.8;
+}
+.tiles .thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 4px;
+  background: var(--bg);
+}
+.tiles .name,
+.tiles .line {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.tiles .name {
+  font-weight: 600;
+}
+.tiles .line {
+  color: var(--dim);
+  font-size: 11.5px;
+}
+.yours .card {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.yours .card h3 {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dim);
+  margin: 0 0 4px;
+}
+.yours .card label:not(.check) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12.5px;
+}
+.yours .card label:not(.check) > span {
+  flex: 0 0 52px;
+  color: var(--dim);
+}
+.yours .card label:not(.check):has(textarea) {
+  align-items: flex-start;
+}
+.yours .card input[type="text"],
+.yours .card input[type="number"],
+.yours .card select,
+.yours .card textarea {
+  flex: 1;
+  min-width: 0;
+  background: #0e1320;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12.5px;
+}
+.yours .card input[type="number"] {
+  flex: 0 0 68px;
+}
+.yours .card textarea {
+  resize: vertical;
+}
+.yours .card select:disabled {
+  opacity: 0.4;
+}
+.yours .card input:focus-visible,
+.yours .card select:focus-visible,
+.yours .card textarea:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: -1px;
+}
+.yours .card .row {
+  margin-top: 8px;
+}
+.yours .card .circuits {
+  padding: 3px 0;
+  font-size: 12.5px;
+}
+.yours .card .circuits > span {
+  display: block;
+  color: var(--dim);
+}
+.yours .card .circuit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+.yours .card .circuit button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.yours .card .circuit .members {
+  flex: 1;
+  min-width: 0;
+  color: var(--dim);
+  font-size: 11.5px;
+}
+
+.foot {
+  color: var(--dim);
+  font-size: 12px;
+  margin-top: 18px;
+}
+.foot a,
+.foot button {
+  color: var(--accent);
+  text-decoration: none;
+}
+.foot a:hover {
+  text-decoration: underline;
+}

@@ -38,6 +38,8 @@ The slices, in the order they pay off, each a commit of its own and each leaving
 - **The bus and the spoken map.** `dom.js` whole, and the a11y pattern: one summary sentence into a live region and into the canvas's own name.
 - **The CSS tokens.** The four maps already share a vocabulary in two spellings, `--panel-2`/`--ink` here and in HerculesMap against `--panel2`/`--text` in OddworldMap and MetalSlugMap. Agreeing one spelling is the whole of the first step, and the rows, the drawer and the dialog can then share a stylesheet. One name this map and OddworldMap already spell alike is `--surface-float`, what a float over the map stands on: the chip and the corner here, the panels there.
 
+  This map's stylesheet is partials linked in name order, their ranks starting at 10 and the tokens first in the base, so a tokens file shared by the maps can be linked ahead of it.
+
 Mechanics: a repo of its own under the RetroAtlas org, plain ES modules with no build step of its own, vendored into each map at `public/js/lib/` with a manifest naming the version it came from, a script under `tools/` that copies a sibling checkout in, and a CI job that fails when the copy and the source differ.
 
 Vendoring rather than anything cleverer is what keeps the deployed `public/` working from a plain clone and a plain static server, which is the rule the maps are built on, and what lets HerculesMap and MetalSlugMap, which have no `package.json` at all, take the library without taking a toolchain.

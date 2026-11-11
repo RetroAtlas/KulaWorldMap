@@ -573,6 +573,33 @@ The modules lie in layers, and a module imports only its own layer and those ben
 
 A tile's picture is painted as the tile comes within a screen of showing, again when its item's stamp changes or the screen's density does, and on request, at once for a tile within that screen and when it next nears for one farther off, and a paint that says it was not whole is asked again the next time the tile nears, so a long list paints only what shows.
 
+### The stylesheet
+
+The stylesheet is the partials under `css/`, each linked by its own `<link>` from `index.html` in name order, and that order is the cascade: where two rules of equal specificity set one property of one element, the rule of the later partial wins.
+
+A partial is named `NN-word.css`, a two-digit rank and one lowercase word, so the folder listed by name is the order the page links the partials in; `tests/unit/stylesheet.test.js` holds the page's links to that listing, each partial once and no other stylesheet.
+
+The ranks start at 10 and leave numbers free between them, and a new partial takes a free rank between the partial it must follow and the one that must follow it, a multiple of five where one is free, so none is renamed to make room.
+
+The links stand after the page's inline script, since a script that follows a stylesheet still loading waits for it, and the world's textures the script asks for would wait with it.
+
+The partials are named for what they hold, and the page links them in this order:
+
+- `10-base.css` holds the tokens, the resets, the body, `.sr` and `.mono`, which any surface may wear, and the frame the sidebar and the map stand in.
+- `20-sidebar.css` holds the sidebar: its head, the search box with the scope bar, the release's buttons, the count line and the results, the sections, whose class is `.panel`, the small button of a heading and the link-like button, which the level line's notes wear too, the worlds and their levels, the folds, the switches, the keys' caps, the slice and the legend.
+- `27-yours.css` holds Your levels, with a level's row, a bundle, the Level card, and the tiles and the row that stands above a list and sorts and filters it, both worn by the community levels too, and the sidebar's foot.
+- `30-map.css` holds the map and its canvas, the menu button, the scrim and the level line with its notes.
+- `40-readouts.css` holds the readout, the corner with its buttons and the compass, and the tip.
+- `50-panels.css` holds the panel, which a click on a block opens, and the tags, with the toasts, the rules under reduced motion, the dialogs' shell, the list of the keys, Settings and the first of the rules under a phone's width, the drawer that the sidebar becomes among them.
+- `60-play.css` holds the strips of the editor, the planner and play, the HUD, the bar that play's strip becomes on a phone, the pad and the jump.
+- `65-palette.css` holds the palette.
+- `80-dialogs.css` holds the editor's boxes: the disc box, the import boxes and the paste, share and bundle boxes.
+- `90-narrow.css` holds the panel's form and, on a phone, the sheets that the palette and the panel become and the places of the strips, the pad and the corner.
+
+A new rule goes in the partial of the surface it styles, and a rule two surfaces share stands with the surface it names first.
+
+The page for a missing path links the same partials by paths from the root, since the host answers a missing path at any depth with the page.
+
 ### What the page fetches
 
 The page itself starts what the boot will ask for before any of its modules has arrived: every module the boot imports, so they load in one round rather than as each is found in the last, the data files, and the textures of the world the link's pack names, or the first world's textures where there is no link, so everything is on its way together.

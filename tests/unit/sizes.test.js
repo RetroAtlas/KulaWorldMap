@@ -23,6 +23,7 @@ const KINDS = [
     800,
     () => under("public/js", [".js"], true).filter((f) => !f.includes("/vendor/")),
   ],
+  ["public/css", 800, () => under("public/css", [".css"])],
   ["tests/browser", 800, () => under("tests/browser", [".js"])],
   ["tests/unit", 1000, () => under("tests/unit", [".js"])],
   ["tools", 1000, () => [...under("tools", [".py", ".js"]), ...under("tools/tests", [".py"])]],
@@ -47,7 +48,7 @@ const nextHundred = (n) => Math.floor(n / 100) * 100 + 100;
 const capOf = (path) => KINDS.find(([dir]) => path.startsWith(`${dir}/`))[1];
 const CUT = "split it where its sections join, a subject to a file";
 
-test("every module, spec, unit test and tool is short enough to read whole", () => {
+test("every module, partial, spec, unit test and tool is short enough to read whole", () => {
   const over = [];
   for (const [, cap, files] of KINDS)
     for (const path of files()) {

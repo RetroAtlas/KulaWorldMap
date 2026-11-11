@@ -75,10 +75,14 @@ No commit message reports what a test found, a test of its own or any other: eve
 - A new module goes in the lowest layer its imports allow, and where that leaves a choice, with what uses it.
 - The game's number for a kind of block or a type of thing the annotations name is read from `KIND` or `TYPE` in `format/lattice.js`, named as the annotations and [docs/level-format.md](docs/level-format.md) name it, and no module keeps a constant of its own for one.
 - A set of kinds or types that more than one layer reads sits beside `KIND` and `TYPE`, so no two modules keep a copy of it.
-- Every module under `public/js`, spec under `tests/browser`, file under `tests/unit` and tool or test under `tools/` is held under a size by the unit tests: 800 lines for a module or a spec and 1,000 for a unit test or a tool.
+- The stylesheet is the partials under `public/css`, each named `NN-word.css`, a two-digit rank and one lowercase word, and linked from `index.html` in name order, which is the cascade; the unit tests hold the page's links to the folder's listing.
+- A new rule goes in the partial of the surface it styles, and a rule two surfaces share stands with the surface it names first; "How it is built" in [docs/viewer.md](docs/viewer.md) lists what each partial holds, and a commit that adds or moves a surface, or adds a partial, brings the list up to date.
+- A new partial takes a free rank between the partial it must follow and the one that must follow it, a multiple of five where one is free; none is renamed to make room, and no rank is under 10, which leaves room ahead of the base.
+- Every module under `public/js`, partial under `public/css`, spec under `tests/browser`, file under `tests/unit` and tool or test under `tools/` is held under a size by the unit tests: 800 lines for a module, a partial or a spec and 1,000 for a unit test or a tool.
 - A file already over its cap stands in the size test's table at its allowance, the next hundred above its size; a commit that shrinks it lowers the row, none raises one, and the commit that brings it under the cap takes its row out.
 - A change that would push a file past its cap or its row splits the file first, in a commit of its own, where its sections join, a subject to a file.
 - A module without section comments gains them before it is split.
+- A partial takes no section comments: its selectors mark where its surfaces join, and it is split there.
 - What `tools/kula_build.py` writes under `public/`, which the README lists, is generated and committed. Never hand-edit it; change the tool and rebuild.
 - The maps under `tools/maps/`, which `tools/kula_map.py` writes from the discs and the hand table `tools/kula_map_hand.py`, are generated and committed the same way, never hand-edited, and regenerated when a reader gains a row; the size test does not read them.
 - `public/community/index.json`, which `node tools/community.js` writes from the community level records, is generated and committed the same way, never hand-edited: change a record or the ledger and run the tool, and the unit tests hold the committed index to them.

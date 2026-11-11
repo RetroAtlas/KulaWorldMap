@@ -1,0 +1,61 @@
+/* on the strip, where the editor's tools are, whatever its height */
+.palette {
+  position: absolute;
+  left: 12px;
+  bottom: calc(var(--corner-foot) + var(--strip-h, 44px) + var(--course-h, 0px) + 6px);
+  z-index: 15;
+  width: 250px;
+  max-height: calc(100% - var(--corner-foot) - var(--strip-h, 44px) - var(--course-h, 0px) - 26px);
+  overflow-y: auto;
+  background: var(--surface-float);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px;
+  font-size: 12.5px;
+}
+.palette .tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.palette .rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.palette .kind[aria-pressed="false"] {
+  opacity: 1;
+}
+.palette .kind[aria-pressed="true"] {
+  background: var(--panel-2);
+  box-shadow: inset 0 0 0 1px var(--accent-dim);
+}
+.palette .kind kbd {
+  margin-left: auto;
+}
+.palette .grip {
+  display: none;
+  width: 36px;
+  height: 4px;
+  margin: 0 auto 8px;
+  border-radius: 2px;
+  background: var(--line);
+}
+.palette .x {
+  display: none;
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  place-items: center;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--dim);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.palette .x:hover {
+  color: var(--ink);
+}
