@@ -413,13 +413,23 @@ test("the keys stand in one column across the sections, a long key cell wrapping
   await page.setViewportSize({ width: 320, height: 568 });
   await page.keyboard.press("?");
   await expect(page.locator("#help")).toBeVisible();
-  const cells = await page
-    .locator("#help dt")
-    .evaluateAll((ds) =>
-      ds.map((d) => [d.getBoundingClientRect().width, d.clientWidth, d.scrollWidth]),
-    );
+  const read = () =>
+    page
+      .locator("#help dt")
+      .evaluateAll((ds) =>
+        ds.map((d) => [d.getBoundingClientRect().width, d.clientWidth, d.scrollWidth]),
+      );
+  const cells = await read();
   for (const [width, inside, needed] of cells) {
     expect(Math.abs(width - cells[0][0])).toBeLessThanOrEqual(1);
+    expect(needed).toBeLessThanOrEqual(inside);
+  }
+  // and a font with wider letters widens the column with its widest chord, in every section alike
+  await page.addStyleTag({ content: "#help kbd { letter-spacing: 4px }" });
+  const wider = await read();
+  expect(wider[0][0]).toBeGreaterThan(cells[0][0]);
+  for (const [width, inside, needed] of wider) {
+    expect(Math.abs(width - wider[0][0])).toBeLessThanOrEqual(1);
     expect(needed).toBeLessThanOrEqual(inside);
   }
 });
