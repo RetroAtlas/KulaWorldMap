@@ -183,6 +183,8 @@ A level of your own marked a Simon room is shown as the game shows the rooms, wi
 
 Each level of your own is a tile: a picture of the level, turned as the social card shows a level, its title, its world, whether it is saved to a file and, once there are changes, how many; choosing one shows it, as choosing a level does.
 
+The tile of the level on screen is filled with the accent colour, as its row in the list and a level's button under its world are, where another tile under the pointer only lights its border, so the two are told apart.
+
 The picture is painted from the level itself as the tile comes into view, never fetched or stored, flat in its world's colour until that world's textures land, and flat for good where the browser is set to save data.
 
 A link to a level of your own (`#DRAFT/3/...`) opens it on the device that holds it, and anywhere else gives way to the view on screen, saying that the level is kept in another browser.

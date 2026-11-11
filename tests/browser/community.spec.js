@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { settle, trackErrors } from "./helpers.js";
+import { filledTiles, settle, trackErrors } from "./helpers.js";
 import { EDIT, docOf, shown, toasts } from "./drafthelpers.js";
 import { writeProject } from "../../public/js/format/project.js";
 import { writeBundle } from "../../public/js/format/bundle.js";
@@ -93,6 +93,7 @@ test("choosing a tile shows the level, tagged Community, with the author, the no
   await expect(note.getByRole("button", { name: "save the file" })).toBeVisible();
   await expect(tile(page, 1)).toHaveAttribute("aria-current", "true");
   await expect(tile(page, 2)).toHaveAttribute("aria-current", "false");
+  expect(await filledTiles(page, "#communityTiles")).toEqual(["1"]);
   await expect.poll(() => bar(page)).toMatch(/^#COMMUNITY\/1\//);
   expect(index.n).toBe(1);
   expect(errors).toEqual([]);

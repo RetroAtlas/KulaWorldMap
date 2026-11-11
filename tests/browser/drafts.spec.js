@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { settle, textured, topPixels, trackErrors } from "./helpers.js";
+import { filledTiles, settle, textured, topPixels, trackErrors } from "./helpers.js";
 import { EDIT, docOf, faced, shown, stored, written } from "./drafthelpers.js";
 
 /** Put `block` into the shown draft at `cell`, or take the block there out with null, through the
@@ -211,6 +211,7 @@ test("copy this level makes a draft out of the level on screen, and of a draft a
   expect(await standing(page)).toEqual(shipped);
   expect(await docOf(page, second.draft)).toEqual(doc);
   await expect(page.locator("#draftRows button[aria-current='true']")).toHaveCount(1);
+  expect(await filledTiles(page, "#draftRows")).toEqual([String(second.draft)]);
   expect(errors).toEqual([]);
 });
 

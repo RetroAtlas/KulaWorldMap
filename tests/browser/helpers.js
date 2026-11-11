@@ -494,3 +494,17 @@ export const hovered = (page) =>
     const c = state.hover;
     return c && `${c.x}, ${c.y}, ${c.z}`;
   });
+
+/** The keys of the tiles under `list` that are filled with the accent, the colour the page
+    computes for that token. */
+export const filledTiles = (page, list) =>
+  page.evaluate((list) => {
+    const probe = document.createElement("i");
+    probe.style.background = "var(--accent)";
+    document.body.append(probe);
+    const accent = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return [...document.querySelectorAll(`${list} .tile`)]
+      .filter((tile) => getComputedStyle(tile).backgroundColor === accent)
+      .map((tile) => tile.dataset.key);
+  }, list);
