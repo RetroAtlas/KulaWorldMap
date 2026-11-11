@@ -16,12 +16,10 @@
 // --save writes both sides of every capture that differs as PNGs. Past a few
 // differing captures the rest are counted by what differs rather than named,
 // and --all names every one.
-import { existsSync } from "node:fs";
-import { mkdtemp, writeFile, mkdir, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { writeFile, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { chromium } from "@playwright/test";
-import { ROOT, serve, checkout, locate } from "../public.js";
+import { ROOT, serve, fromRef, locate } from "../public.js";
 import { cases, live, play } from "./cases.js";
 import { WORLDS } from "../../public/js/format/kwl.js";
 import { blank } from "../../public/js/format/project.js";
@@ -491,9 +489,9 @@ async function playCapture(page, c, keep) {
 async function render(browser, root, { only = null, keep = null } = {}) {
   const server = await serve(root);
   const base = `http://127.0.0.1:${server.address().port}`;
-  const discs = existsSync(join(root, "js", "viewer", "release.js"));
   const out = [];
   try {
+    const discs = (await fetch(`${base}/js/viewer/release.js`, { method: "HEAD" })).ok;
     for (const [side, store] of SIDES) {
       for (const dpr of [1, 2]) {
         const todo = cases.filter((c) => (c.dpr || 1) === dpr && (!only || only.has(c.id)));
@@ -553,10 +551,9 @@ function differences(before, after) {
   return out;
 }
 
-const scratch = await mkdtemp(join(tmpdir(), "kula-pixels-"));
 const browser = await chromium.launch();
 try {
-  const theirs = checkout(ref, scratch);
+  const theirs = fromRef(ref);
   const started = Date.now();
   const before = await render(browser, theirs);
   const after = await render(browser, join(ROOT, "public"));
@@ -598,5 +595,4 @@ try {
   process.exitCode = found.length ? 1 : 0;
 } finally {
   await browser.close();
-  await rm(scratch, { recursive: true, force: true });
 }
