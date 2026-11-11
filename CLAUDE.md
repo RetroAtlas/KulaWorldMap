@@ -45,7 +45,7 @@ The matrix also stands the ball on a level, so a move inside play is proven by `
 
 A change to the stylesheet that is to show exactly as before, a rule moved, a file cut or a selector regrouped, is proven with `npm run styles`, which opens the page at the working tree and at `HEAD` in the interface states of `tests/styles/states.js`, each waiting for what it opened to stand, and compares the computed style of every element and of every `::before` and `::after` it draws, read as the state stands under reduced motion, with motion allowed and every animation held at its first frame, and with hover, focus and active forced on every element, each alone and all at once, and names every state in which one differs, with the properties, and passes when it names none. A change meant to show differently does not run it.
 
-A new surface earns a state in `tests/styles/states.js`, and `npm run styles -- --unseen` names every rule of the stylesheet no state shows.
+A new surface earns a state in the list of its subject beside `tests/styles/states.js`, and `npm run styles -- --unseen` names every rule of the stylesheet no state shows.
 
 Where a change is about speed, `npm run frame` says where a frame's main-thread time goes, part by part, at a phone's size with the CPU slowed, and given a ref measures that ref beside the working tree, and `npm run boot` opens the page over a throttled network and says when its first frame and its first textured frame land, given a ref beside that ref's frames; both are there to reach for, not checks a commit must pass.
 

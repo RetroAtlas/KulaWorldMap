@@ -34,6 +34,10 @@ The matrix also stands levels on the other discs, such a case naming its disc in
 
 A state is a size and kind of screen, what is kept in storage or answered for a file before the page loads, what the page is asked to open through its own controls, or through its modules or an event the browser would send where no control serves, and a selector that stands once it is open and is absent from the plain map, so a state that fails to open fails the run; each is opened on a page of its own at both trees, and a new surface earns a state there.
 
+The states stand in a list for each subject beside `tests/styles/states.js`, which joins them: `viewerstates.js` for the plain viewer and the page for a missing path, `editorstates.js` for Your levels, the editor and its boxes, and `playstates.js` for play, a level carried in its link and the community levels, with what the lists share in `statehelpers.js`.
+
+A new state goes in the list of the surface it shows, and one that shows surfaces of two lists stands with the surface it names first.
+
 The page's clock is stopped before a state is read and every running animation put at its end, since a toast, an armed button and the note of a save leave by themselves; a state that drives the ball holds the game's clock before its first step, as a browser test of play does.
 
 A state is read only where its selector still stands once the clock has stopped: one whose selector has left by then, as the note of a save has where the machine stalled for a second, is opened again, and fails the run the third time.
