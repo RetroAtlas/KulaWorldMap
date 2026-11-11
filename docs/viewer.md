@@ -594,15 +594,17 @@ The partials are named for what they hold, and the page links them in this order
 - `30-map.css` holds the map and its canvas.
 - `40-readouts.css` holds the readout, the corner with its buttons and the compass, the tip and the toasts.
 - `50-panels.css` holds the panel, which a click on a block opens, with its form, and the tags.
-- `60-play.css` holds play's strip, the HUD, the pad and the jump.
-- `65-palette.css` holds the palette.
 - `70-chrome.css` holds the menu button, the scrim, the level line with its notes, the rules the three strips share and the planner's strip.
+- `72-play.css` holds play's strip, the HUD, the pad and the jump.
+- `75-palette.css` holds the palette.
 - `80-dialogs.css` holds the dialogs' shell, the list of the keys, Settings and the editor's boxes: the disc box, the import boxes and the paste, share and bundle boxes.
 - `90-narrow.css` holds the rules under reduced motion and under a phone's width.
 
 A new rule goes in the partial of the surface it styles, and a rule two surfaces share stands with the surface it names first.
 
 The rules under reduced motion and under a phone's width stand in `90-narrow.css`, linked last: where one restates a selector another partial writes at the same specificity, the later rule wins.
+
+`72-play.css` is linked after `70-chrome.css`, which holds the rules the three strips share, so that a rule of play's own strip wins a tie against a shared one.
 
 The page for a missing path links `10-base.css` alone, since it draws on the tokens, the reset of box-sizing and the body's rule and on no other rule of the stylesheet.
 
