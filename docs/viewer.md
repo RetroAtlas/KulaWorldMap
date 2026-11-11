@@ -587,7 +587,7 @@ The partials are named for what they hold, and the page links them in this order
 
 - `10-base.css` holds the tokens, the resets, the body, `.sr` and `.mono`, which any surface may wear, and the frame the sidebar and the map stand in.
 - `20-sidebar.css` holds the sidebar: its head, its sections, whose class is `.panel`, the small button of a heading and the link-like button, which the count line and the level line's notes wear too, the worlds and their levels, the folds, the switches, the keys' caps, the slice, the legend and the foot.
-- `25-search.css` holds the search box, the scope bar, whose look the release's buttons and the palette's tabs wear, the count line and the results.
+- `25-search.css` holds the search box, whose wrapper's class, `.field`, the rows of the panel's form and the fields of the import picker and of the paste, share and bundle boxes wear too, the scope bar, whose look the release's buttons and the palette's tabs wear, the count line and the results.
 - `27-yours.css` holds Your levels: a level's row, a bundle, the Level card, and the tiles and the row that stands above a list and sorts and filters it, both worn by the community levels too.
 - `30-map.css` holds the map and its canvas.
 - `40-readouts.css` holds the readout, the corner with its buttons and the compass, the tip and the toasts.
