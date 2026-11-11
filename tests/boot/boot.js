@@ -1,5 +1,6 @@
 // Measures how the map boots: the page opened in Chromium over a throttled
-// network with the cache off, and when the page lands, when the boot's modules
+// network with the cache off, and when the page lands, when the browser first
+// paints content, which waits on the stylesheet, when the boot's modules
 // and its data have all arrived, when the first frame with a level on it is
 // drawn, and when the shown world's textures are asked for and land, which is
 // the first textured frame. Given a ref, the ref's public/ is measured beside
@@ -8,8 +9,8 @@
 // connections, where the host's HTTP/2 carries every request on one, so the
 // modules and the stylesheet's partials cost more here than there: the sides
 // compare fairly where they ask for the same files, a change in how many they
-// ask for shows larger here than there, and the figures are on the
-// conservative side.
+// ask for shows larger here than there, and a figure that waits on many
+// files is on the conservative side.
 //
 //     npm run boot -- [<ref>] [--views a,b] [--net 10000/60] [--rounds 3] [--detail]
 //
@@ -96,13 +97,21 @@ async function visit(browser, base, view) {
   await page.waitForTimeout(500);
   const out = await page.evaluate(() => {
     const nav = performance.getEntriesByType("navigation")[0];
+    const painted = performance
+      .getEntriesByType("paint")
+      .find((e) => e.name === "first-contentful-paint");
     const rs = performance.getEntriesByType("resource").map((e) => ({
       name: e.name.replace(/^https?:\/\/[^/]+\//, ""),
       start: e.startTime,
       end: e.responseEnd,
       bytes: e.encodedBodySize,
     }));
-    return { html: nav.responseEnd, resources: rs, firstFrame: window.__firstFrame };
+    return {
+      html: nav.responseEnd,
+      paint: painted?.startTime ?? null,
+      resources: rs,
+      firstFrame: window.__firstFrame,
+    };
   });
   await context.close();
   const ended = (test) =>
@@ -111,6 +120,7 @@ async function visit(browser, base, view) {
   const by = atlas?.end ?? Infinity;
   return {
     html: out.html,
+    paint: out.paint,
     modules: ended((n) => /^js\/.*\.js$/.test(n)),
     data: ended((n) => /\.json$/.test(n)),
     frame: out.firstFrame,
@@ -126,7 +136,7 @@ const median = (xs) => {
   return s.length ? s[Math.floor(s.length / 2)] : null;
 };
 const ms = (v) => (v === null ? "   -" : String(Math.round(v)).padStart(6));
-const COLUMNS = ["html", "modules", "data", "frame", "asked", "textured"];
+const COLUMNS = ["html", "paint", "modules", "data", "frame", "asked", "textured"];
 
 async function measure(browser, base, label) {
   const rows = [];

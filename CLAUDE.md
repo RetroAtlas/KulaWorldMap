@@ -47,7 +47,7 @@ A change to the stylesheet that is to show exactly as before, a rule moved, a fi
 
 A new surface earns a state in the list of its subject beside `tests/styles/states.js`, and `npm run styles -- --unseen` names every rule of the stylesheet no state shows.
 
-Where a change is about speed, `npm run frame` says where a frame's main-thread time goes, part by part, at a phone's size with the CPU slowed, and given a ref measures that ref beside the working tree, and `npm run boot` opens the page over a throttled network and says when its first frame and its first textured frame land, given a ref beside that ref's frames; both are there to reach for, not checks a commit must pass.
+Where a change is about speed, `npm run frame` says where a frame's main-thread time goes, part by part, at a phone's size with the CPU slowed, and given a ref measures that ref beside the working tree, and `npm run boot` opens the page over a throttled network and says when its first paint, its first frame and its first textured frame land, given a ref beside that ref's paint and frames; both are there to reach for, not checks a commit must pass.
 
 No commit message reports what a test found, a test of its own or any other: every commit passes them all.
 

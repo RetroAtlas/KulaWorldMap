@@ -58,7 +58,7 @@ An animation is compared at one moment alone, at its first frame where reduced m
 
 A declaration is compared only in a state where it decides, so one that another rule stands over in every state is compared in none, as the look a toast wears while it fades.
 
-`npm run frame` and `npm run boot` are measurements, not checks: where a frame's time goes, and when the page's first frames land over a throttled network.
+`npm run frame` and `npm run boot` are measurements, not checks: where a frame's time goes, and when the page's first paint and its first frames land over a throttled network.
 
 `python3 -m unittest discover -s tools/tests` runs the tools' tests without the disc, the motion reader's one file a module, `test_kula_motion_<subject>.py`, over the shared `motion_fixture.py`, the atlas writer's tests and the build's artwork tests over the worlds `tgi_fixture.py` builds, the aligner's in `test_kula_align.py` and the map writer's in `test_kula_map.py` over the executables `align_fixture.py` lays out, a few routines and copies of them laid out as another release lays out the same code, and the tests of the level writer's disc check in `test_kula_kwl_check.py` beside the writer's own `test_kula_kwl.py`; `python3 -m compileall -q tools/` and `ruff check tools/` at the release [.github/workflows/ci.yml](../.github/workflows/ci.yml) pins complete the Python checks.
 
