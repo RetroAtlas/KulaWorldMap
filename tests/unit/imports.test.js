@@ -106,6 +106,33 @@ test("a module imports only its own layer and those beneath it", () => {
   }
 });
 
+/** The rows `row` names, itself left out, a file standing for its folder. */
+function named(row) {
+  const names = LAYERS[row].map((entry) => (entry.endsWith(".js") ? posix.dirname(entry) : entry));
+  return [...new Set(names)].filter((name) => name !== row && LAYERS[name]);
+}
+
+// Rows that name each other let every module pass, each importing within its row.
+test("the table of layers is an order, a row naming only itself and the rows beneath it", () => {
+  const cycles = [];
+  const seen = new Map();
+  const path = [];
+  const visit = (row) => {
+    if (seen.get(row) === "done") return;
+    if (seen.get(row) === "open") {
+      cycles.push([...path.slice(path.indexOf(row)), row].join(" -> "));
+      return;
+    }
+    seen.set(row, "open");
+    path.push(row);
+    for (const below of named(row)) visit(below);
+    path.pop();
+    seen.set(row, "done");
+  };
+  for (const row of Object.keys(LAYERS)) visit(row);
+  assert.deepEqual(cycles, []);
+});
+
 // The simulation and what play composes over it are pure: a module of them
 // reaches the model, the lattice and these modules, and nothing that paints or
 // touches the page, so the ball can be stepped and what play says read without
