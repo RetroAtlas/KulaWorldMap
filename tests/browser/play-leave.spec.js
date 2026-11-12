@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { trackErrors } from "./helpers.js";
-import { IDENTITY, listening, opened, probe, said, startPlay } from "./playhelpers.js";
+import { IDENTITY, listening, opened, probe, said, say, startPlay } from "./playhelpers.js";
 
 // LEVEL 68: the start on 17,18,17, and blue teleporters round a ring of three, the one on 17,7,17
 // leading to the one on 17,25,17
@@ -137,6 +137,8 @@ test("leaving play says so after what the way out says of where it goes, a telep
   await go.click();
   await expect.poll(() => said(page)).toEqual([there, "Left play."]);
   await startPlay(page);
+  // play's opening line can wait a frame behind "Left play.", so the list is emptied after it
+  await expect(say(page)).toHaveText(/^Playing LEVEL 68\./);
   await page.evaluate(() => (window.__said = []));
   await page.locator("#worlds .levels button[title='LEVEL 69']").click();
   const described = await page.evaluate(async () => {
