@@ -132,6 +132,7 @@ const spanWord = (b) =>
 const toCell = ([x, y, z]) => ({ x, y, z });
 
 export function bootEditor() {
+  on("atlas-loaded", forgetIcon);
   load();
   provideLevels(levelFor);
   wireDrafts();
@@ -1183,9 +1184,9 @@ function drawHover(ctx, c, home, key) {
 }
 
 let icon = null;
-on("atlas-loaded", (world) => {
+function forgetIcon(world) {
   if (world === state.lvl?.theme) icon = null;
-});
+}
 
 /** A cell's faces turned to the view, tinted. */
 function tint(ctx, cell, fill) {
