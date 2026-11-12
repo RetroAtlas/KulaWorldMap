@@ -110,11 +110,6 @@ const levelAt = (id, n) => heldAt(id, n)?.l ?? null;
 /** The record's id and the place of the level on screen, where it is one of the community levels. */
 const shownAt = () => (state.lvl?.pack === COMMUNITY_PACK ? placeOf(slotOf(state.lvl)) : null);
 
-provideLevels((slot) => {
-  const at = placeOf(slot);
-  return at ? levelAt(...at) : null;
-});
-
 // --- the tiles ----------------------------------------------------------------------------
 /** A level's record for the order and the filter, its world by the name the map shows. */
 const recordOf = (e) => ({
@@ -172,22 +167,6 @@ function sync() {
   else grid = tiles($("communityTiles"), items);
 }
 
-nothing = $("communityEmpty").textContent;
-$("communitySort").onchange = (e) => {
-  sort = SORTS.includes(e.target.value) ? e.target.value : SORTS[0];
-  sync();
-};
-$("communityFilter").oninput = () => sync();
-on("atlas-loaded", (world) => {
-  if (!grid) return;
-  for (const e of catalogue.entries) if (e.world === world) grid.repaint(e.id);
-});
-// One of its levels coming on screen opens the fold, as a world's fold opens for its level.
-on("level-changed", () => {
-  if (state.lvl?.pack === COMMUNITY_PACK) $("communityFold").open = true;
-  if (grid) sync();
-});
-
 // --- the note -----------------------------------------------------------------------------
 /** The level's place in its bundle, and the bundle's levels as links to each under their count,
     open where the sidebar has a column of its own, closed where it overlays the map, and as the
@@ -222,7 +201,7 @@ function placeIn(bundle, n) {
   ];
 }
 
-noteWith((l) => {
+function noteFor(l) {
   if (l.pack !== COMMUNITY_PACK || !l.project) return null;
   const { title, author, notes } = l.project;
   const [id, n] = placeOf(slotOf(l)) ?? [];
@@ -263,4 +242,28 @@ noteWith((l) => {
     bundle ? placeIn(bundle, n) : [],
     el("p", {}, "One of the community levels, not kept in this browser. ", copy, " · ", save),
   );
-});
+}
+
+// --- the wiring ---------------------------------------------------------------------------
+export function wirePanel() {
+  provideLevels((slot) => {
+    const at = placeOf(slot);
+    return at ? levelAt(...at) : null;
+  });
+  nothing = $("communityEmpty").textContent;
+  $("communitySort").onchange = (e) => {
+    sort = SORTS.includes(e.target.value) ? e.target.value : SORTS[0];
+    sync();
+  };
+  $("communityFilter").oninput = () => sync();
+  on("atlas-loaded", (world) => {
+    if (!grid) return;
+    for (const e of catalogue.entries) if (e.world === world) grid.repaint(e.id);
+  });
+  // One of its levels coming on screen opens the fold, as a world's fold opens for its level.
+  on("level-changed", () => {
+    if (state.lvl?.pack === COMMUNITY_PACK) $("communityFold").open = true;
+    if (grid) sync();
+  });
+  noteWith(noteFor);
+}

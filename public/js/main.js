@@ -340,11 +340,24 @@ const UNSHARED =
   "The level in that link could not be loaded; open the link again to try once more.";
 const CUT_SHORT = "That link was cut short on its way and carries no level. Ask for it again.";
 let communityLoading = null;
+let communityBroken = false;
+
+// The layer boots as it arrives. A boot that threw is not run again, since it may have half
+// run, and every arrival after it is said as a fetch that failed is.
+function communityReady(module) {
+  try {
+    if (!communityBroken) module.bootCommunity();
+  } catch {
+    communityBroken = true;
+  }
+  return communityBroken ? Promise.reject() : module;
+}
+const fetchCommunity = () => import("./community/community.js").then(communityReady);
 
 // A fetch that failed is tried again by the next link or the next opening of the fold, each
 // saying so in its own way.
 const bootCommunity = (failed = () => toast(UNSHARED)) =>
-  (communityLoading ??= import("./community/community.js").catch(() => {
+  (communityLoading ??= fetchCommunity().catch(() => {
     communityLoading = null;
     failed();
     return null;
@@ -434,7 +447,7 @@ Promise.all([
   loadJson("releases/eu.json", null),
   loadJson("releases/jp.json", null),
   awaited ? import("./editor/editor.js").catch(() => null) : null,
-  carried ? import("./community/community.js").catch(() => null) : null,
+  carried ? fetchCommunity().catch(() => null) : null,
 ]).then(async ([data, ann, objects, us, eu, jp, module, community]) => {
   if (!data) {
     $("chipLine").textContent = "The map's data could not be loaded.";
