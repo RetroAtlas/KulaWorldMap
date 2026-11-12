@@ -132,6 +132,26 @@ const isLevel = (bytes) => {
   return body >= 0 && body % RECORD === 0;
 };
 
+const RLV_MARK = "RALV";
+const RLV_LENGTH_AT = 8;
+const RLV_NAME_AT = 12;
+const RLV_HEADER = 60;
+
+/** The name and the level a file of the PC recompilation's editor holds, or null where the bytes
+    are not one: its mark, and a length that counts every byte past its header. */
+function rlvParts(bytes) {
+  if (bytes.length < RLV_HEADER) return null;
+  if (String.fromCharCode(...bytes.subarray(0, RLV_MARK.length)) !== RLV_MARK) return null;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (view.getUint32(RLV_LENGTH_AT, true) !== bytes.length - RLV_HEADER) return null;
+  const field = bytes.subarray(RLV_NAME_AT, RLV_HEADER);
+  const end = field.indexOf(0);
+  return {
+    name: new TextDecoder().decode(end < 0 ? field : field.subarray(0, end)).trim(),
+    level: bytes.subarray(RLV_HEADER),
+  };
+}
+
 /** A level the game would load, read in the world given, or a thrown sentence. */
 function readGame(bytes, world, refusal) {
   if (!isLevel(bytes)) throw new Error(refusal);
@@ -322,6 +342,7 @@ export async function readLevelFile(source, name, world, held = null) {
   const bytes = await bytesOf(source);
   const json = parsed(bytes);
   const pak = json === undefined ? asPak(bytes) : null;
+  const rlv = rlvParts(bytes);
   let read;
   if (json !== undefined) {
     if (!json || typeof json !== "object") throw new Error(NOT_MAP);
@@ -336,6 +357,9 @@ export async function readLevelFile(source, name, world, held = null) {
   } else if (pak) {
     read = await readFromPak(pak, name, world);
     if (!read) return null;
+  } else if (rlv) {
+    read = readGame(rlv.level, world, NOT_LEVEL);
+    read.project.title = rlv.name || stem(name);
   } else if (isCue(bytes)) throw new Error(CUE_SHEET);
   else {
     read = readGame(bytes, world, NOT_LEVEL);

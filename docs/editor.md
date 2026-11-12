@@ -563,6 +563,7 @@ The patches are then the bytes of [disc.md](disc.md): the PPF with the descripti
 - A file of whole 2352-byte sectors with the volume mark at sector 16 is a disc image, sniffed next so that one handed over as a file is read a slice at a time rather than whole.
 - Text that parses as JSON is the map's file where it carries the marker, a bundle where it carries the bundle's marker, and the community viewer's level where it has `blocks` at `pos` and a `time`.
 - Bytes whose first word counts 1 to 32 slots whose table, records and NUL-ended names all lie within the file are a pack.
+- Bytes that open with `RALV` and a length word counting every byte past a 60-byte header are a level of the PC recompilation's editor.
 - A length that is the lattice, the six header bytes and whole records is the game's level.
 
 Anything else is refused.
@@ -604,6 +605,16 @@ Of the viewer's 203 level files, 169 read back to the canonical bytes of a shipp
 The share link carries the level as text, a header of `time|hidden|reverse` and a line a block, every number in base 36 with `~` for 65535 and `_` for an empty slot, gzipped and written in base64url without padding under `level=`, with the viewer's theme under `theme=`; `readOrbitLink` takes a whole URL, a query or the bare value, refuses a value that is only digits, which names one of the viewer's own levels, reads the level in the world `theme` names where that is one of the disc's worlds and the world on screen otherwise, saying so where it is not, and `readLevelText` titles it Shared level.
 
 The link is pasted into the box the sidebar's `paste a link…` opens, which reads it in the world on screen, shows the reader's refusal under the field and keeps the field for another paste, and the result is a new draft marked saved, as it is for a file. The fixture holds the link the viewer's own encoder makes of each of its five levels.
+
+### The PC recompilation's editor
+
+A PC recompilation of the game ships a level editor of its own, the Roll Away level editor, which saves a level as `.rlv`: a 60-byte header and then the game's level file whole, byte for byte.
+
+The header is `RALV`, four bytes the map leaves unread, a little-endian word counting the bytes past the header, and the level's name, NUL-padded to the header's end.
+
+The level behind the header is read by `readKwl` in the world on screen, since the header names none the map reads, and titled by the header's name, or by the file's stem where the name is empty.
+
+A file whose length word does not count the rest is no such file, and is refused as anything the order places nowhere.
 
 ## The palette
 

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { plain, project, start } from "./project-doc.js";
 import { writeProject } from "../../public/js/format/project.js";
+import { writeKwl } from "../../public/js/format/kwl.js";
 import { NOT_LINK, OWN_LEVEL } from "../../public/js/format/orbit.js";
 import { NOT_CARRIED } from "../../public/js/format/share.js";
 import { BUNDLE_FORMAT, writeBundle } from "../../public/js/format/bundle.js";
@@ -143,5 +144,32 @@ test("a bundle with no level the map can open is refused in one sentence, naming
   await refused([], `${NONE}.`);
   await assert.rejects(openBundle(JSON.stringify({ format: BUNDLE_FORMAT, levels: ["x"] })), {
     message: `${NONE}.`,
+  });
+});
+
+/** The PC recompilation's file: its mark, four bytes, the length of the rest, the name and the level. */
+function rlv(level, name, length = level.length) {
+  const file = new Uint8Array(60 + level.length);
+  file.set(bytes("RALV"));
+  file.set([1, 0, 0, 1], 4);
+  new DataView(file.buffer).setUint32(8, length, true);
+  file.set(bytes(name), 12);
+  file.set(level, 60);
+  return file;
+}
+
+test("a level of the PC recompilation's editor is the game's level behind a header of its own, read in the world on screen and titled by the header's name, or by the file's stem where it holds none", async () => {
+  const level = writeKwl(one("Kept out of the game's file"));
+  const read = await readLevelFile(rlv(level, "test level"), "test level.rlv", "COWBOY");
+  assert.deepEqual(
+    [read.project.title, read.project.world, read.report],
+    ["test level", "COWBOY", []],
+  );
+  assert.deepEqual(writeKwl(read.project), level);
+  const unnamed = await readLevelFile(rlv(level, ""), "spiral.rlv", "MARS");
+  assert.equal(unnamed.project.title, "spiral");
+  // a length that does not count the rest is no such file, and its bytes are no level of the game
+  await assert.rejects(readLevelFile(rlv(level, "x", level.length - 1), "x.rlv", "MARS"), {
+    message: "That file is neither one of the map's level files nor a level file of the game.",
   });
 });
