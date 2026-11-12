@@ -47,7 +47,9 @@ function speak() {
   say((changed ? `Showing the ${discWord(spoken)} release. ` : "") + label());
 }
 
-on("level-changed", speak);
-on("level-updated", label);
-on("release-changed", speak);
-on("link-opening", () => (current() === spoken ? label() : speak()));
+export function wireA11y() {
+  on("level-changed", speak);
+  on("level-updated", label);
+  on("release-changed", speak);
+  on("link-opening", () => (current() === spoken ? label() : speak()));
+}
