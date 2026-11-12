@@ -48,19 +48,7 @@ export async function prepare(hash) {
   levels.set(segment, level);
 }
 
-provideLevels((slot) =>
-  slot.startsWith(SHARED) && noted !== null ? (levels.get(noted) ?? null) : null,
-);
-
-tailWith({
-  letter: LETTER,
-  write: () => segmentOf(state.lvl),
-  before: (segment) => {
-    noted = segment;
-  },
-});
-
-noteWith((l) => {
+function noteFor(l) {
   if (l.pack !== SHARED_PACK || !l.project) return null;
   const { author, notes } = l.project;
   const copy = el("button", {
@@ -77,4 +65,18 @@ noteWith((l) => {
     notes ? el("p", { className: "notes", textContent: notes }) : [],
     el("p", {}, "This level came by its link and is not kept in this browser. ", copy),
   );
-});
+}
+
+export function wireLink() {
+  provideLevels((slot) =>
+    slot.startsWith(SHARED) && noted !== null ? (levels.get(noted) ?? null) : null,
+  );
+  tailWith({
+    letter: LETTER,
+    write: () => segmentOf(state.lvl),
+    before: (segment) => {
+      noted = segment;
+    },
+  });
+  noteWith(noteFor);
+}
