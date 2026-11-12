@@ -34,7 +34,7 @@ import {
 } from "../format/project.js";
 import { runOf } from "../format/checks.js";
 import { load } from "./drafts.js";
-import { canRedo, canUndo, redo, undo } from "./trail.js";
+import { canRedo, canUndo, redo, undo, wireTrail } from "./trail.js";
 import { copyShown, levelFor, wireDrafts } from "./draftlist.js";
 import {
   BRITTLE,
@@ -132,6 +132,7 @@ const spanWord = (b) =>
 const toCell = ([x, y, z]) => ({ x, y, z });
 
 export function bootEditor() {
+  wireTrail();
   on("atlas-loaded", forgetIcon);
   load();
   provideLevels(levelFor);
