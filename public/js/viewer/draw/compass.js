@@ -24,11 +24,6 @@ let size = 0;
 let painted = "";
 let placed = [];
 
-new ResizeObserver(() => {
-  size = cv.clientWidth;
-  drawCompass();
-}).observe(cv);
-
 export function drawCompass() {
   cv.hidden = !state.show.compass;
   if (cv.hidden) return;
@@ -115,4 +110,11 @@ function write(text, [x, y], colour, u = null) {
   g.strokeText(text, ...p);
   g.fillStyle = colour;
   g.fillText(text, ...p);
+}
+
+export function wireCompass() {
+  new ResizeObserver(() => {
+    size = cv.clientWidth;
+    drawCompass();
+  }).observe(cv);
 }

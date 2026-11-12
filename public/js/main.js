@@ -1,6 +1,7 @@
 import { $, dialogOpen, el, on, typing } from "./viewer/ui/dom.js";
 import { state } from "./viewer/state.js";
 import { resize, onResize, wireRender } from "./viewer/draw/render.js";
+import { wireCompass } from "./viewer/draw/compass.js";
 import { loadJson, setAnnotations, setObjects, ballFor } from "./viewer/data.js";
 import { setReleases } from "./viewer/release.js";
 import { iconFor } from "./viewer/draw/icons.js";
@@ -30,6 +31,7 @@ import { wireA11y } from "./viewer/chrome/a11y.js";
 import { wireInteraction } from "./viewer/chrome/interaction.js";
 import { wireSearch } from "./viewer/chrome/search.js";
 
+wireCompass();
 wireRender();
 wireDetail();
 wireNavigate();
