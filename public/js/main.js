@@ -1,10 +1,21 @@
 import { $, dialogOpen, el, on, typing } from "./viewer/ui/dom.js";
 import { state } from "./viewer/state.js";
-import { resize, onResize, wireRender } from "./viewer/draw/render.js";
-import { wireCompass } from "./viewer/draw/compass.js";
 import { loadJson, setAnnotations, setObjects, ballFor } from "./viewer/data.js";
 import { setReleases } from "./viewer/release.js";
 import { iconFor } from "./viewer/draw/icons.js";
+import { carriesLevel, parseHash, slotOf } from "./viewer/permalink.js";
+import { probeOf } from "./viewer/walk.js";
+import { FACE_NAME } from "./format/lattice.js";
+import { openModal } from "./viewer/ui/modal.js";
+import { named } from "./viewer/ui/keys.js";
+import { toast } from "./viewer/ui/toast.js";
+import { address } from "./viewer/ui/address.js";
+import { KEY, heldIn } from "./format/held.js";
+import { warm } from "./viewer/draw/atlas.js";
+import { wireCompass } from "./viewer/draw/compass.js";
+import { resize, onResize, wireRender } from "./viewer/draw/render.js";
+import { onShow, refreshDetail, wireDetail } from "./viewer/chrome/detail.js";
+import { applyHash, selectLevel, wireNavigate, writeHash } from "./viewer/chrome/navigate.js";
 import {
   buildWorlds,
   buildKinds,
@@ -13,23 +24,12 @@ import {
   restore,
   setSidebar,
 } from "./viewer/chrome/sidebar.js";
-import { applyHash, selectLevel, wireNavigate, writeHash } from "./viewer/chrome/navigate.js";
-import { carriesLevel, parseHash, slotOf } from "./viewer/permalink.js";
-import { wireRelease } from "./viewer/chrome/release.js";
-import { onShow, refreshDetail, wireDetail } from "./viewer/chrome/detail.js";
-import { probeOf } from "./viewer/walk.js";
-import { FACE_NAME } from "./format/lattice.js";
-import { wireCourse } from "./viewer/chrome/course.js";
-import { openModal } from "./viewer/ui/modal.js";
-import { named } from "./viewer/ui/keys.js";
-import { wireSettings } from "./viewer/ui/settings.js";
-import { toast } from "./viewer/ui/toast.js";
-import { address } from "./viewer/ui/address.js";
-import { KEY, heldIn } from "./format/held.js";
-import { warm } from "./viewer/draw/atlas.js";
-import { wireA11y } from "./viewer/chrome/a11y.js";
 import { wireInteraction } from "./viewer/chrome/interaction.js";
+import { wireA11y } from "./viewer/chrome/a11y.js";
 import { wireSearch } from "./viewer/chrome/search.js";
+import { wireSettings } from "./viewer/ui/settings.js";
+import { wireRelease } from "./viewer/chrome/release.js";
+import { wireCourse } from "./viewer/chrome/course.js";
 
 wireCompass();
 wireRender();
