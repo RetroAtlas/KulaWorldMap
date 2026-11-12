@@ -113,10 +113,8 @@ export const onResize = (fn) => {
   resized.push(fn);
 };
 
-new ResizeObserver(() => resize()).observe(cv);
-
-// The observer sees the canvas's size and not the screen's density, which
-// changes under a window dragged to a screen of another.
+// A resize observer sees the canvas's size and not the screen's density,
+// which changes under a window dragged to a screen of another.
 function watchDensity() {
   matchMedia(`(resolution: ${devicePixelRatio}dppx)`).addEventListener(
     "change",
@@ -128,13 +126,6 @@ function watchDensity() {
     { once: true },
   );
 }
-watchDensity();
-
-on("atlas-loaded", (world) => {
-  if (world !== state.lvl?.theme) return;
-  invalidatePick();
-  draw();
-});
 
 // --- the run and what travels --------------------------------------------------------------
 
@@ -346,15 +337,6 @@ function animate() {
     draw();
   });
 }
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    hiddenAt = performance.now();
-    return;
-  }
-  if (run && hiddenAt !== null) run.startMs += performance.now() - hiddenAt;
-  hiddenAt = null;
-  draw();
-});
 
 /** Draw, unless a frame already asked for will draw before anything reaches
     the screen. */
@@ -489,4 +471,25 @@ export function cellAt(cx, cy, near = false) {
     }
   }
   return null;
+}
+
+// --- the wiring ----------------------------------------------------------------------------
+
+export function wireRender() {
+  new ResizeObserver(() => resize()).observe(cv);
+  watchDensity();
+  on("atlas-loaded", (world) => {
+    if (world !== state.lvl?.theme) return;
+    invalidatePick();
+    draw();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      hiddenAt = performance.now();
+      return;
+    }
+    if (run && hiddenAt !== null) run.startMs += performance.now() - hiddenAt;
+    hiddenAt = null;
+    draw();
+  });
 }
