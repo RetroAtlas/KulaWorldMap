@@ -26,9 +26,10 @@ import { address } from "./viewer/ui/address.js";
 import { KEY, heldIn } from "./format/held.js";
 import { warm } from "./viewer/draw/atlas.js";
 import { wireA11y } from "./viewer/chrome/a11y.js";
-import "./viewer/chrome/interaction.js";
+import { wireInteraction } from "./viewer/chrome/interaction.js";
 import { wireSearch } from "./viewer/chrome/search.js";
 
+wireInteraction();
 wireA11y();
 wireSearch();
 setSidebar(innerWidth > 860);

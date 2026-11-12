@@ -71,9 +71,7 @@ const offer = (fns, ...args) => {
   return null;
 };
 
-cv.addEventListener("contextmenu", (e) => e.preventDefault());
-
-cv.addEventListener("pointerdown", (e) => {
+function onPointerDown(e) {
   pointing(true);
   cv.setPointerCapture(e.pointerId);
   // the cell under the press is read only where the handler asks for it
@@ -86,7 +84,7 @@ cv.addEventListener("pointerdown", (e) => {
   endPress();
   if (e.pointerType === "touch" && e.isPrimary)
     pressTimer = setTimeout(longPress, HOLD, e.pointerId);
-});
+}
 
 /** Whether a finger is being held still on the map, about to select. */
 export const holding = () => longPressed !== null;
@@ -103,7 +101,7 @@ function endPress() {
   longPressed = null;
 }
 
-cv.addEventListener("pointermove", (e) => {
+function onPointerMove(e) {
   pointing(true);
   pointer = { x: e.clientX, y: e.clientY };
   if (drag) {
@@ -119,9 +117,9 @@ cv.addEventListener("pointermove", (e) => {
     return;
   }
   if (hoverAt(pointer)) readoutSoon();
-});
+}
 
-cv.addEventListener("pointerup", (e) => {
+function onPointerUp(e) {
   const r = cv.getBoundingClientRect();
   const pressed = longPressed === e.pointerId;
   endPress();
@@ -138,20 +136,20 @@ cv.addEventListener("pointerup", (e) => {
   }
   drag = null;
   repickSoon();
-});
-cv.addEventListener("pointercancel", () => {
+}
+function onPointerCancel() {
   endPress();
   drag?.handler?.cancel();
   drag = null;
-});
-cv.addEventListener("pointerleave", () => {
+}
+function onPointerLeave() {
   pointing(false);
   pointer = null;
   state.hover = null;
   tip.hidden = true;
   readoutSoon();
   drawSoon();
-});
+}
 
 function hoverAt({ x, y }, near = false) {
   const r = cv.getBoundingClientRect();
@@ -202,18 +200,6 @@ function refit() {
   writeHash();
 }
 
-$("fitBtn").onclick = refit;
-on("view-changed", () => {
-  $("fitBtn").classList.toggle("fitted", state.framing === fit);
-});
-
-// A level changed under a still pointer names no cell until the pointer moves.
-on("level-changed", () => {
-  $("corner").hidden = false;
-  tip.hidden = true;
-  pointer = null;
-});
-
 // Where the camera moved under a still pointer, the cell under it is hovered
 // first; a press leaves the pick unpainted, so that waits for the lift.
 let readoutQueued = 0;
@@ -225,8 +211,6 @@ function repickSoon() {
   repick = true;
   readoutSoon();
 }
-on("view-changed", repickSoon);
-onResize(repickSoon);
 
 function readout() {
   readoutQueued = 0;
@@ -276,19 +260,11 @@ function hoverTip(c, px, py) {
   if (tip.style.top !== top) tip.style.top = top;
 }
 
-cv.addEventListener(
-  "wheel",
-  (e) => {
-    e.preventDefault();
-    const r = cv.getBoundingClientRect();
-    zoomAt(
-      e.clientX - r.left,
-      e.clientY - r.top,
-      Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0016)),
-    );
-  },
-  { passive: false },
-);
+function onWheel(e) {
+  e.preventDefault();
+  const r = cv.getBoundingClientRect();
+  zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0016)));
+}
 
 export function zoomAt(px, py, factor) {
   if (!Number.isFinite(factor)) return;
@@ -310,46 +286,34 @@ let touch = null;
 const spread = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
 const middle = (t) => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
 
-cv.addEventListener(
-  "touchstart",
-  (e) => {
-    if (e.touches.length === 2) {
-      endPress();
-      drag?.handler?.cancel();
-      drag = null;
-      touch = { d: spread(e.touches), m: middle(e.touches) };
-    }
-  },
-  { passive: true },
-);
+function onTouchStart(e) {
+  if (e.touches.length === 2) {
+    endPress();
+    drag?.handler?.cancel();
+    drag = null;
+    touch = { d: spread(e.touches), m: middle(e.touches) };
+  }
+}
 
-cv.addEventListener(
-  "touchmove",
-  (e) => {
-    if (e.touches.length !== 2 || !touch) return;
-    e.preventDefault();
-    const r = cv.getBoundingClientRect();
-    const d = spread(e.touches),
-      m = middle(e.touches);
-    pan(m[0] - touch.m[0], m[1] - touch.m[1]);
-    zoomAt(m[0] - r.left, m[1] - r.top, d / touch.d);
-    touch = { d, m };
-  },
-  { passive: false },
-);
+function onTouchMove(e) {
+  if (e.touches.length !== 2 || !touch) return;
+  e.preventDefault();
+  const r = cv.getBoundingClientRect();
+  const d = spread(e.touches),
+    m = middle(e.touches);
+  pan(m[0] - touch.m[0], m[1] - touch.m[1]);
+  zoomAt(m[0] - r.left, m[1] - r.top, d / touch.d);
+  touch = { d, m };
+}
 
-cv.addEventListener(
-  "touchend",
-  (e) => {
-    touch = null;
-    if (!swallowed) return;
-    swallowed = false;
-    e.preventDefault();
-  },
-  { passive: false },
-);
+function onTouchEnd(e) {
+  touch = null;
+  if (!swallowed) return;
+  swallowed = false;
+  e.preventDefault();
+}
 
-addEventListener("keydown", (e) => {
+function onKey(e) {
   // a focused switch leaves the map its keys, and the slider keeps its arrows
   if (e.key === "/" && !typing(e)) {
     e.preventDefault();
@@ -467,7 +431,7 @@ addEventListener("keydown", (e) => {
   }
   e.preventDefault();
   lightCap($("sidebar"), e);
-});
+}
 
 function toggle(id, e) {
   if (e.repeat) return;
@@ -476,4 +440,30 @@ function toggle(id, e) {
   if (why) return toast(`${why}.`);
   box.checked = !box.checked;
   box.dispatchEvent(new Event("change"));
+}
+
+export function wireInteraction() {
+  cv.addEventListener("contextmenu", (e) => e.preventDefault());
+  cv.addEventListener("pointerdown", onPointerDown);
+  cv.addEventListener("pointermove", onPointerMove);
+  cv.addEventListener("pointerup", onPointerUp);
+  cv.addEventListener("pointercancel", onPointerCancel);
+  cv.addEventListener("pointerleave", onPointerLeave);
+  $("fitBtn").onclick = refit;
+  on("view-changed", () => {
+    $("fitBtn").classList.toggle("fitted", state.framing === fit);
+  });
+  // A level changed under a still pointer names no cell until the pointer moves.
+  on("level-changed", () => {
+    $("corner").hidden = false;
+    tip.hidden = true;
+    pointer = null;
+  });
+  on("view-changed", repickSoon);
+  onResize(repickSoon);
+  cv.addEventListener("wheel", onWheel, { passive: false });
+  cv.addEventListener("touchstart", onTouchStart, { passive: true });
+  cv.addEventListener("touchmove", onTouchMove, { passive: false });
+  cv.addEventListener("touchend", onTouchEnd, { passive: false });
+  addEventListener("keydown", onKey);
 }
