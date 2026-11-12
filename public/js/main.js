@@ -12,7 +12,7 @@ import {
   restore,
   setSidebar,
 } from "./viewer/chrome/sidebar.js";
-import { applyHash, selectLevel, writeHash } from "./viewer/chrome/navigate.js";
+import { applyHash, selectLevel, wireNavigate, writeHash } from "./viewer/chrome/navigate.js";
 import { carriesLevel, parseHash, slotOf } from "./viewer/permalink.js";
 import { wireRelease } from "./viewer/chrome/release.js";
 import { onShow, refreshDetail } from "./viewer/chrome/detail.js";
@@ -30,6 +30,7 @@ import { wireA11y } from "./viewer/chrome/a11y.js";
 import { wireInteraction } from "./viewer/chrome/interaction.js";
 import { wireSearch } from "./viewer/chrome/search.js";
 
+wireNavigate();
 wireSidebar();
 wireInteraction();
 wireA11y();

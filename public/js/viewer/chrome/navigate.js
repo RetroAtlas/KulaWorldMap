@@ -179,12 +179,6 @@ function foldNote() {
   $("chipNote").hidden = btn.hidden || !open;
 }
 
-$("chipBtn").onclick = () => {
-  state.show.note = !state.show.note;
-  emit("show-changed", "note");
-  foldNote();
-};
-
 // Browsers rate-limit replaceState and throw past the limit, so the bar
 // follows a change once the view has rested.
 const SETTLE = 350;
@@ -279,13 +273,6 @@ function drop() {
   timer = 0;
 }
 
-// A dialog opens on an entry of its own, so what is waiting to be written
-// goes onto the entry under it first; a page on its way out, or put out of
-// sight, writes it too.
-on("dialog-opened", settle);
-addEventListener("pagehide", settle);
-document.addEventListener("visibilitychange", () => document.hidden && settle());
-
 export function applyHash() {
   if (!state.data) return false;
   // the bar has moved under a waiting write, which has no entry left to go to
@@ -325,16 +312,28 @@ export function applyHash() {
   return true;
 }
 
-on("selection-changed", () => writeHash());
-
-// A hash the viewer cannot honour gives way to the view on screen.
-addEventListener("hashchange", () => {
-  if (!applyHash()) writeHash();
-});
-
 export function stepLevel(delta, push = true) {
   if (!state.data || state.li < 0) return;
   const order = state.data.themes.flatMap((t) => t.levels);
   const i = order[order.indexOf(state.li) + delta];
   if (i !== undefined) selectLevel(i, { push });
+}
+
+export function wireNavigate() {
+  $("chipBtn").onclick = () => {
+    state.show.note = !state.show.note;
+    emit("show-changed", "note");
+    foldNote();
+  };
+  // A dialog opens on an entry of its own, so what is waiting to be written
+  // goes onto the entry under it first; a page on its way out, or put out of
+  // sight, writes it too.
+  on("dialog-opened", settle);
+  addEventListener("pagehide", settle);
+  document.addEventListener("visibilitychange", () => document.hidden && settle());
+  on("selection-changed", () => writeHash());
+  // A hash the viewer cannot honour gives way to the view on screen.
+  addEventListener("hashchange", () => {
+    if (!applyHash()) writeHash();
+  });
 }
