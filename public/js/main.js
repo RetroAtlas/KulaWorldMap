@@ -15,7 +15,7 @@ import {
 import { applyHash, selectLevel, wireNavigate, writeHash } from "./viewer/chrome/navigate.js";
 import { carriesLevel, parseHash, slotOf } from "./viewer/permalink.js";
 import { wireRelease } from "./viewer/chrome/release.js";
-import { onShow, refreshDetail } from "./viewer/chrome/detail.js";
+import { onShow, refreshDetail, wireDetail } from "./viewer/chrome/detail.js";
 import { probeOf } from "./viewer/walk.js";
 import { FACE_NAME } from "./format/lattice.js";
 import { wireCourse } from "./viewer/chrome/course.js";
@@ -30,6 +30,7 @@ import { wireA11y } from "./viewer/chrome/a11y.js";
 import { wireInteraction } from "./viewer/chrome/interaction.js";
 import { wireSearch } from "./viewer/chrome/search.js";
 
+wireDetail();
 wireNavigate();
 wireSidebar();
 wireInteraction();
