@@ -8,6 +8,7 @@ import {
   buildWorlds,
   buildKinds,
   wireDisplay,
+  wireSidebar,
   restore,
   setSidebar,
 } from "./viewer/chrome/sidebar.js";
@@ -29,6 +30,7 @@ import { wireA11y } from "./viewer/chrome/a11y.js";
 import { wireInteraction } from "./viewer/chrome/interaction.js";
 import { wireSearch } from "./viewer/chrome/search.js";
 
+wireSidebar();
 wireInteraction();
 wireA11y();
 wireSearch();

@@ -47,22 +47,11 @@ export const sidebarOverlays = () => matchMedia("(max-width: 760px)").matches;
 let keyboardFocus = false;
 let keyedInside = false;
 let pressedSince = null;
-// Read as the focus lands: by a keydown a click's focus can look like the keyboard's focus too.
-addEventListener("focusin", (e) => (keyboardFocus = e.target.matches(":focus-visible")), true);
-addEventListener(
-  "keydown",
-  (e) => {
-    if (!e.repeat) pressedSince?.add(e.code);
-    keyedInside = keyboardFocus && $("sidebar").contains(document.activeElement);
-  },
-  true,
-);
-addEventListener("pointerdown", () => (keyedInside = false), true);
-// A key still held as the menu button is handed the focus would go on to press it.
-$("menuBtn").addEventListener("keydown", (e) => {
-  const held = e.repeat && pressedSince && !pressedSince.has(e.code);
-  if (held && (e.key === "Enter" || e.key === " ")) e.preventDefault();
-});
+
+function onKeyDown(e) {
+  if (!e.repeat) pressedSince?.add(e.code);
+  keyedInside = keyboardFocus && $("sidebar").contains(document.activeElement);
+}
 
 export function setSidebar(open) {
   document.body.classList.toggle("sidebar-open", open);
@@ -329,10 +318,6 @@ export function restore() {
   }
 }
 
-on("show-changed", (key) => {
-  if (!UNKEPT.has(key)) choose(key, state.show[key], DEFAULTS[key]);
-});
-
 const slicing = () => sliceZ() > (state.lvl?.min[2] ?? 0);
 const isOn = (el) => (el.type === "range" ? slicing() : el.checked);
 
@@ -369,13 +354,6 @@ function syncSlice() {
   syncNeeds();
 }
 
-on("slice-changed", syncSlice);
-
-on("density-changed", () => state.data && buildKinds());
-on("atlas-loaded", (world) => {
-  if (world === state.lvl?.theme) buildKinds();
-});
-
 // The sidebar's folds, closed until opened, each keep the way they were left from one visit to
 // the next under a key of their own.
 const FOLDS = [
@@ -395,26 +373,42 @@ function restoreFolds() {
 /** Whether "Your levels" was folded away by a press, rather than never opened. */
 export const yoursClosed = () => foldKept(FOLDS[0][1]) === "closed";
 
-on("level-changed", () => {
-  markLevel();
-  state.hiddenKinds.clear();
-  buildKinds();
-  syncSlice();
-});
-
-for (const [id, key] of FOLDS)
-  $(id).addEventListener("toggle", () => {
-    try {
-      localStorage.setItem(key, $(id).open ? "open" : "closed");
-    } catch {
-      /* ignore */
-    }
+export function wireSidebar() {
+  // Read as the focus lands: by a keydown a click's focus can look like the keyboard's focus too.
+  addEventListener("focusin", (e) => (keyboardFocus = e.target.matches(":focus-visible")), true);
+  addEventListener("keydown", onKeyDown, true);
+  addEventListener("pointerdown", () => (keyedInside = false), true);
+  // A key still held as the menu button is handed the focus would go on to press it.
+  $("menuBtn").addEventListener("keydown", (e) => {
+    const held = e.repeat && pressedSince && !pressedSince.has(e.code);
+    if (held && (e.key === "Enter" || e.key === " ")) e.preventDefault();
   });
-
-on("level-updated", () => {
-  buildKinds();
-  syncSlice();
-});
-
-on("release-changed", follow);
-on("link-opening", follow);
+  on("show-changed", (key) => {
+    if (!UNKEPT.has(key)) choose(key, state.show[key], DEFAULTS[key]);
+  });
+  on("slice-changed", syncSlice);
+  on("density-changed", () => state.data && buildKinds());
+  on("atlas-loaded", (world) => {
+    if (world === state.lvl?.theme) buildKinds();
+  });
+  on("level-changed", () => {
+    markLevel();
+    state.hiddenKinds.clear();
+    buildKinds();
+    syncSlice();
+  });
+  for (const [id, key] of FOLDS)
+    $(id).addEventListener("toggle", () => {
+      try {
+        localStorage.setItem(key, $(id).open ? "open" : "closed");
+      } catch {
+        /* ignore */
+      }
+    });
+  on("level-updated", () => {
+    buildKinds();
+    syncSlice();
+  });
+  on("release-changed", follow);
+  on("link-opening", follow);
+}
