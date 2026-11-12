@@ -1,6 +1,23 @@
 import { test, expect } from "@playwright/test";
 import { settle, frame, still } from "./helpers.js";
 
+/** The drawer opened over the map at a phone's width by `/`, the keyboard's focus in the search box. */
+async function searching(page) {
+  await page.setViewportSize({ width: 375, height: 700 });
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.keyboard.press("/");
+  await expect(page.locator("#search")).toBeFocused();
+}
+/** The drawer as `searching` leaves it, with the finds of a typed search listed. */
+async function finding(page) {
+  await searching(page);
+  await page.keyboard.type("key");
+  await expect(page.locator("#hit0")).toBeVisible();
+}
+/** Wait for the drawer to close, by which time a focus it hands on has landed. */
+const closed = (page) => expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "false");
+
 test("the drawer stays dismissable on the narrowest phone", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
   await page.goto("/#HIRO/0");
@@ -110,4 +127,195 @@ test("the closed drawer is out of the tab order, and / opens it to search", asyn
   await page.evaluate(() => document.getElementById("menuBtn").click());
   await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "false");
   await expect.poll(inDrawer).toBe(false);
+});
+
+test("a key that closes the drawer hands the keyboard's focus inside it to the menu button", async ({
+  page,
+}) => {
+  await searching(page);
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.locator("#settingsBtn")).toBeFocused();
+  await page.keyboard.press("s");
+  await closed(page);
+  await expect(page.locator("#menuBtn")).toBeFocused();
+});
+
+test("Enter on a find closes the drawer onto the menu button, though the search box has let the focus go", async ({
+  page,
+}) => {
+  await finding(page);
+  await page.keyboard.press("Enter");
+  await closed(page);
+  await expect(page.locator("#menuBtn")).toBeFocused();
+});
+
+test("Enter on a find hands on the focus of a search box that a click reached", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 700 });
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.locator("#menuBtn").click();
+  await page.locator("#search").click();
+  await page.keyboard.type("key");
+  await expect(page.locator("#hit0")).toBeVisible();
+  await page.keyboard.press("Enter");
+  await closed(page);
+  await expect(page.locator("#menuBtn")).toBeFocused();
+});
+
+test("Enter on a find hands the focus on as the first key pressed in the search box", async ({
+  page,
+}) => {
+  await finding(page);
+  await page.keyboard.press("Enter");
+  await closed(page);
+  await page.keyboard.press("/");
+  await expect(page.locator("#search")).toBeFocused();
+  await page.keyboard.press("Enter");
+  await closed(page);
+  await expect(page.locator("#menuBtn")).toBeFocused();
+});
+
+test("Enter held on a find closes the drawer once, its repeats pressing nothing", async ({
+  page,
+}) => {
+  await searching(page);
+  await page.keyboard.type("ke");
+  await page.keyboard.down("y");
+  await expect(page.locator("#hit0")).toBeVisible();
+  await page.keyboard.down("Enter");
+  await closed(page);
+  await expect(page.locator("#menuBtn")).toBeFocused();
+  // neither a key let go under the held one nor a key pressed under it frees its repeats
+  await page.keyboard.up("y");
+  await page.keyboard.down("Shift");
+  // a second down of a key still held arrives as its repeat
+  await page.keyboard.down("Enter");
+  await page.keyboard.up("Enter");
+  await page.keyboard.up("Shift");
+  await closed(page);
+  await expect(page.locator("#menuBtn")).toBeFocused();
+});
+
+test("Enter held on a find closes the drawer once on a later search too, its repeats pressing nothing", async ({
+  page,
+}) => {
+  await finding(page);
+  await page.keyboard.press("Enter");
+  await closed(page);
+  await page.keyboard.press("/");
+  await expect(page.locator("#search")).toBeFocused();
+  await page.keyboard.down("Enter");
+  await closed(page);
+  await expect(page.locator("#menuBtn")).toBeFocused();
+  await page.keyboard.down("Enter");
+  await page.keyboard.up("Enter");
+  await closed(page);
+  await expect(page.locator("#menuBtn")).toBeFocused();
+});
+
+test("Space held on the gear as s closes the drawer leaves it closed, its repeats and its letting go pressing nothing", async ({
+  page,
+}) => {
+  await searching(page);
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.locator("#settingsBtn")).toBeFocused();
+  await page.keyboard.down("Space");
+  await page.keyboard.press("s");
+  await closed(page);
+  await expect(page.locator("#menuBtn")).toBeFocused();
+  await page.keyboard.down("Space");
+  await page.keyboard.up("Space");
+  await closed(page);
+  await expect(page.locator("#menuBtn")).toBeFocused();
+});
+
+test("Tab held as s closes the drawer goes on moving the focus, its repeats not stopped on the menu button", async ({
+  page,
+}) => {
+  await searching(page);
+  await page.keyboard.down("Shift");
+  await page.keyboard.down("Tab");
+  await page.keyboard.up("Shift");
+  await expect(page.locator("#settingsBtn")).toBeFocused();
+  await page.keyboard.press("s");
+  await closed(page);
+  await expect(page.locator("#menuBtn")).toBeFocused();
+  await page.keyboard.down("Tab");
+  await expect(page.locator("#cv")).toBeFocused();
+  await page.keyboard.up("Tab");
+});
+
+test("a key pressed on the menu button once it holds the focus repeats as on any button", async ({
+  page,
+}) => {
+  await finding(page);
+  await page.keyboard.press("Enter");
+  await closed(page);
+  await page.keyboard.down("Enter");
+  await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.down("Enter");
+  await closed(page);
+  await page.keyboard.up("Enter");
+});
+
+test("a key held since before the page opened repeats on the menu button as on any button", async ({
+  page,
+}) => {
+  await page.keyboard.down("Enter");
+  await page.setViewportSize({ width: 375, height: 700 });
+  await page.goto("/#HIRO/0");
+  await settle(page);
+  await page.locator("#menuBtn").focus();
+  await page.keyboard.down("Enter");
+  await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.down("Enter");
+  await closed(page);
+  await page.keyboard.up("Enter");
+});
+
+test("a key that closes the drawer with nothing focused leaves the focus on the body", async ({
+  page,
+}) => {
+  await searching(page);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("body")).toBeFocused();
+  await page.keyboard.press("s");
+  await closed(page);
+  await expect(page.locator("body")).toBeFocused();
+});
+
+test("a key that closes the drawer lets a focus a click left on a switch inside it fall to the body", async ({
+  page,
+}) => {
+  await searching(page);
+  await page.locator("#showOutlines").click();
+  await expect(page.locator("#showOutlines")).toBeFocused();
+  await page.keyboard.press("s");
+  await closed(page);
+  await expect(page.locator("body")).toBeFocused();
+});
+
+test("a click on the scrim closes the drawer and leaves the focus on the body, where the press put it", async ({
+  page,
+}) => {
+  await searching(page);
+  await page.keyboard.type("k");
+  await still(page);
+  const drawer = await page.locator("#sidebar").boundingBox();
+  const beside = { x: (drawer.x + drawer.width + 375) / 2, y: drawer.height / 2 };
+  await page.locator("#scrim").click({ position: beside });
+  await closed(page);
+  await expect(page.locator("body")).toBeFocused();
+});
+
+test("/ pressed on a control of the open drawer still lands the focus in the search box", async ({
+  page,
+}) => {
+  await searching(page);
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.locator("#settingsBtn")).toBeFocused();
+  await page.keyboard.press("/");
+  await expect(page.locator("#search")).toBeFocused();
 });

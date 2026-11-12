@@ -93,6 +93,22 @@ Play on through the levels gives the ball the game's own run, off by default so 
 
 `s` shows and hides the sidebar itself.
 
+A key that closes the sidebar while the keyboard's focus is on a control inside it hands that focus to the menu button, since the closed sidebar's controls can hold none and the browser would drop it.
+
+Only the keyboard's focus is handed on, since the button that holds it takes Enter, which at a level's ending would otherwise start the level again.
+
+A focus counts as the keyboard's focus where, as it lands, the browser marks it as one to show (`:focus-visible`): one that Tab reached is marked, and one that a click or a tap has just put on a button or a switch is not, and that focus is dropped as the sidebar closes.
+
+The search box's focus is marked however the box was reached, a click or a tap included, so where the sidebar overlays the map, as on a phone, and going to a find closes it, Enter on a find hands the focus on however the search began.
+
+A focus that the map puts on a control after a key may be marked though a click chose that control, as when Settings gives the focus back to the gear as `Esc` closes it, or "On this level" keeps the focus on a row while a key builds its list anew, and it is then handed on, in the browsers that mark it.
+
+After a click or a tap that closes the sidebar the map moves no focus.
+
+The menu button takes no press from the repeats of a key that was down as it was handed the focus, so Enter held on a find closes the sidebar once.
+
+`s` held still shows and hides the sidebar at every repeat, since the map takes `s` itself.
+
 `?` opens the list of the keys and gestures.
 
 The list and the buttons' tooltips name Ctrl and Alt as the keyboard in front of you does, Cmd and Option on an Apple one, and the map takes Ctrl and Cmd alike in the chords it lists.

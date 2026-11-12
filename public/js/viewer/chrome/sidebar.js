@@ -44,6 +44,26 @@ const DEFAULTS = { ...state.show, motion: !matchMedia(REDUCED).matches };
 
 export const sidebarOverlays = () => matchMedia("(max-width: 760px)").matches;
 
+let keyboardFocus = false;
+let keyedInside = false;
+let pressedSince = null;
+// Read as the focus lands: by a keydown a click's focus can look like the keyboard's focus too.
+addEventListener("focusin", (e) => (keyboardFocus = e.target.matches(":focus-visible")), true);
+addEventListener(
+  "keydown",
+  (e) => {
+    if (!e.repeat) pressedSince?.add(e.code);
+    keyedInside = keyboardFocus && $("sidebar").contains(document.activeElement);
+  },
+  true,
+);
+addEventListener("pointerdown", () => (keyedInside = false), true);
+// A key still held as the menu button is handed the focus would go on to press it.
+$("menuBtn").addEventListener("keydown", (e) => {
+  const held = e.repeat && pressedSince && !pressedSince.has(e.code);
+  if (held && (e.key === "Enter" || e.key === " ")) e.preventDefault();
+});
+
 export function setSidebar(open) {
   document.body.classList.toggle("sidebar-open", open);
   $("sidebar").inert = !open;
@@ -52,6 +72,16 @@ export function setSidebar(open) {
   btn.setAttribute("aria-expanded", String(open));
   btn.setAttribute("aria-label", label);
   btn.title = `${label} (s)`;
+  queueMicrotask(handOn);
+}
+
+/** Give the menu button the keyboard's focus, held by a closed sidebar or fallen to the body. */
+function handOn() {
+  if (document.body.classList.contains("sidebar-open") || !keyedInside) return;
+  const at = document.activeElement;
+  if (!$("sidebar").contains(at) && at !== document.body) return;
+  $("menuBtn").focus();
+  pressedSince = new Set();
 }
 
 /** The swatch coloured as the world's blocks draw untextured on the disc shown. */
