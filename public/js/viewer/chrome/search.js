@@ -93,11 +93,6 @@ function goTo(x, y, z, li = state.li) {
   writeHash(true);
 }
 
-on("go-to", ({ x, y, z, said }) => {
-  goTo(x, y, z);
-  say(said);
-});
-
 function jump(h) {
   goTo(h.at.x, h.at.y, h.at.z, h.li);
   say([h.name, h.face, h.cell, levelTitle(h.level)].filter(Boolean).join(", "));
@@ -374,13 +369,7 @@ const clear = () => {
   render();
 };
 
-eraser.onclick = () => {
-  clear();
-  box.focus();
-};
-
-box.addEventListener("input", search);
-box.addEventListener("keydown", (e) => {
+function onKey(e) {
   if (e.key === "Escape") {
     clear();
     box.blur();
@@ -400,7 +389,7 @@ box.addEventListener("keydown", (e) => {
     (list[cursor] || list[0]).click();
     e.preventDefault();
   }
-});
+}
 
 // A list is built anew only where its finds no longer fit its scope or were
 // found on another disc; one that still fits stays as it was, so a walk down
@@ -419,7 +408,20 @@ function rescope() {
 function relist() {
   if (!bar.hidden && release() !== builtOn) render();
 }
-on("level-changed", rescope);
-on("level-updated", rescope);
-on("release-changed", relist);
-on("link-opening", relist);
+
+export function wireSearch() {
+  on("go-to", ({ x, y, z, said }) => {
+    goTo(x, y, z);
+    say(said);
+  });
+  eraser.onclick = () => {
+    clear();
+    box.focus();
+  };
+  box.addEventListener("input", search);
+  box.addEventListener("keydown", onKey);
+  on("level-changed", rescope);
+  on("level-updated", rescope);
+  on("release-changed", relist);
+  on("link-opening", relist);
+}

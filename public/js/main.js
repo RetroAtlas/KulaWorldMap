@@ -27,8 +27,9 @@ import { KEY, heldIn } from "./format/held.js";
 import { warm } from "./viewer/draw/atlas.js";
 import "./viewer/chrome/a11y.js";
 import "./viewer/chrome/interaction.js";
-import "./viewer/chrome/search.js";
+import { wireSearch } from "./viewer/chrome/search.js";
 
+wireSearch();
 setSidebar(innerWidth > 860);
 restore();
 wireSettings();
