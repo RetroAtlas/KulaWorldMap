@@ -753,6 +753,30 @@ The viewer tells the editor, the planner and play what has changed through the `
 - `drafts-moved`, which the editor says with the ids it moves drafts from and to, on which the planner moves the routes it keeps for those drafts to their new ids.
 - `play-changed`, which play says as the ball is put on the map or taken off, on which the editor ends editing and the disc's bar is disabled.
 
+### How the page is wired
+
+A module of the page declares as it is imported, and whatever it has to register, subscribe or set as the page boots it does in a function it exports, named `wire…`, so that the order the page is wired in is a list in `js/main.js` and never the order the import graph happens to be evaluated in.
+
+`js/main.js` wires the page in two parts: before anything is awaited it calls the wiring function of each module of the plain viewer, stands the sidebar, restores the switches and wires Settings, and once the data is in it wires what reads the data, the release buttons, the switches and the planner, then the entries that load the editor and play, and last the community levels' fold.
+
+A layer that loads later is wired by its boot, which `js/main.js` calls on the layer once it is in and which calls the wiring functions of the layer's own modules: `bootEditor` behind the planner where the boot waits for the editor and as the editor arrives otherwise, `bootPlay` as play arrives, and `bootCommunity` as the community layer arrives, which on a link to one of its levels is with the data, ahead of the second part.
+
+The order of the calls is behaviour: listeners on one target hear an event in the order they were registered, so the calls are the order the modules answer `level-changed`, `atlas-loaded`, a key and the rest in, and the order each seam's list is filled in.
+
+Nothing derives that order from what each module needs: the first part's is the order the import graph once evaluated its modules in, and no order within it is known to show, since two of its modules that hear one event each answer it over state of their own.
+
+The order is known to decide three things, none within the first part.
+
+- `wireRelease` leads the second part: it takes the release kept from the last visit where the link names no level, and the worlds' list, built behind it, is titled as that release has it.
+- `wireCourse` follows `wireDisplay`: the planner listens on its own switch and on the reset beside the switches, and reads there the state their own listeners, registered first, have just set.
+- The segments at a link's tail are written in the order their modules registered them, the release's and then the route's, with a carried level's own behind them where the community layer arrived after the boot and ahead of them where the page opened on its link; a link is read by the shape of its segments, in any order.
+
+What a module does as it is imported is declare and look things up, none of which changes the page: a handle on a static element through `$`, a canvas's context and a canvas of its own, a media query, the hash the page opened on, a collator, a set or a table built from the lattice.
+
+`js/format/sectors.js` fills its three tables in loops as it is imported, as a reader or writer may, reaching no page.
+
+A primitive with nothing to hear until it is first used wires itself on that use and has no function for the boot to call: `js/viewer/ui/dialog.js` its key trap and its popstate listener as the first dialog opens, and `js/viewer/ui/keycap.js` its keyup and blur as the first cap is lit.
+
 ### Loading the editor and play mode
 
 `js/editor/editor.js` and what it imports, pako included, load when a level of your own is first made, opened or linked to, or when this browser already holds one, after the map's first frame unless the link names one of them, which waits for the editor, and never on a plain visit, which carries the editor's markup and styles alone.

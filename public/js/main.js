@@ -31,6 +31,8 @@ import { wireSettings } from "./viewer/ui/settings.js";
 import { wireRelease } from "./viewer/chrome/release.js";
 import { wireCourse } from "./viewer/chrome/course.js";
 
+// The page is wired here, a module at a time: listeners on one target hear an event in the
+// order they were registered, which is the order of these calls.
 wireCompass();
 wireRender();
 wireDetail();

@@ -74,6 +74,9 @@ No commit message reports what a test found, a test of its own or any other: eve
   - `community/` is what loads only through the boot's dynamic import when a level comes by its link or the community levels are wanted, and reaches nothing of the editor.
   - `main.js` is the boot.
 - A new module goes in the lowest layer its imports allow, and where that leaves a choice, with what uses it.
+- A module of the page declares as it is imported and wires in a function it exports, named `wire…`, which its owner calls once: `main.js` for a module of the plain viewer, and for a module of a layer that loads later the layer's `boot…`, which `main.js` calls on the layer once it is in.
+- The calls stand in the order the page is wired in, which is behaviour, since listeners on one target hear an event in the order they were registered: a call moves, or a new one joins, only with a look at every event its module shares with those it passes, and "How the page is wired" in [docs/viewer.md](docs/viewer.md) says what the order is known to decide.
+- The unit tests hold every module but `main.js` and the readers and writers under `format/` to no top-level statement, and every exported `wire…` and `boot…` to one call, in `main.js` or in another of them.
 - The game's number for a kind of block or a type of thing the annotations name is read from `KIND` or `TYPE` in `format/lattice.js`, named as the annotations and [docs/level-format.md](docs/level-format.md) name it, and no module keeps a constant of its own for one.
 - A set of kinds or types that more than one layer reads sits beside `KIND` and `TYPE`, so no two modules keep a copy of it.
 - The stylesheet is the partials under `public/css`, each named `NN-word.css`, a two-digit rank and one lowercase word, and linked from `index.html` in name order, which is the cascade; the unit tests hold the page's links to the folder's listing.

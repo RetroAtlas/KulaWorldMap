@@ -161,6 +161,110 @@ test("a pure module of play imports only the model, the lattice and the pure mod
       );
 });
 
+// A module of the page declares as it is imported and wires in a function its
+// owner calls, so the order the page is wired in is the boot's own list and
+// never the order an import graph happens to be evaluated in. The readers and
+// writers reach no page, and may build a table as they are imported.
+const ACTS =
+  "Program > :not(ImportDeclaration, ExportNamedDeclaration, ExportDefaultDeclaration, " +
+  "ExportAllDeclaration, FunctionDeclaration, VariableDeclaration, ClassDeclaration)";
+const MODULE = { ecmaVersion: "latest", sourceType: "module" };
+const source = (name) => readFileSync(join(dir, name), "utf8");
+
+test("no module of the page but the boot acts as it is imported", () => {
+  const linter = new Linter();
+  const acting = (name) =>
+    linter
+      .verify(source(name), {
+        languageOptions: MODULE,
+        rules: { "no-restricted-syntax": ["error", ACTS] },
+      })
+      .map((e) => `${name}:${e.line}`);
+  assert.ok(acting("main.js").length, "the sweep finds the boot's own statements");
+  assert.deepEqual(
+    modules()
+      .filter((name) => name !== "main.js" && posix.dirname(name) !== "format")
+      .flatMap(acting),
+    [],
+  );
+});
+
+const WIRES = /^(wire|boot)[A-Z]/;
+
+/** Every name a module exports of its own, declared at the export or listed by it. */
+const exported = (ast) =>
+  ast.body.flatMap((node) => {
+    if (node.type !== "ExportNamedDeclaration" || node.source) return [];
+    const made = node.declaration;
+    if (!made) return node.specifiers.map((s) => s.exported.name);
+    return made.declarations ? made.declarations.map((d) => d.id.name) : [made.id.name];
+  });
+
+/** Every use of a name of `names` in a module's tree that is not its declaration, its export
+    or its import under its own name: how it is used and the named function it stands in. */
+function uses(ast, names) {
+  const out = [];
+  const own = new Set(exported(ast));
+  for (const node of ast.body)
+    for (const s of node.type === "ImportDeclaration" ? node.specifiers : []) {
+      if (s.type !== "ImportSpecifier") continue;
+      if (s.imported.name === s.local.name) own.add(s.local.name);
+      else if (names.has(s.imported.name))
+        out.push({ name: s.imported.name, how: "imported under another name" });
+    }
+  const visit = (node, parent, within) => {
+    if (!node || typeof node.type !== "string") return;
+    if (/^(Import|Export(Named|All|Default)?)Declaration$/.test(node.type) && !node.declaration)
+      return;
+    let inside = within;
+    if (node.type === "FunctionDeclaration") inside = node.id.name;
+    else if (node.type === "VariableDeclarator" && /Function/.test(node.init?.type ?? ""))
+      inside = node.id.name;
+    const called = parent?.type === "CallExpression" && parent.callee === node;
+    if (node.type === "Identifier" && names.has(node.name) && own.has(node.name)) {
+      const declared =
+        (parent.type === "FunctionDeclaration" || parent.type === "VariableDeclarator") &&
+        parent.id === node;
+      if (!declared) out.push({ name: node.name, how: called ? "called" : "named", within });
+    }
+    if (node.type === "MemberExpression" && !node.computed && names.has(node.property.name))
+      out.push({ name: node.property.name, how: called ? "called" : "named", within });
+    for (const [key, child] of Object.entries(node)) {
+      if (key === "parent" || (node.type === "MemberExpression" && key === "property")) continue;
+      for (const kid of Array.isArray(child) ? child : [child]) visit(kid, node, inside);
+    }
+  };
+  for (const node of ast.body) visit(node, ast, null);
+  return out;
+}
+
+// A wiring function nobody calls leaves its module dead without an error, and one called
+// twice registers every listener twice, where a module that wired itself could be neither.
+test("every wiring function a module exports is called once, by the boot or by a wiring function", () => {
+  const linter = new Linter();
+  const trees = new Map(
+    modules().map((name) => {
+      assert.deepEqual(linter.verify(source(name), { languageOptions: MODULE }), [], name);
+      return [name, linter.getSourceCode().ast];
+    }),
+  );
+  const wired = [...trees.values()].flatMap((ast) => exported(ast).filter((n) => WIRES.test(n)));
+  assert.ok(wired.length, "the sweep finds the wiring functions");
+  assert.equal(new Set(wired).size, wired.length, "a wiring function's name is its own");
+  const calls = new Map(wired.map((name) => [name, []]));
+  const wrong = [];
+  for (const [module, ast] of trees)
+    for (const { name, how, within } of uses(ast, new Set(wired))) {
+      if (how !== "called") wrong.push(`${module}: ${name} is ${how}`);
+      else if (module !== "main.js" && !WIRES.test(within ?? ""))
+        wrong.push(`${module}: ${name} is called in ${within ?? "the module"}`);
+      else calls.get(name).push(module);
+    }
+  for (const [name, by] of calls)
+    if (by.length !== 1) wrong.push(`${name} is called ${by.length} times`);
+  assert.deepEqual(wrong, []);
+});
+
 // A module is parsed whole before any of it runs, so one construct the engine
 // does not know is a blank page rather than one broken feature; older WebKit
 // does not know a regex lookbehind.
