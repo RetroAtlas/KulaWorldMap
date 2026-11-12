@@ -246,9 +246,6 @@ export function flush() {
   if (timer || waiting()) write();
 }
 
-addEventListener("pagehide", flush);
-document.addEventListener("visibilitychange", () => document.hidden && flush());
-
 /** Merge the store's text, another tab's copy, where it is not the one last read or written here. */
 function absorb(text) {
   if (text === known) return false;
@@ -272,12 +269,6 @@ function take(text) {
   else emit("drafts-changed");
 }
 
-addEventListener("storage", (e) => {
-  if (e.key !== KEY && e.key !== null) return;
-  if (e.storageArea && e.storageArea !== localStorage) return;
-  take(e.key === null ? null : e.newValue);
-});
-
 // A page back from the cache, or thawed, may have missed another tab's writes.
 function reread() {
   if (memoryOnly) return;
@@ -290,5 +281,14 @@ function reread() {
   take(text);
 }
 
-addEventListener("pageshow", (e) => e.persisted && reread());
-document.addEventListener("resume", reread);
+export function wireStore() {
+  addEventListener("pagehide", flush);
+  document.addEventListener("visibilitychange", () => document.hidden && flush());
+  addEventListener("storage", (e) => {
+    if (e.key !== KEY && e.key !== null) return;
+    if (e.storageArea && e.storageArea !== localStorage) return;
+    take(e.key === null ? null : e.newValue);
+  });
+  addEventListener("pageshow", (e) => e.persisted && reread());
+  document.addEventListener("resume", reread);
+}

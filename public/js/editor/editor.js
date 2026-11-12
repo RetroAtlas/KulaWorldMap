@@ -33,7 +33,7 @@ import {
   setFace,
 } from "../format/project.js";
 import { runOf } from "../format/checks.js";
-import { load } from "./drafts.js";
+import { load, wireStore } from "./drafts.js";
 import { canRedo, canUndo, redo, undo, wireTrail } from "./trail.js";
 import { copyShown, levelFor, wireDrafts } from "./draftlist.js";
 import {
@@ -132,6 +132,7 @@ const spanWord = (b) =>
 const toCell = ([x, y, z]) => ({ x, y, z });
 
 export function bootEditor() {
+  wireStore();
   wireTrail();
   on("atlas-loaded", forgetIcon);
   load();

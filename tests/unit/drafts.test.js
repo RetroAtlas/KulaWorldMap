@@ -5,8 +5,7 @@ import { KEY } from "../../public/js/format/held.js";
 import { parse } from "../../public/js/format/store.js";
 
 // The page the module expects: a storage that keeps what it is given, holding
-// a store from before bundles, and a document and a window that take listeners
-// and hold a toast.
+// a store from before bundles, and a document that holds a toast.
 const kept = new Map();
 kept.set(
   KEY,
@@ -29,13 +28,7 @@ const element = () => ({
   remove() {},
   setAttribute() {},
 });
-globalThis.document = {
-  addEventListener() {},
-  getElementById: element,
-  createElement: element,
-  hidden: false,
-};
-globalThis.addEventListener = () => {};
+globalThis.document = { getElementById: element, createElement: element };
 const drafts = await import("../../public/js/editor/drafts.js");
 const { on } = await import("../../public/js/viewer/ui/dom.js");
 
