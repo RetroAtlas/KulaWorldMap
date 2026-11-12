@@ -3,7 +3,7 @@
 import { $, el, emit, on } from "../viewer/ui/dom.js";
 import { current } from "../viewer/chrome/course.js";
 import { ageDust, drawDust, dustAlive, resetDust, travelDust } from "./dust.js";
-import { drawEffects, effectsWith } from "./effects.js";
+import { drawEffects, effectsWith, wireEffects } from "./effects.js";
 import { flashing, screened } from "./screen.js";
 import { state } from "../viewer/state.js";
 import { BASE, current as disc, rulesOf } from "../viewer/release.js";
@@ -519,6 +519,7 @@ export function playAt(c) {
 export function bootPlay() {
   if (wired) return;
   wired = true;
+  wireEffects();
   wireStrip({
     startOver,
     retire: () => retire(live),

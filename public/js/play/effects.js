@@ -19,11 +19,6 @@ export function effectsWith(fn) {
   source = fn;
 }
 
-lightsWith(() => {
-  const run = source();
-  return run ? effectLights(run) : null;
-});
-
 // The sheet is fetched as the first particle needs it, and the frame drawn again as it lands.
 function sheetOf() {
   if (!sheet) {
@@ -90,4 +85,11 @@ function lay(ctx, img, sx, side, x, y, s, alpha) {
     ctx.globalAlpha = Math.min(1, a);
     ctx.drawImage(img, sx, 0, side, side, x, y, s, s);
   }
+}
+
+export function wireEffects() {
+  lightsWith(() => {
+    const run = source();
+    return run ? effectLights(run) : null;
+  });
 }
