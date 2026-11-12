@@ -114,6 +114,8 @@ A spec file is one subject, named for it: a new browser test goes in the spec of
 
 A browser test of play holds the page's clock before its first step of the game, through `frozen`, `onward` and `stepUntil` in `helpers.js`, opens its level through `drafted` or the play helpers' drafts, and reads the frames it means; it waits on the wall clock only where the wall clock is its subject. The live region, the toasts, the drawer and the hash's deferred write run on timers and animation frames the held clock does not drive, and a held-clock test awaits or flushes them, or installs Playwright's own clock before the page loads where a timer is what it waits for.
 
+With the page's clock running, a key tapped to move the ball while a level's opening holds the pad dead is pressed through `betweenFrames` in `playhelpers.js`, which holds the clock over the press: Playwright sends a key's down and its up as two events, and a frame of the opening that runs between them takes the key as held, so the tap is not kept for the frame that reads the pad.
+
 A tile's picture is painted from an intersection observer's callback, which the browser runs on a frame of its own once the tile has come within a screen of showing, so a browser test of the tiles awaits the paint with a poll rather than reading it after the step that scrolled the tile in, and reads a repaint an update or a change of density gives a tile in view in the same step, since that paint is synchronous.
 
 A unit test of the simulation builds its level from the builders beside its file, `rules-level.js`, `ball-lattice.js`, `hazards-level.js` or `project-doc.js`, which also set the viewer's state from the fixtures.

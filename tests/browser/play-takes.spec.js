@@ -5,6 +5,7 @@ import {
   DONE,
   TAKEN,
   about,
+  betweenFrames,
   jumped,
   line,
   opened,
@@ -217,7 +218,7 @@ test("the hidden exit is unseen while a key remains and appears as the last key 
   await startPlay(page);
   await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
   expect(await hiddenExitFills(page)).toBe(0);
-  await page.keyboard.press("ArrowUp");
+  await betweenFrames(page, () => page.keyboard.press("ArrowUp"));
   await expect.poll(async () => (await probe(page)).station.block).toEqual([17, 16, 17]);
   await expect.poll(async () => (await probe(page)).station.moving).toBe(false);
   await expect(page.locator("#playKeys")).toHaveText(/\b0\b/);
