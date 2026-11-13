@@ -7,12 +7,13 @@ import { Linter } from "eslint";
 
 const dir = fileURLToPath(new URL("../../public/js", import.meta.url));
 const IMPORT = /^import\s(?:[^;]*?\sfrom\s+)?"(\.\.?\/[^"]+)"/gm;
+const VENDOR = "vendor";
 
 /** Every module's path relative to js/, the vendored library left out. */
 function modules(at = ".") {
   return readdirSync(join(dir, at), { withFileTypes: true }).flatMap((entry) => {
     const path = posix.join(at, entry.name);
-    if (entry.isDirectory()) return path === "vendor" ? [] : modules(path);
+    if (entry.isDirectory()) return path === VENDOR ? [] : modules(path);
     return entry.name.endsWith(".js") ? [path] : [];
   });
 }
@@ -87,7 +88,7 @@ const LAYERS = {
   "viewer/ui": ["viewer/ui"],
   "viewer/draw": ["viewer", "viewer/ui", "viewer/draw", LATTICE],
   "viewer/chrome": ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", LATTICE],
-  format: ["format", "vendor"],
+  format: ["format", VENDOR],
   editor: ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", "format", "editor"],
   play: ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", "play", LATTICE],
   community: ["viewer", "viewer/ui", "viewer/draw", "viewer/chrome", "format", "community"],
@@ -109,7 +110,7 @@ test("a module imports only its own layer and those beneath it", () => {
 /** The rows `row` names, itself left out, a file standing for its folder. */
 function named(row) {
   const names = LAYERS[row].map((entry) => (entry.endsWith(".js") ? posix.dirname(entry) : entry));
-  return [...new Set(names)].filter((name) => name !== row && LAYERS[name]);
+  return [...new Set(names)].filter((name) => name !== row && Object.hasOwn(LAYERS, name));
 }
 
 // Rows that name each other let every module pass, each importing within its row.
@@ -131,6 +132,25 @@ test("the table of layers is an order, a row naming only itself and the rows ben
   };
   for (const row of Object.keys(LAYERS)) visit(row);
   assert.deepEqual(cycles, []);
+});
+
+// An entry that names nothing would pass unseen, and a file nothing of its row imports would let
+// in what nothing uses.
+test("every entry of the table of layers is a row, the vendored folder or a module its row imports", () => {
+  const g = graph();
+  const imported = (row, file) =>
+    [...g].some(([name, imports]) => posix.dirname(name) === row && imports.includes(file));
+  const stray = [];
+  const unused = [];
+  for (const [row, entries] of Object.entries(LAYERS))
+    for (const entry of entries) {
+      const file = entry.endsWith(".js");
+      if (file ? !g.has(entry) : !Object.hasOwn(LAYERS, entry) && entry !== VENDOR)
+        stray.push(`${row}: ${entry}`);
+      else if (file && !imported(row, entry)) unused.push(`${row}: ${entry}`);
+    }
+  assert.deepEqual(stray, [], "an entry is a row, the vendored folder or a module");
+  assert.deepEqual(unused, [], "a module a row names is imported from that row's folder");
 });
 
 // The simulation and what play composes over it are pure: a module of them

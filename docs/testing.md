@@ -16,6 +16,10 @@ Of the other conventions, `docs.test.js`, `docs-releases.test.js` and `counts.te
 
 `imports.test.js` holds its table of layers to an order of its own too, a row naming only itself and the rows beneath it, where a file a row names stands for its folder, so two rows that name each other fail there, a cycle through them named once, though no module yet imports along it.
 
+`imports.test.js` holds every entry of the table to naming something as well, a row, the vendored library's folder or a module, so an entry spelt wrong fails there.
+
+A module a row names is held to being imported from that row's folder, so a row lets in no file that nothing of it uses.
+
 `imports.test.js` holds the page's wiring to the boot in two tests, each read off a parse of every module: a top-level statement in a module other than `main.js` or one under `format/` fails the first, which first finds the boot's own statements so that a sweep matching nothing cannot pass, and the second takes every function a module exports under a name beginning `wire` or `boot`, declared at the export or listed by it, and fails one that is not called exactly once, is called outside `main.js` and outside a function so named, is imported under another name or is handed on as a value.
 
 `stylesheet.test.js` holds the partials under `public/css` to their names, the stylesheet links of the page and of the page for a missing path to them, in name order and after the page's inline script, the list of partials in `docs/viewer.md` to the folder, and every custom property the page for a missing path reads to a partial it links.
