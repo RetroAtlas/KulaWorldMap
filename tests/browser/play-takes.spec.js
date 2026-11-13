@@ -65,16 +65,25 @@ const discOf = (page, c, type) =>
   );
 
 /** Whether the frame draws the thing of `type` on `c`: its pixels paint otherwise with the
-    objects hidden. */
+    objects hidden. A burst's sheet that lands under the reads changes the frame by more than the
+    switch, so they are taken again until the frame stands the same before them and after. */
 async function drawsThing(page, c, type) {
   const point = await discOf(page, c, type);
-  const shown = await about(page, point);
-  await page.keyboard.press("o");
-  await expect(page.locator("#showObjects")).not.toBeChecked();
-  const hidden = await about(page, point);
-  await page.keyboard.press("o");
-  await expect(page.locator("#showObjects")).toBeChecked();
-  return JSON.stringify(shown) !== JSON.stringify(hidden);
+  const objects = page.locator("#showObjects");
+  let differs;
+  await expect
+    .poll(async () => {
+      const shown = await about(page, point);
+      await page.keyboard.press("o");
+      await expect(objects).not.toBeChecked();
+      const hidden = await about(page, point);
+      await page.keyboard.press("o");
+      await expect(objects).toBeChecked();
+      differs = JSON.stringify(shown) !== JSON.stringify(hidden);
+      return JSON.stringify(await about(page, point)) === JSON.stringify(shown);
+    })
+    .toBe(true);
+  return differs;
 }
 
 /** Tap Up and step the frozen level to the ball's rest on `block`, a second of frames the bound;
@@ -176,7 +185,13 @@ test("the shadow the game paints into a coin's face goes with the coin as the ba
   expect(await pixelAt(page, face)).not.toEqual(await bareTop(page, face));
   for (const block of [[17, 17, 17], coin, [17, 15, 17]]) await rolledTo(page, block, hz);
   await expect(page.locator("#playPoints")).toHaveText("250 points");
-  expect(await pixelAt(page, face)).toEqual(await bareTop(page, face));
+  // the take's burst joins the frame as its sheet lands, which can be between the two reads
+  await expect
+    .poll(
+      async () =>
+        JSON.stringify(await pixelAt(page, face)) === JSON.stringify(await bareTop(page, face)),
+    )
+    .toBe(true);
   expect(errors).toEqual([]);
 });
 

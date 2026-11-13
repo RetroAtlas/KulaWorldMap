@@ -124,6 +124,8 @@ A browser test of play holds the page's clock before its first step of the game,
 
 With the page's clock running, a key tapped to move the ball while a level's opening holds the pad dead is pressed through `betweenFrames` in `playhelpers.js`, which holds the clock over the press: Playwright sends a key's down and its up as two events, and a frame of the opening that runs between them takes the key as held, so the tap is not kept for the frame that reads the pad.
 
+Where a test compares two reads of the frame after the ball has taken a thing, it takes them again until they agree on what stands under both, since the take's burst joins the frame only once its sheet has landed, which can be between the two.
+
 A tile's picture is painted from an intersection observer's callback, which the browser runs on a frame of its own once the tile has come within a screen of showing, so a browser test of the tiles awaits the paint with a poll rather than reading it after the step that scrolled the tile in, and reads a repaint an update or a change of density gives a tile in view in the same step, since that paint is synchronous.
 
 A unit test of the simulation builds its level from the builders beside its file, `rules-level.js`, `ball-lattice.js`, `hazards-level.js` or `project-doc.js`, which also set the viewer's state from the fixtures.
