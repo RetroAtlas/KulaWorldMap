@@ -123,7 +123,7 @@ test("the closed drawer is out of the tab order, and / opens it to search", asyn
   await page.keyboard.press("/");
   await expect(page.locator("body")).toHaveClass(/sidebar-open/);
   await expect(page.locator("#search")).toBeFocused();
-  // closed with the focus still inside, as a key closes it
+  // a close that hands no focus on leaves it inside, for the browser to drop
   await page.evaluate(() => document.getElementById("menuBtn").click());
   await expect(page.locator("#menuBtn")).toHaveAttribute("aria-expanded", "false");
   await expect.poll(inDrawer).toBe(false);
