@@ -3,8 +3,8 @@ import { SIDE } from "../format/lattice.js";
 export const BLOCK = 34;
 
 const DEG = Math.PI / 180;
-export const PITCH_MIN = -84;
-export const PITCH_MAX = 84;
+export const PITCH_MIN = -90;
+export const PITCH_MAX = 90;
 export const ZOOM_MIN = 0.08;
 export const ZOOM_MAX = 5;
 
@@ -60,7 +60,8 @@ let basis = null;
 export function basisAt(yaw, pitch) {
   const cy = Math.cos(yaw * DEG),
     sy = Math.sin(yaw * DEG);
-  const cp = Math.cos(pitch * DEG),
+  // exact at a right angle, where every upright face lies along the view
+  const cp = Math.abs(pitch) === 90 ? 0 : Math.cos(pitch * DEG),
     sp = Math.sin(pitch * DEG);
   // z counts downward, and seen from above y counts down the page.
   return {

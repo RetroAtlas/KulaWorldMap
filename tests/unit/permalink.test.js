@@ -1,7 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mapData, PINNED_LINK, PINNED_CELLS } from "./fixtures.js";
-import { PITCH_MAX, ZOOM_MIN, ZOOM_MAX, state, screen } from "../../public/js/viewer/state.js";
+import {
+  PITCH_MIN,
+  PITCH_MAX,
+  ZOOM_MIN,
+  ZOOM_MAX,
+  state,
+  screen,
+} from "../../public/js/viewer/state.js";
 import { SIDE } from "../../public/js/format/lattice.js";
 import { slotOf, formatHash, parseHash, carriesLevel } from "../../public/js/viewer/permalink.js";
 
@@ -163,6 +170,7 @@ test("a link escaped on its way reads as the link", () => {
 test("a number past what the camera can reach is held where the camera stops", () => {
   const far = parseHash("#HIRO/0/400,170/1e6/99,-5,17/1e300,-1e300");
   assert.deepEqual(far.turn, [40, PITCH_MAX]);
+  assert.deepEqual(parseHash("#HIRO/0/40,-170").turn, [40, PITCH_MIN]);
   assert.equal(far.zoom, ZOOM_MAX);
   assert.deepEqual(far.target, [SIDE, 0, 17]);
   assert.deepEqual(far.pan, [(8 * SIDE) / ZOOM_MIN, (-8 * SIDE) / ZOOM_MIN]);
@@ -176,6 +184,19 @@ test("a number past what the camera can reach is held where the camera stops", (
     slice: 33,
   });
   assert.ok(/^#HIRO\/0\/45,35\/0\.90\/34,0,17\/3400,0\/33$/.test(written), written);
+});
+
+test("a link turned straight above the level or straight below it opens there", () => {
+  assert.deepEqual(parseHash("#HIRO/0/40,90").turn, [40, 90]);
+  assert.deepEqual(parseHash("#HIRO/0/40,-90").turn, [40, -90]);
+  const written = formatHash({
+    slot: "HIRO/0",
+    cam: { ...cam, yaw: 40, pitch: 90 },
+    target: [17, 17, 17],
+    slice: 33,
+  });
+  assert.ok(written.startsWith("#HIRO/0/40,90/"), written);
+  assert.deepEqual(parseHash(written).turn, [40, 90]);
 });
 
 test("a cell outside the lattice names nothing, and a slot is a number", () => {

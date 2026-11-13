@@ -45,8 +45,8 @@ const LEVELS = {
 const V1 = [45, 35];
 const V2 = [200, 10];
 const V3 = [120, -30];
-const TOP = [0, 84];
-const BOTTOM = [300, -84];
+const TOP = [0, 90];
+const BOTTOM = [300, -90];
 const SIDEWAYS = [15, 60];
 
 export const cases = [];

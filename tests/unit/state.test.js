@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { mapData, PINNED_LINK, PINNED_CELLS } from "./fixtures.js";
 import {
   ZOOM_MIN,
+  PITCH_MIN,
+  PITCH_MAX,
   FIT_MARGIN,
   FIT_ZOOM_MAX,
   state,
@@ -37,8 +39,8 @@ const TURNS = [
   [0, 0],
   [135, 50],
   [315, -30],
-  [10, 84],
-  [200, -84],
+  [10, PITCH_MAX],
+  [200, PITCH_MIN],
 ];
 
 /** The box every corner of every block of `l` lands in on screen, as the view stands. */
@@ -115,8 +117,8 @@ test("the camera basis is orthonormal at any yaw and pitch", () => {
   for (const [yaw, pitch] of [
     [0, 0],
     [45, 35],
-    [-137, 84],
-    [212, -84],
+    [-137, PITCH_MAX],
+    [212, PITCH_MIN],
   ]) {
     Object.assign(state.cam, { yaw, pitch });
     const { right, up, toward } = camera();
@@ -139,6 +141,32 @@ test("a face is drawn when its normal turns toward the camera", () => {
   Object.assign(state.cam, { yaw: 0, pitch: 90 });
   assert.ok(facing([0, 0, -1]), "looking down, the top face shows");
   assert.ok(!facing([0, 0, 1]), "and the underside does not");
+});
+
+test("from straight above and from straight below no side of a block is turned to the view, and the blocks of a layer stand at one depth", (t) => {
+  const was = { cam: structuredClone(state.cam), frame: state.frame };
+  t.after(() => {
+    Object.assign(state.cam, was.cam);
+    state.frame = was.frame;
+  });
+  state.frame = null;
+  for (const yaw of [0, 45, 90, 200, 300])
+    for (const pitch of [PITCH_MAX, PITCH_MIN]) {
+      const where = `${yaw}, ${pitch}`;
+      Object.assign(state.cam, { yaw, pitch });
+      assert.equal(facing(FACE_NORMAL[0]), pitch === PITCH_MAX, where);
+      assert.equal(facing(FACE_NORMAL[5]), pitch === PITCH_MIN, where);
+      for (const face of [1, 2, 3, 4]) assert.ok(!facing(FACE_NORMAL[face]), `${where}: ${face}`);
+      const d = depth(0, 0, 3);
+      assert.ok(depth(33, 0, 3) === d && depth(0, 33, 3) === d, where);
+      const [x0, y0] = project(5, 7, 0);
+      const [x1, y1] = project(5, 7, 33);
+      assert.ok(x0 === x1 && y0 === y1, where);
+    }
+  state.frame = frameOf([0, 1, 0], [1, 0, 0]);
+  Object.assign(state.cam, { yaw: 0, pitch: PITCH_MAX });
+  assert.ok(facing(FACE_NORMAL[1]));
+  for (const face of [0, 2, 3, 5]) assert.ok(!facing(FACE_NORMAL[face]), `${face}`);
 });
 
 test("projection is linear, which is what makes a face a parallelogram", () => {

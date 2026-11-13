@@ -10,7 +10,9 @@ Each control is given briefly, with the choices behind it; what a control says, 
 
 ## Turning, panning and zooming
 
-**Drag to turn the level.** A lattice has no side that is the right one to look from, so dragging orbits the camera around it rather than sliding the view, the eye anywhere from along the floor to straight down; `q` and `e` snap the swing to 45°.
+**Drag to turn the level.** A lattice has no side that is the right one to look from, so dragging orbits the camera around it rather than sliding the view, the eye anywhere from straight above the level to straight below it; `q` and `e` snap the swing to 45°.
+
+The tilt stops straight above and straight below, where the level lies as a floor plan seen from either side: tilted on past either, the picture would stand upside down and a drag would turn it against the hand, and a view free to turn any way round would need a third angle, a roll, in every link.
 
 A level opens framed to fit the window and stays fitted as the window changes, until you turn, pan or zoom it or go to a find; `f`, or the button at the map's bottom right, frames it again.
 
@@ -55,6 +57,8 @@ A row of objects hides and shows its kind on the map, the light a device casts a
 The block at the map's bottom right is a compass, turned as the level is and shaded as the map shades a face, so the brightest side on it is the brightest on the level.
 
 It names each face turned to you, a side by the way it faces (`+x`, `-y`) and the top and the underside by name, and beyond the block the ways it leaves unnamed, `-z` up and `+z` down since `z` counts downward: the words the panel and the search use for the side a thing stands on (`on the +x side`) and the way it faces (`facing=-y`).
+
+The ways beyond the block are named along the lines they point in, so one that points straight at you or straight away has no line to be named on and is left out: from straight above the compass names the top and the four ways round it, and from straight below the underside and the same four.
 
 ## The objects
 
@@ -966,6 +970,8 @@ The camera is a plain orbit: a yaw and a pitch give three unit vectors, and ever
 A module may hand `js/viewer/state.js` a frame, a rotation in world coordinates, and the three are then turned about it, so the yaw and pitch count from the frame's axes rather than the world's axes and the compass turns with them; and a module may park the camera, the target, the framing and the slice as they were and frame the view in the fit's place through `fitWith` in `js/viewer/chrome/navigate.js`, so that `f`, the button and a resize go through it, the button is dim while it holds the view, and a link written meanwhile carries the parked view rather than the one on screen.
 
 Cubes are drawn back to front by that depth, which is exact for equal cubes on a lattice, and a face is drawn only when its outward normal turns toward the camera and no block the game hides that face behind stands against it.
+
+Straight above and straight below, the pitch's cosine is held at exactly nothing rather than the hair a float leaves, so the four sides of every block lie exactly along the view, none of them is drawn, outlined or picked, and the blocks of a layer stand at one depth.
 
 A face toward a block the index holds as breaking up is drawn all the same, the game making the faces toward a breaking block active at the break, a platform's apart, and a breaking block's own faces are drawn whole as it shrinks about its middle, hidden by no neighbour.
 

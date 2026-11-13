@@ -397,6 +397,25 @@ test("a camera moved on purpose stays where it was put as the canvas resizes, un
   expect(framed.zoom).toBe(framed.fit);
 });
 
+test("a drag tilts the view no further than straight above the level, and no further than straight below it", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/#INCA/11/30,20");
+  await settle(page);
+  await still(page);
+  const turn = () =>
+    page.evaluate(async () => {
+      const { state } = await import(new URL("js/viewer/state.js", location.href).href);
+      return [state.cam.yaw, state.cam.pitch];
+    });
+  await press(page, 0, 400);
+  expect(await turn()).toEqual([30, 90]);
+  await press(page, 0, -600);
+  expect(await turn()).toEqual([30, -90]);
+  expect(errors).toEqual([]);
+});
+
 test("f at a turn frames every block inside the canvas, with the margin round the level", async ({
   page,
 }) => {
