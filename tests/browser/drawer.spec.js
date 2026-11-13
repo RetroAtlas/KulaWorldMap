@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { settle, frame, still } from "./helpers.js";
+import { settle, frame, still, trackErrors, unmarking } from "./helpers.js";
 
 /** The drawer opened over the map at a phone's width by `/`, the keyboard's focus in the search box. */
 async function searching(page) {
@@ -273,6 +273,20 @@ test("a key held since before the page opened repeats on the menu button as on a
   await page.keyboard.down("Enter");
   await closed(page);
   await page.keyboard.up("Enter");
+});
+
+test("in a browser that does not know :focus-visible a key's close hands no focus on, and nothing is logged", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await unmarking(page);
+  await searching(page);
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.locator("#settingsBtn")).toBeFocused();
+  await page.keyboard.press("s");
+  await closed(page);
+  await expect(page.locator("body")).toBeFocused();
+  expect(errors).toEqual([]);
 });
 
 test("a key that closes the drawer with nothing focused leaves the focus on the body", async ({

@@ -1,4 +1,4 @@
-import { $, el, emit, on } from "../ui/dom.js";
+import { $, el, emit, focusShown, on } from "../ui/dom.js";
 import { state, sliceZ } from "../state.js";
 import { SIDE } from "../../format/lattice.js";
 import {
@@ -375,7 +375,7 @@ export const yoursClosed = () => foldKept(FOLDS[0][1]) === "closed";
 
 export function wireSidebar() {
   // Read as the focus lands: by a keydown a click's focus can look like the keyboard's focus too.
-  addEventListener("focusin", (e) => (keyboardFocus = e.target.matches(":focus-visible")), true);
+  addEventListener("focusin", (e) => (keyboardFocus = focusShown(e.target)), true);
   addEventListener("keydown", onKeyDown, true);
   addEventListener("pointerdown", () => (keyedInside = false), true);
   // A key still held as the menu button is handed the focus would go on to press it.

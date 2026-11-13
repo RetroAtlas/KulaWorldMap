@@ -18,5 +18,14 @@ export const escaped = (text) =>
 export const typing = (e) =>
   /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "checkbox";
 
+/** Whether the browser marks the focus on `node` as one to show, never in one that has no such mark. */
+export function focusShown(node) {
+  try {
+    return node.matches(":focus-visible");
+  } catch {
+    return false;
+  }
+}
+
 /** Whether a dialog stands open over the page. */
 export const dialogOpen = () => document.querySelector(".modal:not([hidden])") !== null;

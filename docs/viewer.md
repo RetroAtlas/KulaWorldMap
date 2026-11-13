@@ -99,6 +99,8 @@ Only the keyboard's focus is handed on, since the button that holds it takes Ent
 
 A focus counts as the keyboard's focus where, as it lands, the browser marks it as one to show (`:focus-visible`): one that Tab reached is marked, and one that a click or a tap has just put on a button or a switch is not, and that focus is dropped as the sidebar closes.
 
+In a browser that has no such mark no focus counts as the keyboard's focus, so none is handed on.
+
 The search box's focus is marked however the box was reached, a click or a tap included, so where the sidebar overlays the map, as on a phone, and going to a find closes it, Enter on a find hands the focus on however the search began.
 
 A focus that the map puts on a control after a key may be marked though a click chose that control, as when Settings gives the focus back to the gear as `Esc` closes it, or "On this level" keeps the focus on a row while a key builds its list anew, and it is then handed on, in the browsers that mark it.

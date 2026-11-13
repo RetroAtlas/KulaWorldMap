@@ -1,6 +1,6 @@
 // Play's chrome: the strip and the HUD that stand beside the map while the ball is on it, the pad
 // and the keys that roll it, and the live region's queue of what play says.
-import { $, dialogOpen, typing } from "../viewer/ui/dom.js";
+import { $, dialogOpen, focusShown, typing } from "../viewer/ui/dom.js";
 import { current, measureStrip } from "../viewer/chrome/course.js";
 import { state } from "../viewer/state.js";
 import { BASE, current as disc, releaseOf } from "../viewer/release.js";
@@ -307,7 +307,7 @@ export function wireStrip(hub) {
   document.addEventListener("keyup", (e) => keyup(e, hub), { capture: true });
   // read as the focus lands, since by the keydown a clicked button's focus is visible too
   document.addEventListener("focusin", (e) => {
-    keyed = e.target.matches(":focus-visible");
+    keyed = focusShown(e.target);
   });
   addEventListener("blur", () => hub.keys.up());
   wirePad(hub);

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { drafted, faced, frozen, onward, stepUntil, trackErrors } from "./helpers.js";
+import { drafted, faced, frozen, onward, stepUntil, trackErrors, unmarking } from "./helpers.js";
 import {
   IDENTITY,
   arcadeDraft,
@@ -143,6 +143,28 @@ test("Enter starts the level again after a button was clicked in the sidebar or 
   await page.keyboard.press(" ");
   await started();
   await expect(forgive).toHaveAttribute("aria-pressed", "false");
+  expect(errors).toEqual([]);
+});
+
+test("in a browser that does not know :focus-visible Enter starts the level again from a strip button Tab has moved to, and nothing is logged", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await unmarking(page);
+  await arcadeDraft(page, { time: 2, motion: false });
+  const { play } = await table(page);
+  await startPlay(page);
+  await frozen(page);
+  await page.keyboard.down("ArrowUp");
+  await stepUntil(page, { status: "^TIME OUT" }, 2 * play.clock.second);
+  await page.keyboard.up("ArrowUp");
+  await expect(line(page)).toHaveText(ENDED);
+  const padBtn = page.locator("#padBtn");
+  const padWas = await padBtn.getAttribute("aria-pressed");
+  await tabbedTo(page, padBtn);
+  await page.keyboard.press("Enter");
+  await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
+  await expect(padBtn).toHaveAttribute("aria-pressed", padWas);
   expect(errors).toEqual([]);
 });
 

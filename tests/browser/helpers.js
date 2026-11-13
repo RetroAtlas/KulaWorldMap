@@ -9,6 +9,16 @@ export function trackErrors(page) {
   return errors;
 }
 
+/** Make the page's browser one that does not know `:focus-visible`, as an older engine does not. */
+export const unmarking = (page) =>
+  page.addInitScript(() => {
+    const matches = Element.prototype.matches;
+    Element.prototype.matches = function (selector) {
+      if (selector.includes(":focus-visible")) throw new SyntaxError("an unknown selector");
+      return matches.call(this, selector);
+    };
+  });
+
 /** Wait for the data to land and the canvas to have a size to fit against. */
 export async function settle(page) {
   await page.evaluate(async () => {
