@@ -15,7 +15,7 @@ const PASTE_FIRST = "Paste the link first.";
 const PATCH_NOTE =
   "A patch carries only what it changes, so its levels come back whole over the disc image it was made for.";
 const NO_CHANGE = "The patch changes no level of this image.";
-const heldOver = (name) => `Read over ${name}, the image Put it on the disc holds.`;
+const heldOver = (name) => `Read over ${name}, the image you gave to patch the game's disc.`;
 
 let ui = null;
 let pending = null;

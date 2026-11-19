@@ -269,9 +269,11 @@ A group's `arrange…` opens the bundle's card under its levels: the bundle's ti
 
 Your levels stay in this browser, written a moment after each change, and travel only as a file or as a link that carries one whole; a browser that cannot keep them says so.
 
-### Put it on the disc
+### Patch the game's disc
 
-A draft goes onto the disc from its Level card, which opens "Put it on the disc", three steps in one box, and the box takes several of your levels as one patch.
+A draft goes onto the disc from its Level card, whose `patch the game's disc…` opens "Patch the game's disc", three steps in one box, and the box takes several of your levels as one patch.
+
+Under its heading the box says what it does: it puts your levels in the game, in place of levels you choose, and makes a patch for your own disc image, or a patched copy of it, to play on an emulator.
 
 The levels: a row for each, the draft the box was opened for first, with `add a level…` under them for another level this browser holds, or `a file…`, which takes what the sidebar's `open a file…` takes and adds a row for each level it opens.
 

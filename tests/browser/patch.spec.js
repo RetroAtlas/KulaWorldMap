@@ -45,6 +45,10 @@ test("the draft goes onto the disc as the fixture's bytes, the slot kept on the 
   await page.locator("#draftPatch").click();
   const dialog = page.locator("#patch");
   await expect(dialog).toBeVisible();
+  await expect(dialog.locator("#patchTitle")).toHaveText("Patch the game's disc");
+  await expect(dialog.locator("#patchTitle + p")).toHaveText(
+    "This puts your levels in the game, in place of levels you choose. It makes a patch for your own disc image, or a patched copy of it, to play on an emulator.",
+  );
   for (const live of ["#patchFit", "#patchStatus", "#patchReady"])
     await expect(dialog.locator(live)).toHaveAttribute("aria-live", "polite");
   await expect(dialog.locator(".name")).toHaveText("Spiral");

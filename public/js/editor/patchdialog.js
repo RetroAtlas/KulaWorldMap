@@ -41,6 +41,8 @@ import { inflate } from "../format/inflate.js";
 
 const LEVEL = 6;
 const BINARY = "application/octet-stream";
+const NOTE =
+  "This puts your levels in the game, in place of levels you choose. It makes a patch for your own disc image, or a patched copy of it, to play on an emulator.";
 const PRIVATE = "Read in your browser; nothing is uploaded.";
 const OLDER = "Making the patch needs a newer browser, one that can unpack the game's files.";
 const ERRORS = "A level with errors cannot go on the disc until they are fixed.";
@@ -202,7 +204,8 @@ function build() {
     "div",
     { className: "box settings patch" },
     x,
-    el("h3", { id: "patchTitle", textContent: "Put it on the disc" }),
+    el("h3", { id: "patchTitle", textContent: "Patch the game's disc" }),
+    el("p", { id: "patchNote", textContent: NOTE }),
     section("The levels", u.rows, u.clash, el("div", { className: "add" }, u.add, u.clear, u.file)),
     section(
       "The disc",

@@ -309,7 +309,7 @@ export function buildForm(id, box, { imported, open }) {
   const patch = el("button", {
     id: "draftPatch",
     type: "button",
-    textContent: "put it on the disc…",
+    textContent: "patch the game's disc…",
     title: "Make a patch that puts this level on the game's disc",
   });
   patch.onclick = () => openPatchDialog(id);

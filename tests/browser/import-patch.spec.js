@@ -202,7 +202,7 @@ test("a patch reads over the image the disc box holds without asking for one", a
   await expect(dialog).toBeVisible();
   await expect(dialog.locator(".drop")).toBeHidden();
   await expect(dialog.locator("#fromPatchOver")).toHaveText(
-    "Read over image.bin, the image Put it on the disc holds.",
+    "Read over image.bin, the image you gave to patch the game's disc.",
   );
   await expect(dialog.locator("#fromPatchLevels li")).toHaveText(LISTED);
   await dialog.locator("#fromPatchOpen").click();
