@@ -1,7 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { SORTS, grouping, matches, ordering } from "../../public/js/editor/draftsort.js";
+import {
+  SORTS,
+  grouping,
+  listed,
+  matches,
+  ordering,
+  stepFrom,
+} from "../../public/js/editor/draftsort.js";
 
 const WORLDS = ["HIRO", "INCA", "ATLANTIS"];
 const record = (id, title, world, updated, { saved = null, edits = 0 } = {}) => ({
@@ -88,6 +95,36 @@ test("a bundle's group holds the records of its levels the filter keeps, in the 
     [false, true, true],
   );
   assert.deepEqual([...some.grouped].sort(), [1, 2, 3]);
+});
+
+test("the list's order is each group's kept levels, group after group, then the levels in no bundle", () => {
+  const records = new Map(RECORDS.map((r) => [r.id, r]));
+  const bundles = [
+    { id: 7, levels: [3, 1] },
+    { id: 8, levels: [] },
+    { id: 9, levels: [2] },
+  ];
+  const loose = [RECORDS[3]];
+  assert.deepEqual(listed(grouping(bundles, records, "").groups, loose), [3, 1, 2, 4]);
+  // a filter drops the levels it does not keep from the groups, and a group left with none adds nothing
+  assert.deepEqual(listed(grouping(bundles, records, "atlant").groups, []), [1]);
+  assert.deepEqual(listed([], []), []);
+});
+
+test("a step goes that many places on in the list's order and nowhere past either end", () => {
+  const order = [3, 1, 2, 4];
+  assert.equal(stepFrom(order, 3, 1), 1);
+  assert.equal(stepFrom(order, 1, 1), 2);
+  assert.equal(stepFrom(order, 2, -1), 1);
+  assert.equal(stepFrom(order, 4, 1), null);
+  assert.equal(stepFrom(order, 3, -1), null);
+});
+
+test("from a level the list does not hold a step on goes to the first level and a step back to the last", () => {
+  assert.equal(stepFrom([3, 1, 2], 9, 1), 3);
+  assert.equal(stepFrom([3, 1, 2], 9, -1), 2);
+  assert.equal(stepFrom([], 9, 1), null);
+  assert.equal(stepFrom([], 9, -1), null);
 });
 
 test("the sort control offers the sorts the module knows, in its order", () => {

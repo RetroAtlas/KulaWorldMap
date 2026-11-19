@@ -6,7 +6,7 @@ import { state } from "../viewer/state.js";
 import { index, worldName } from "../viewer/data.js";
 import { releaseOf } from "../viewer/release.js";
 import { paintLevel } from "../viewer/draw/still.js";
-import { selectLevel, showLevel } from "../viewer/chrome/navigate.js";
+import { selectLevel, showLevel, stepWith } from "../viewer/chrome/navigate.js";
 import { sidebarOverlays, yoursClosed } from "../viewer/chrome/sidebar.js";
 import { say, describeLevel } from "../viewer/chrome/a11y.js";
 import { blank, fromLevel, setMeta, toLevel } from "../format/project.js";
@@ -24,7 +24,7 @@ import {
   unsavedIn,
 } from "./levelcard.js";
 import { buildBundleCard } from "./bundlecard.js";
-import { SORTS, grouping, matches, ordering } from "./draftsort.js";
+import { SORTS, grouping, listed, matches, ordering, stepFrom } from "./draftsort.js";
 import { savedWords, stateLine } from "./draftwords.js";
 import * as drafts from "./drafts.js";
 
@@ -81,6 +81,7 @@ export function wireDrafts() {
   on("level-updated", sync);
   on("release-changed", sync);
   on("link-opening", sync);
+  stepWith(stepDraft);
   sync();
 }
 
@@ -88,6 +89,26 @@ export function wireDrafts() {
 function show(id, doc, opts) {
   drawn = doc;
   showLevel(toLevel(doc, id), opts);
+}
+
+/** Step from the draft on screen to the draft `delta` places on in the list's order, its tile or row brought into the sidebar's view and the keyboard kept on the Level card where it was there; whether a draft was on screen. */
+function stepDraft(delta, push) {
+  const id = state.lvl?.draft;
+  if (id === undefined) return false;
+  const { groups, loose } = arranged(drafts.list());
+  const to = stepFrom(listed(groups, loose), id, delta);
+  if (to === null) return true;
+  const card = $("draftCard");
+  const held = card.contains(document.activeElement) ? document.activeElement.id : null;
+  show(to, drafts.get(to).doc, { push });
+  const marked = $("draftRows").querySelector('[aria-current="true"]');
+  marked?.scrollIntoView({ block: "nearest" });
+  // the card is built afresh for each level, which takes the control that held the focus with it
+  if (held !== null) {
+    if (held) $(held)?.focus();
+    if (!card.contains(document.activeElement)) marked?.focus();
+  }
+  return true;
 }
 
 /** Open a copy of the level on screen: a draft as it is, a level that came with its document as that document, author and notes kept, or a shipped level as the game loads it, a copy of another disc's own level carrying that disc's label in its title. */
@@ -233,6 +254,18 @@ const recordOf = (d) => ({
   d,
 });
 
+/** The bundles' groups and the levels in no bundle as the list shows `all`, under the sort chosen and the filter typed. */
+function arranged(all) {
+  const query = $("draftFilter").value;
+  const worlds = state.data.themes.map((t) => worldName(t.id));
+  const records = new Map(all.map((d) => [d.id, recordOf(d)]));
+  const { groups, grouped } = grouping(drafts.bundles(), records, query);
+  const loose = [...records.values()]
+    .filter((r) => !grouped.has(r.id) && matches(r, query))
+    .sort(ordering(sortNow(), worlds));
+  return { groups, loose };
+}
+
 function rows() {
   const box = $("draftRows");
   const all = drafts.list();
@@ -244,13 +277,7 @@ function rows() {
   for (const b of bar.querySelectorAll(".scope button"))
     b.setAttribute("aria-pressed", String(b.dataset.view === viewNow()));
   $("draftSort").value = sortNow();
-  const query = $("draftFilter").value;
-  const worlds = state.data.themes.map((t) => worldName(t.id));
-  const records = new Map(all.map((d) => [d.id, recordOf(d)]));
-  const { groups, grouped } = grouping(drafts.bundles(), records, query);
-  const loose = [...records.values()]
-    .filter((r) => !grouped.has(r.id) && matches(r, query))
-    .sort(ordering(sortNow(), worlds));
+  const { groups, loose } = arranged(all);
   const shown = loose.length + groups.reduce((n, g) => n + g.kept.length, 0);
   const filtered = all.length > 0 && shown === 0;
   const empty = $("draftEmpty");

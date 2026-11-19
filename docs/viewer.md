@@ -225,6 +225,16 @@ Under the heading, inside the group and so out of sight while the group is folde
 
 A group opens when one of its levels comes on screen, or when it comes to hold the level on screen, so the shown level never disappears into a closed group, and nothing of the groups' folds is kept across visits.
 
+`[` and `]` step through your levels as they step through the game's levels, in the order the list shows them: a bundle's levels in the bundle's order, on from one bundle into the next, then the levels in no bundle in the sort chosen.
+
+The filter narrows what the two keys step through as it narrows the list.
+
+From a level of your own the filter hides, `]` goes to the first level listed and `[` to the last.
+
+The level stepped to has its tile or row brought into the sidebar's view, as a level of the game has its button.
+
+A step taken with the keyboard on a control of the Level card leaves it on the same control of the next level's card, or on that level's tile or row where the next card has no such control in sight.
+
 Levels this browser holds that could not be read are kept as they are, and a row under the drafts counts them and offers to remove them.
 
 For the shown draft a Level card edits its title, author, notes and world, its time as its file holds it with what the clock starts at on each disc under it, whether it is a hidden level or shows invisible blocks from afar, and whether a level with no key plays as a bonus level or a Simon room; a level with a key plays as an arcade level, since the game decides that from the keys.
@@ -775,6 +785,8 @@ A module may take the panel down through `clearDetail` and build it again for th
 A module may reinstall the slot shown in place through `reshow` in `js/viewer/chrome/navigate.js`, which keeps the selection where its cell stands and frames the level afresh where it was fitted, and may register a segment of the link's tail with `before` beside `read`, told the segment before the slot is resolved, so that what it names is installed once.
 
 A module may answer a link's slot with a level of its own through `provideLevels` in `js/viewer/chrome/navigate.js`, each source asked with the slot the link names, in upper case, and answering with a level or nothing; a link to a slot a source answers installs the level where that slot is not the one shown, whatever level is on screen, which is a change of level, or an update where the level's own slot is the one shown, while a link to the slot shown installs nothing and lays its view on the level there.
+
+A module may answer `[` and `]` on a level that is not among the disc's levels through `stepWith` in `js/viewer/chrome/navigate.js`, each one registered asked with the step until one says the level on screen is its own, which is how the editor steps through your levels in its list's order; a level no module answers for stays where it is.
 
 A module may read what the link writes for the level shown through `viewParts` in `js/viewer/chrome/navigate.js`, the view a module parked or the camera and the target as they stand, whether the level is framed to fit, the slice and the selected cell, which is how the editor's share box writes its link with the turn the map has.
 

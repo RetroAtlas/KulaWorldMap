@@ -41,6 +41,18 @@ async function addBundle(page, name, text, total) {
   await expect(levels(page)).toHaveCount(total);
 }
 
+/** Open the page with a level in no bundle made and the bundle file opened after it, the bundle's first level on screen; the name on the tile or row of the level on screen. */
+async function shelved(page) {
+  await page.goto(EDIT);
+  await settle(page);
+  await page.locator("#draftNew").click();
+  await expect(levels(page)).toHaveCount(1);
+  await addBundle(page, NAME, BUNDLE, 4);
+  const current = page.locator('#draftRows [aria-current="true"] .name');
+  await expect(current).toHaveText("Spiral 1");
+  return current;
+}
+
 /** Open the page and the bundle file through the sidebar's file input, and wait for its levels to be listed. */
 async function openedBundle(page, text = BUNDLE, total = LEVELS.length) {
   await page.goto(EDIT);
@@ -326,6 +338,48 @@ test("the groups stand first in the order the bundles were made, each in its own
   expect(await tagOf(page.locator("#draftRows > :first-child"))).toBe("details.bundle");
   expect(await tagOf(page.locator("#draftRows > :last-child"))).toBe("button.");
   await expect(page.locator("#draftRows .tile")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("[ and ] step through your levels in the list's order, a bundle's levels in the bundle's order and then the levels in no bundle, each brought into the sidebar's view, and nowhere past either end", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const current = await shelved(page);
+  const press = async (key, title) => {
+    await page.keyboard.press(key);
+    await expect(current).toHaveText(title);
+    await expect(current).toBeInViewport();
+  };
+  // from the sidebar's top, where the levels lie below its foot
+  await page.locator("#sidebar").evaluate((side) => (side.scrollTop = 0));
+  await expect(current).not.toBeInViewport();
+  await press("]", "Spiral 2");
+  await press("[", "Spiral 1");
+  await press("[", "Spiral 1");
+  await press("]", "Spiral 2");
+  await press("]", "Spiral 3");
+  await press("]", "Untitled level");
+  await press("]", "Untitled level");
+  await press("[", "Spiral 3");
+  expect(errors).toEqual([]);
+});
+
+test("a step taken from a control of the Level card leaves the keyboard on that control of the next level's card, or on the level's tile where that card has none in sight", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const current = await shelved(page);
+  await page.locator("#draftSaveKwl").focus();
+  await page.keyboard.press("]");
+  await expect(current).toHaveText("Spiral 2");
+  await expect(page.locator("#draftSaveKwl")).toBeFocused();
+  // a level in no bundle has no take out, so from that button the keyboard goes to the level's tile
+  await page.keyboard.press("]");
+  await page.locator("#draftUnbundle").focus();
+  await page.keyboard.press("]");
+  await expect(current).toHaveText("Untitled level");
+  await expect(page.locator('#draftRows .tile[aria-current="true"]')).toBeFocused();
   expect(errors).toEqual([]);
 });
 

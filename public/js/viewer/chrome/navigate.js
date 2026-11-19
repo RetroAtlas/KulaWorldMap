@@ -312,8 +312,17 @@ export function applyHash() {
   return true;
 }
 
+// What steps from a level that is not among the disc's levels.
+const steppers = [];
+/** Register what `stepLevel` asks on a level that is not among the disc's levels: given the step and whether to push, it steps where the level on screen is one of its own and answers whether it was. */
+export const stepWith = (fn) => steppers.push(fn);
+
 export function stepLevel(delta, push = true) {
-  if (!state.data || state.li < 0) return;
+  if (!state.data) return;
+  if (state.li < 0) {
+    steppers.some((fn) => fn(delta, push));
+    return;
+  }
   const order = state.data.themes.flatMap((t) => t.levels);
   const i = order[order.indexOf(state.li) + delta];
   if (i !== undefined) selectLevel(i, { push });

@@ -222,19 +222,13 @@ test("the keys that step through the levels leave a level from elsewhere alone",
     const [{ state }, { showLevel, stepLevel }] = await Promise.all(
       ["viewer/state.js", "viewer/chrome/navigate.js"].map(at),
     );
-    const copy = {
-      ...state.data.levels[0],
-      pack: "/DRAFT/DRAFT.PAK",
-      index: 7,
-      draft: 7,
-      tag: "Draft",
-    };
+    const copy = { ...state.data.levels[0], pack: "/ELSEWHERE/LEVELS.PAK", index: 7 };
     showLevel(copy);
     stepLevel(1);
     stepLevel(-1);
-    return { li: state.li, draft: state.lvl.draft };
+    return { li: state.li, pack: state.lvl.pack, index: state.lvl.index };
   });
-  expect(out).toEqual({ li: -1, draft: 7 });
+  expect(out).toEqual({ li: -1, pack: "/ELSEWHERE/LEVELS.PAK", index: 7 });
   expect(errors).toEqual([]);
 });
 

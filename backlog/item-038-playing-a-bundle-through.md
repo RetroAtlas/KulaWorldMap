@@ -44,7 +44,6 @@ This item holds what a play-through would need, each piece with where it stands 
 - The death's cost needs a count of its own for such a level: `settle` takes it as `countOf` over `stationOf`, which gives no station for a draft to read a place and a slot from, so a death in the arcade form would throw there, spared today only by `conclude` returning before `settle` where the run has no game.
 - `ended` drops the run's game where Play on through the levels is off, which is what keeps a disc level from going on, so whether a bundle goes on under that setting, always, or under a setting of its own is open, a bundle's order being its author's choice rather than the game's arithmetic.
 - At the bundle's last level the answer is null and the verdict says the level starts again, as a level of your own does today; whether the last way out goes back to the first level instead is open.
-- `stepLevel` in `public/js/viewer/chrome/navigate.js` returns early for a level from elsewhere and steps in the sidebar's order of the disc's levels, so `[` and `]` cannot step through a bundle's levels without a change there or a source of its own.
 
 ## Ruled out
 

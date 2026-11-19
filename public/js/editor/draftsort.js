@@ -36,3 +36,16 @@ export function grouping(bundles, records, query) {
   });
   return { groups, grouped };
 }
+
+/** The ids of the levels the list shows, in its order: each group's kept levels, group after group, then the levels in no bundle. */
+export const listed = (groups, loose) => [
+  ...groups.flatMap((g) => g.kept.map((r) => r.id)),
+  ...loose.map((r) => r.id),
+];
+
+/** The id `delta` places on from `id` among `ids`, or null past either end; from an id the list does not hold, the first id for a step on and the last for a step back. */
+export function stepFrom(ids, id, delta) {
+  const i = ids.indexOf(id);
+  if (i < 0) return ids.at(delta > 0 ? 0 : -1) ?? null;
+  return ids[i + delta] ?? null;
+}
