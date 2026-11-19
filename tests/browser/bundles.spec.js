@@ -402,16 +402,21 @@ test("add to a bundle… makes a new bundle holding the level through its box, w
   expect(await bundles(page)).toMatchObject([
     { title: "Spiral campaign", author: "Ada", notes: "", levels: [id] },
   ]);
-  await expect(page.locator("#draftUnbundle")).toBeVisible();
+  await expect(page.locator("#draftUnbundle")).toHaveText("take out");
   await expect(page.locator("#draftSaveBundle")).toBeVisible();
+  await expect(page.locator("#draftBundle")).toHaveText("move to another bundle…");
   await expect(page.locator("#draftBundle")).toHaveAttribute(
     "title",
     "Move this level to another bundle, or to a new one",
   );
+  // the box is worded afresh each time it opens
+  await openAdd(page);
+  await expect(b.locator("#bundleHeading")).toHaveText("Move to another bundle");
+  await b.locator("#bundleCancel").click();
   expect(errors).toEqual([]);
 });
 
-test("the box for a level in a bundle says which bundle it leaves, offers only the others, and add moves the level last into the one chosen", async ({
+test("the box for a level in a bundle is worded as a move, says which bundle it leaves, offers only the others, and puts the level last into the one chosen", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -420,8 +425,14 @@ test("the box for a level in a bundle says which bundle it leaves, offers only t
   await expect(page.locator("#chipLine b")).toHaveText("Tower 1");
   await openAdd(page);
   const b = box(page);
+  await expect(b.locator("#bundleHeading")).toHaveText("Move to another bundle");
+  await expect(b.locator("#bundleAdd")).toHaveText("move");
+  await expect(b.locator("#bundlePick")).toHaveAttribute(
+    "title",
+    "The bundle to move this level to",
+  );
   await expect(b.locator("#bundleSays")).toHaveText(
-    "Tower 1 leaves Tower set when it is added to another bundle.",
+    "Tower 1 leaves Tower set when it is moved to another bundle.",
   );
   await expect(b.locator("#bundlePick option")).toHaveText(["Spiral campaign", "a new bundle"]);
   await expect(b.locator("#bundlePick")).toBeFocused();
@@ -560,6 +571,7 @@ test("take out, on the card's row and on the Level card, leaves the level among 
   await expect(loose(page)).toHaveText(["Spiral 1", "Spiral 2"]);
   await expect(page.locator("#draftUnbundle")).toBeHidden();
   await expect(page.locator("#draftBundle")).toBeFocused();
+  await expect(page.locator("#draftBundle")).toHaveText("add to a bundle…");
   await expect(page.locator("#say")).toHaveText("Took Spiral 1 out of Spiral campaign.");
   expect((await bundles(page))[0].levels).toEqual([ids[2]]);
   // the last level out leaves a bundle that cannot be saved, the focus on take apart

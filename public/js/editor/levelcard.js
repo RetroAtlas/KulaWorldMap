@@ -47,10 +47,23 @@ const KEYLESS = [
 ];
 const NEW_BUNDLE = "new";
 const BUNDLE_NOTE = "A bundle is a set of your levels in play order, saved as one file.";
-const ADD_TO = "Add this level to a bundle of your levels, or make one";
-const MOVE_TO = "Move this level to another bundle, or to a new one";
+// What the card's button and its box say of a level in no bundle, and of a level in one.
+const ADDING = {
+  label: "add to a bundle…",
+  tip: "Add this level to a bundle of your levels, or make one",
+  heading: "Add to a bundle",
+  act: "add",
+  pick: "The bundle to add this level to",
+};
+const MOVING = {
+  label: "move to another bundle…",
+  tip: "Move this level to another bundle, or to a new one",
+  heading: "Move to another bundle",
+  act: "move",
+  pick: "The bundle to move this level to",
+};
 const GONE = "That bundle is gone from this browser; choose another.";
-const leaves = (level, bundle) => `${level} leaves ${bundle} when it is added to another bundle.`;
+const leaves = (level, bundle) => `${level} leaves ${bundle} when it is moved to another bundle.`;
 
 // --- the helpers ---------------------------------------------------------------------------
 export const nameOf = (doc) => doc.title || UNTITLED;
@@ -330,14 +343,14 @@ export function buildForm(id, box, { imported, open }) {
   const toBundle = el("button", {
     id: "draftBundle",
     type: "button",
-    textContent: "add to a bundle…",
-    title: ADD_TO,
+    textContent: ADDING.label,
+    title: ADDING.tip,
   });
   toBundle.onclick = () => addToBundle(id);
   const unbundle = el("button", {
     id: "draftUnbundle",
     type: "button",
-    textContent: "take out of the bundle",
+    textContent: "take out",
     title: "Take this level out of its bundle; the level stays",
     hidden: true,
   });
@@ -414,7 +427,9 @@ export function buildForm(id, box, { imported, open }) {
       const b = bundleOf(id);
       saveAsBundle.hidden = !b;
       saveAsBundle.classList.toggle("unsaved", b !== null && bundleUnsaved(b));
-      toBundle.title = b ? MOVE_TO : ADD_TO;
+      const words = b ? MOVING : ADDING;
+      toBundle.textContent = words.label;
+      toBundle.title = words.tip;
       unbundle.hidden = !b;
     },
     wrote() {
@@ -441,7 +456,8 @@ function buildAdd() {
   });
   x.setAttribute("aria-label", "Close");
   const u = {
-    pick: el("select", { id: "bundlePick", title: "The bundle to add this level to" }),
+    heading: el("h3", { id: "bundleHeading" }),
+    pick: el("select", { id: "bundlePick" }),
     title: el("input", {
       id: "bundleTitle",
       type: "text",
@@ -452,7 +468,7 @@ function buildAdd() {
       title: "The new bundle's title",
     }),
     says: el("p", { id: "bundleSays", className: "says" }),
-    add: el("button", { id: "bundleAdd", type: "button", textContent: "add" }),
+    add: el("button", { id: "bundleAdd", type: "button" }),
     cancel: el("button", { id: "bundleCancel", type: "button", textContent: "cancel" }),
     titleRow: null,
     id: 0,
@@ -474,7 +490,7 @@ function buildAdd() {
     "div",
     { className: "box settings bundle" },
     x,
-    el("h3", { id: "bundleHeading", textContent: "Add to a bundle" }),
+    u.heading,
     el("p", { id: "bundleNote", textContent: BUNDLE_NOTE }),
     el("label", { className: "field" }, el("span", { textContent: "Bundle" }), u.pick),
     u.titleRow,
@@ -500,7 +516,7 @@ function offer(u, own) {
   u.titleRow.hidden = u.pick.value !== NEW_BUNDLE;
 }
 
-/** Open the box for draft `id`: which bundle to add it to, or the title of a new one, saying which bundle it leaves where it is in one. */
+/** Open the box for draft `id`, worded as an add or, where it is in a bundle, as a move that says which bundle it leaves: which bundle it goes to, or the title of a new one. */
 function addToBundle(id) {
   const d = drafts.get(id);
   if (!d) return;
@@ -508,6 +524,10 @@ function addToBundle(id) {
   const u = adding;
   u.id = id;
   const own = bundleOf(id);
+  const words = own ? MOVING : ADDING;
+  u.heading.textContent = words.heading;
+  u.add.textContent = words.act;
+  u.pick.title = words.pick;
   offer(u, own);
   u.title.value = "";
   u.says.textContent = own ? leaves(nameOf(d.doc), bundleName(own)) : "";

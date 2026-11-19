@@ -263,7 +263,9 @@ It takes a patch the disc box made too, a PPF or an xdelta, which asks for the d
 
 `open a link…` beside it makes a level of your own out of a link that carries a level, the map's own or one shared from the community's level viewer, where following the map's link shows the level without keeping it.
 
-The card's `add to a bundle…` puts the level last in a bundle this browser holds or in a new one, a level standing in one bundle at most, and `take out of the bundle` leaves it in none.
+The card's `add to a bundle…` puts the level last in a bundle this browser holds or in a new one, a level standing in one bundle at most, and `take out` leaves it in none.
+
+On a level that is in a bundle the button reads `move to another bundle…`, and its box is worded as a move and says which bundle the level leaves.
 
 A group's `arrange…` opens the bundle's card under its levels: the bundle's title, author and notes, its levels in play order to move up or down or take out, `save as a bundle` while the bundle holds a level, since a bundle file with no level would open as nothing, and `take apart`, which forgets the bundle and leaves its levels among your levels.
 
