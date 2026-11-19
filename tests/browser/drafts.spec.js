@@ -147,9 +147,8 @@ test("new level makes a draft, shown and kept in this browser, which a reload br
   const row = page.locator("#draftRows button");
   await expect(row).toHaveCount(1);
   await expect(row).toHaveAttribute("aria-current", "true");
-  await expect(row.locator(".name")).toHaveText("Untitled level");
-  await expect(row.locator(".tag")).toHaveText("Draft");
-  await expect(row.locator(".line")).toHaveText("HIRO · not saved to a file");
+  // a tile's words are its title and its line of state, with no tag
+  await expect(row.locator("span")).toHaveText(["Untitled level", "HIRO · not saved to a file"]);
   await expect(page.locator("#draftEmpty")).toBeHidden();
   await expect(page.locator("#chipLine b")).toHaveText("Untitled level");
   await expect(page.locator("#chipLine .tag")).toHaveText("Draft");
@@ -427,6 +426,7 @@ test("list and tiles switch the view once this browser holds two levels, and the
   const rows = page.locator("#draftRows > button");
   await expect(rows).toHaveCount(2);
   await expect(rows.locator(".state")).toHaveText(["not saved to a file", "not saved to a file"]);
+  await expect(rows.first().locator("span")).toHaveText(["Untitled level", "not saved to a file"]);
   await expect(rows.first()).toHaveAttribute("aria-current", "true");
   await expect(page.locator("#draftRows .tile")).toHaveCount(0);
   await expect(pressed).toHaveText("list");

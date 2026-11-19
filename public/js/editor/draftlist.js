@@ -383,7 +383,6 @@ function rowOf({ d, title }) {
   b.dataset.id = d.id;
   b.append(
     el("span", { className: "name", textContent: title }),
-    el("span", { className: "tag", textContent: "Draft" }),
     el("span", { className: "state", textContent: status(d) }),
   );
   b.setAttribute("aria-current", state.lvl?.draft === d.id ? "true" : "false");
@@ -398,7 +397,6 @@ const itemOf = ({ d, title, world }) => ({
   key: d.id,
   stamp: stampOf(d),
   title,
-  tag: "Draft",
   line: `${world} · ${status(d)}`,
   current: state.lvl?.draft === d.id,
   open: () => show(d.id, drafts.get(d.id).doc, { push: true }),

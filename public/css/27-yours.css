@@ -162,8 +162,7 @@
   color: var(--dim);
   font-size: 11.5px;
 }
-.drafts button[aria-current="true"] .state,
-.drafts button[aria-current="true"] .tag {
+.drafts button[aria-current="true"] .state {
   color: inherit;
   opacity: 0.8;
 }
