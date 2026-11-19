@@ -403,6 +403,7 @@ test("add to a bundle… makes a new bundle holding the level through its box, w
     { title: "Spiral campaign", author: "Ada", notes: "", levels: [id] },
   ]);
   await expect(page.locator("#draftUnbundle")).toHaveText("take out");
+  await expect(page.locator("#draftPlace")).toHaveText("Spiral campaign · level 1 of 1");
   await expect(page.locator("#draftSaveBundle")).toBeVisible();
   await expect(page.locator("#draftBundle")).toHaveText("move to another bundle…");
   await expect(page.locator("#draftBundle")).toHaveAttribute(
@@ -543,6 +544,8 @@ test("the card's up and down move a level a place, saying where it stands, the k
   await expect(rows.locator(".name")).toHaveText(["Spiral 3", "Spiral 2", "Spiral 1"]);
   await expect(rows.nth(2).locator('[data-act="up"]')).toBeFocused();
   await expect(page.locator("#say")).toHaveText("Moved Spiral 1 down, to level 3 of 3.");
+  // the Level card says where the level on screen then stands
+  await expect(page.locator("#draftPlace")).toHaveText("Spiral campaign · level 3 of 3");
   expect((await bundles(page))[0].levels).toEqual([ids[2], ids[1], ids[0]]);
   await written(page, (s) => s?.bundles[Object.keys(s.bundles)[0]].levels).toEqual([
     ids[2],
@@ -566,10 +569,12 @@ test("take out, on the card's row and on the Level card, leaves the level among 
   await expect(loose(page)).toHaveText(["Spiral 2"]);
   await expect(page.locator("#say")).toHaveText("Took Spiral 2 out of Spiral campaign.");
   // the Level card's button takes the shown level out and gives way to add to a bundle…
+  await expect(page.locator("#draftPlace")).toHaveText("Spiral campaign · level 1 of 2");
   await page.locator("#draftUnbundle").click();
   await expect(rows.locator(".name")).toHaveText(["Spiral 3"]);
   await expect(loose(page)).toHaveText(["Spiral 1", "Spiral 2"]);
   await expect(page.locator("#draftUnbundle")).toBeHidden();
+  await expect(page.locator("#draftPlace")).toBeHidden();
   await expect(page.locator("#draftBundle")).toBeFocused();
   await expect(page.locator("#draftBundle")).toHaveText("add to a bundle…");
   await expect(page.locator("#say")).toHaveText("Took Spiral 1 out of Spiral campaign.");

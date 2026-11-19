@@ -58,7 +58,7 @@ const MAP_FILE = `{
 }
 `;
 
-test("a draft saves as the map's file and as the game's file, and the row counts the changes since", async ({
+test("a draft saves as the map's file and as the game's file, and its tile and its card count the changes since", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -69,6 +69,7 @@ test("a draft saves as the map's file and as the game's file, and the row counts
   await page.locator("#draftTitle").fill("Spiral Two");
   const id = (await shown(page)).draft;
   const row = page.locator("#draftRows button .line");
+  const state = page.locator("#draftState");
   const saveJson = page.locator("#draftSaveJson");
   const saveKwl = page.locator("#draftSaveKwl");
   await expect(saveJson).toHaveText("save as .json");
@@ -84,15 +85,18 @@ test("a draft saves as the map's file and as the game's file, and the row counts
   expect(entry.saved).toBeGreaterThan(0);
   expect(entry.edits).toBe(0);
   await expect(row).toHaveText("HIRO · saved to a file");
+  await expect(state).toHaveText("HIRO · saved to a file");
   await expect(saveJson).not.toHaveClass(/unsaved/);
 
   await page.locator("#draftTime").fill("45");
   await page.locator("#draftTime").blur();
   await expect(row).toHaveText("HIRO · saved to a file · 1 change since");
+  await expect(state).toHaveText("HIRO · saved to a file · 1 change since");
   await expect(saveJson).toHaveClass(/unsaved/);
-  const note = page.locator("#draftCard .note");
+  // the note of the write stands at the end of the card's line of state
+  const note = page.locator("#draftCard .state > #draftState + .note");
   await expect(note).toBeVisible();
-  await expect(note).toHaveText("Saved in this browser");
+  await expect(note).toHaveText("Kept in this browser");
   await page.clock.runFor(300 + 2000);
   await expect(note).toBeHidden();
 
@@ -107,6 +111,17 @@ test("a draft saves as the map's file and as the game's file, and the row counts
   expect(back.report).toEqual([]);
   await expect(row).toHaveText("HIRO · saved to a file");
 
+  // the card's buttons stand in rows a reader hears by their captions
+  const card = page.locator("#draftCard");
+  for (const [caption, buttons] of [
+    ["File", ["save as .json", "save as .kwl"]],
+    ["Share", ["share…"]],
+    ["Game", ["patch the game's disc…"]],
+    ["Bundle", ["add to a bundle…"]],
+  ])
+    await expect(
+      card.getByRole("group", { name: caption, exact: true }).getByRole("button"),
+    ).toHaveText(buttons);
   // the row above holds the four openers alone, so the saves are on the card
   const actions = page.locator("#yours .actions button");
   await expect(actions).toHaveCount(4);

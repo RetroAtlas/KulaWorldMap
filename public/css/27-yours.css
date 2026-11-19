@@ -11,7 +11,6 @@
 }
 .yours .actions button,
 .yours .card .row button,
-.yours .card .circuit button,
 .yours .unread button {
   background: var(--panel-2);
   border: 1px solid var(--line);
@@ -24,7 +23,6 @@
 }
 .yours .actions button:hover,
 .yours .card .row button:hover,
-.yours .card .circuit button:hover,
 .yours .unread button:hover {
   border-color: var(--accent-dim);
 }
@@ -50,11 +48,6 @@
   vertical-align: 1px;
   border-radius: 50%;
   background: var(--accent);
-}
-.yours .card .note {
-  align-self: center;
-  color: var(--dim);
-  font-size: 11.5px;
 }
 .yours .card .report {
   margin: 0 0 8px;
@@ -209,7 +202,8 @@
   white-space: nowrap;
 }
 .drafts .bundle > summary .arrange,
-.yours .card .levels button {
+.yours .card .levels button,
+.yours .card button.quiet {
   display: inline-block;
   width: auto;
   text-align: center;
@@ -224,9 +218,14 @@
   cursor: pointer;
 }
 .drafts .bundle > summary .arrange:hover,
-.yours .card .levels button:enabled:hover {
+.yours .card .levels button:enabled:hover,
+.yours .card button.quiet:hover {
   border-color: var(--accent-dim);
   color: var(--ink);
+}
+.yours .card button.quiet.warn {
+  color: var(--warn);
+  border-color: var(--warn);
 }
 .drafts .members {
   display: flex;
@@ -380,6 +379,67 @@
 }
 .yours .card .row {
   margin-top: 8px;
+}
+.yours .card .state {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 0;
+  color: var(--dim);
+  font-size: 12px;
+}
+.yours .card .state > :first-child {
+  min-width: 0;
+}
+/* the words give way to the note, so that nothing under the line moves while it shows */
+.yours .card .state:has(.note:not([hidden])) > :first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.yours .card .note {
+  flex: none;
+  margin-left: auto;
+}
+.yours .card .named {
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+.yours .card .caption {
+  flex: 0 0 52px;
+  color: var(--dim);
+}
+.yours .card .acts {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+.yours .card .place {
+  flex: 1 0 100%;
+  overflow-wrap: anywhere;
+}
+.yours .card .last {
+  margin: 6px 0 3px;
+  padding: 6px 0 6px 60px;
+  border: solid var(--line);
+  border-width: 1px 0;
+}
+.yours .card .far {
+  margin-left: auto;
+}
+/* the button keeps the width of what it reads while it asks */
+.yours .card .far::after {
+  content: attr(data-asking);
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
 }
 .yours .card .circuits {
   padding: 3px 0;

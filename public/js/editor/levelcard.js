@@ -26,6 +26,7 @@ import { slotName } from "./shipped.js";
 import { readWith } from "./intake.js";
 import { openPatchDialog } from "./patchdialog.js";
 import { edit as step } from "./trail.js";
+import { placeLine, stateLine } from "./draftwords.js";
 import * as drafts from "./drafts.js";
 import { TYPE } from "../format/lattice.js";
 
@@ -87,8 +88,9 @@ export const bundleUnsaved = (b) =>
     return d !== null && unsaved(d);
   });
 
-/** Make `button` ask to be pressed again within a moment before it does `act`; returns what disarms it. */
+/** Make `button` ask to be pressed again within a moment before it does `act`, carrying what it reads while it asks; returns what disarms it. */
 export function twice(button, label, title, act) {
+  const asking = `${label}?`;
   let armed = 0;
   const disarm = () => {
     clearTimeout(armed);
@@ -99,9 +101,10 @@ export function twice(button, label, title, act) {
   };
   button.textContent = label;
   button.title = title;
+  button.dataset.asking = asking;
   button.onclick = () => {
     if (!armed) {
-      button.textContent = `${label}?`;
+      button.textContent = asking;
       button.title = `Press again to ${title.charAt(0).toLowerCase()}${title.slice(1)}`;
       button.classList.add("warn");
       armed = setTimeout(disarm, CONFIRM_MS);
@@ -186,6 +189,19 @@ function reportFold({ lines, repairs }) {
       lines.map((line) => el("li", { textContent: line })),
     ),
   );
+}
+
+/** A row of the card's buttons as a group named by its caption, which stands in the fields' own column. */
+function captioned(id, caption, ...controls) {
+  const row = el(
+    "div",
+    { className: "row named" },
+    el("span", { id, className: "caption", textContent: caption }),
+    el("div", { className: "acts" }, controls),
+  );
+  row.setAttribute("role", "group");
+  row.setAttribute("aria-labelledby", id);
+  return row;
 }
 
 /** The card's form for draft `id` in `box`, with the reader's report on it, if any, and `open`, which shows a draft the form makes. */
@@ -292,6 +308,13 @@ export function buildForm(id, box, { imported, open }) {
     edit({ invisibleFromAfar: afar.checked }, "changed the invisible blocks setting");
   const circuits = circuitRows(id);
   const plays = el("p", { id: "draftPlays", className: "plays" });
+  const stateText = el("span", { id: "draftState" });
+  const note = el("span", {
+    className: "note",
+    textContent: "Kept in this browser",
+    hidden: true,
+  });
+  let noteTimer = 0;
   const errors = el("p", { id: "draftErrors", className: "errors", hidden: true });
 
   const saveJson = el("button", {
@@ -303,6 +326,7 @@ export function buildForm(id, box, { imported, open }) {
   saveJson.onclick = () => saveAs(id, false);
   const saveKwl = el("button", {
     id: "draftSaveKwl",
+    className: "quiet",
     type: "button",
     textContent: "save as .kwl",
     title: "Save this level as the .kwl file the game loads",
@@ -333,15 +357,11 @@ export function buildForm(id, box, { imported, open }) {
     title: "Share this level by a link that carries it whole",
   });
   share.onclick = () => shareLevel(id, () => saveAs(id, false));
-  const note = el("span", {
-    className: "note",
-    textContent: "Saved in this browser",
-    hidden: true,
-  });
-  let noteTimer = 0;
 
+  const place = el("span", { id: "draftPlace", className: "place", hidden: true });
   const toBundle = el("button", {
     id: "draftBundle",
+    className: "quiet",
     type: "button",
     textContent: ADDING.label,
     title: ADDING.tip,
@@ -349,6 +369,7 @@ export function buildForm(id, box, { imported, open }) {
   toBundle.onclick = () => addToBundle(id);
   const unbundle = el("button", {
     id: "draftUnbundle",
+    className: "quiet",
     type: "button",
     textContent: "take out",
     title: "Take this level out of its bundle; the level stays",
@@ -363,13 +384,14 @@ export function buildForm(id, box, { imported, open }) {
   };
 
   const duplicate = el("button", {
+    className: "quiet",
     type: "button",
     textContent: "duplicate",
     title: "Make a copy of this level",
   });
   duplicate.onclick = () => open(drafts.duplicate(id), "Copied the level");
 
-  const del = el("button", { type: "button" });
+  const del = el("button", { className: "quiet far", type: "button" });
   const disarm = twice(del, "delete", "Delete this level from this browser", () => {
     const name = nameOf(drafts.get(id).doc);
     $("draftNew").focus();
@@ -382,20 +404,23 @@ export function buildForm(id, box, { imported, open }) {
     el("h3", { textContent: "Level" }),
     field("Title", title),
     source,
+    el("p", { className: "state" }, stateText, note),
+    errors,
+    captioned("draftFileCaption", "File", saveJson, saveKwl),
+    captioned("draftShareCaption", "Share", share),
+    captioned("draftGameCaption", "Game", patch),
+    captioned("draftBundleCaption", "Bundle", place, unbundle, toBundle, saveAsBundle),
+    el("div", { className: "row last" }, duplicate, del),
     field("Author", author),
     field("Notes", notes),
     field("World", world),
     field("Time", time),
     clock,
     field("Plays as", mode),
+    plays,
     el("label", { className: "check" }, hidden, " Hidden level"),
     el("label", { className: "check" }, afar, " Invisible blocks show from afar"),
     circuits.box,
-    plays,
-    errors,
-    el("div", { className: "row" }, saveJson, saveKwl, saveAsBundle, share, patch, note),
-    el("div", { className: "row" }, toBundle, unbundle),
-    el("div", { className: "row" }, duplicate, del),
   );
 
   const set = (control, value) => {
@@ -420,6 +445,7 @@ export function buildForm(id, box, { imported, open }) {
       afar.checked = !!d.doc.invisibleFromAfar;
       circuits.sync(d.doc);
       plays.textContent = playsAs(d.doc);
+      stateText.textContent = stateLine(worldName(d.doc.world), d);
       const n = validate(d.doc, skinsTable()?.hides, NAMES).filter((f) => f.level === ERROR).length;
       errors.hidden = n === 0;
       errors.textContent = n ? `${n} error${n === 1 ? "" : "s"}, listed under the level line` : "";
@@ -431,6 +457,10 @@ export function buildForm(id, box, { imported, open }) {
       toBundle.textContent = words.label;
       toBundle.title = words.tip;
       unbundle.hidden = !b;
+      place.hidden = !b;
+      place.textContent = b
+        ? placeLine(bundleName(b), b.levels.indexOf(id) + 1, b.levels.length)
+        : "";
     },
     wrote() {
       note.hidden = false;
@@ -582,7 +612,11 @@ function circuitRows(id) {
       markerColour({ type: TYPE.SWITCH, face: 0, variant: String(colour) }),
     );
     lamp.setAttribute("aria-hidden", "true");
-    const toggle = el("button", { id: `draftCircuit${colour}`, type: "button" });
+    const toggle = el("button", {
+      id: `draftCircuit${colour}`,
+      className: "quiet",
+      type: "button",
+    });
     toggle.setAttribute("aria-label", circuitPhrase(colour));
     toggle.onclick = () => {
       const d = drafts.get(id);

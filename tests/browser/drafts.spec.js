@@ -349,8 +349,12 @@ test("delete asks twice, and deleting the shown draft returns to the disc's leve
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   expect((await shown(page)).li).toBe(-1);
   const del = page.locator("#draftCard button", { hasText: /^delete/ });
+  await del.scrollIntoViewIfNeeded();
+  const box = await del.boundingBox();
   await del.click();
   await expect(del).toHaveText("delete?");
+  // the button keeps its box while it asks, so nothing moves under the pointer
+  expect(await del.boundingBox()).toEqual(box);
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   expect((await shown(page)).li).toBe(-1);
   await del.click();

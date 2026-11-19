@@ -231,9 +231,21 @@ A circuit's button is named for a reader by its colour, "green circuit", with wh
 
 The card announces none of its changes to the level's settings, where the panel does, so a change made from it clears what the panel last said.
 
-The card offers `duplicate` and `delete`.
+Under its title the card says what the level's tile says, the level's world and whether it is saved to a file with its count of changes, so "not saved to a file" stands beside the button that answers it.
 
-The card's `share…` opens a box with the link that carries the level whole, as Permalinks says, which holds the level as it is now and opens it framed to fit any window and turned as the map was turned when the box opened, with the slice kept and no block selected.
+For two seconds after each write to this browser that line ends in `Kept in this browser`, its words giving way to the note rather than wrapping, so nothing under the line moves while the note shows.
+
+The count of the errors the checks find stands under that line, in sight of `share…`, since a level with errors gets no link.
+
+The card's buttons stand between those lines and the card's other fields, in rows, each a group named by a caption in the fields' own column: File, Share, Game and Bundle.
+
+`save as .json`, `share…`, `patch the game's disc…` and `save as a bundle` are filled and the card's other buttons are quiet, with no fill and dim words, a circuit's button among them, so the only filled buttons of the card are ways out of this browser.
+
+`save as .kwl` is quiet beside `save as .json`, so the map's own file reads as the one to keep.
+
+`duplicate` and `delete` close the rows in a row of their own between two thin rules, `delete` at its far end and as wide as the `delete?` it reads while it asks to be pressed again, so arming it moves nothing.
+
+The Share row's `share…` opens a box with the link that carries the level whole, as Permalinks says, which holds the level as it is now and opens it framed to fit any window and turned as the map was turned when the box opened, with the slice kept and no block selected.
 
 The box copies the link, hands it to the system's share sheet where the browser has one, emails it, or saves the file instead.
 
@@ -251,7 +263,7 @@ A level the checks find errors in gets no link until they are fixed, only the fi
 
 A level whose link would run past 8,000 characters has the file put first, the box saying the level is too large for a link.
 
-The card's `save as .json` writes the draft as the map's own file and `save as .kwl` as the file the game loads, and for a level in a bundle `save as a bundle` writes the bundle as one file, its levels in order.
+The File row's `save as .json` writes the draft as the map's own file and `save as .kwl` as the file the game loads, and for a level in a bundle the Bundle row's `save as a bundle` writes the bundle as one file, its levels in order.
 
 `open a file…`, under `new level`, opens either file, or a level file from elsewhere, read for what it holds rather than by its name, as a new draft, saying what it had to repair, and a bundle file as new levels of your own gathered into a bundle.
 
@@ -263,9 +275,11 @@ It takes a patch the disc box made too, a PPF or an xdelta, which asks for the d
 
 `open a link…` beside it makes a level of your own out of a link that carries a level, the map's own or one shared from the community's level viewer, where following the map's link shows the level without keeping it.
 
-The card's `add to a bundle…` puts the level last in a bundle this browser holds or in a new one, a level standing in one bundle at most, and `take out` leaves it in none.
+The Bundle row's `add to a bundle…` puts the level last in a bundle this browser holds or in a new one, a level standing in one bundle at most, and `take out` leaves it in none.
 
 On a level that is in a bundle the button reads `move to another bundle…`, and its box is worded as a move and says which bundle the level leaves.
+
+The Bundle row of such a level opens on the bundle's title and the level's place in it, `Spiral campaign · level 2 of 3`, over `take out`, `move to another bundle…` and `save as a bundle`.
 
 A group's `arrange…` opens the bundle's card under its levels: the bundle's title, author and notes, its levels in play order to move up or down or take out, `save as a bundle` while the bundle holds a level, since a bundle file with no level would open as nothing, and `take apart`, which forgets the bundle and leaves its levels among your levels.
 
@@ -273,7 +287,7 @@ Your levels stay in this browser, written a moment after each change, and travel
 
 ### Patch the game's disc
 
-A draft goes onto the disc from its Level card, whose `patch the game's disc…` opens "Patch the game's disc", three steps in one box, and the box takes several of your levels as one patch.
+A draft goes onto the disc from the Game row of its Level card, whose `patch the game's disc…` opens "Patch the game's disc", three steps in one box, and the box takes several of your levels as one patch.
 
 Under its heading the box says what it does: it puts your levels in the game, in place of levels you choose, and makes a patch for your own disc image, or a patched copy of it, to play on an emulator.
 

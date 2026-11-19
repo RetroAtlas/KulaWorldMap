@@ -17,6 +17,7 @@ import { heldImage } from "./patchdialog.js";
 import { buildForm, bundleName, nameOf, signed, twice } from "./levelcard.js";
 import { buildBundleCard } from "./bundlecard.js";
 import { SORTS, grouping, matches, ordering } from "./draftsort.js";
+import { savedWords, stateLine } from "./draftwords.js";
 import * as drafts from "./drafts.js";
 
 // --- the state and the wiring --------------------------------------------------------------
@@ -208,12 +209,6 @@ function sync() {
   card(id, d);
 }
 
-const status = (d) => {
-  const base = d.saved === null ? "not saved to a file" : "saved to a file";
-  if (!d.edits) return base;
-  return `${base} · ${d.edits} change${d.edits === 1 ? "" : "s"}${d.saved === null ? "" : " since"}`;
-};
-
 /** A level's record for the order and the filter, its world by the name the map shows. */
 const recordOf = (d) => ({
   id: d.id,
@@ -383,7 +378,7 @@ function rowOf({ d, title }) {
   b.dataset.id = d.id;
   b.append(
     el("span", { className: "name", textContent: title }),
-    el("span", { className: "state", textContent: status(d) }),
+    el("span", { className: "state", textContent: savedWords(d) }),
   );
   b.setAttribute("aria-current", state.lvl?.draft === d.id ? "true" : "false");
   b.onclick = () => show(d.id, drafts.get(d.id).doc, { push: true });
@@ -397,7 +392,7 @@ const itemOf = ({ d, title, world }) => ({
   key: d.id,
   stamp: stampOf(d),
   title,
-  line: `${world} · ${status(d)}`,
+  line: stateLine(world, d),
   current: state.lvl?.draft === d.id,
   open: () => show(d.id, drafts.get(d.id).doc, { push: true }),
   paint: (canvas) => paintDraft(canvas, d.id),

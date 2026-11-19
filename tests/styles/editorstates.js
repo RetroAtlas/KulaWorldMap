@@ -37,14 +37,15 @@ export const editorStates = [
       stands: "#sidebar:has(#communityEmpty:not([hidden])) #draftNew",
     },
     {
-      name: "a level of your own, its card just saved",
+      name: "a level of your own, its card just saved with delete armed",
       ...RICH,
       async steps(page) {
         await page.fill("#draftTitle", "Rich II");
         // the save lands a moment after the change, and its note with it
         await page.clock.runFor(300);
+        await page.click("#draftCard .row .far");
       },
-      stands: "#draftCard .note:not([hidden])",
+      stands: "#draftCard:has(.note:not([hidden])) .row .far.warn",
     },
     {
       name: "a bundle unfolded in Your levels, its card open with take apart armed",

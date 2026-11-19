@@ -338,7 +338,7 @@ The card's title field takes at most 80 characters, and its time field any whole
 
 A line under the time field says what the clock starts at on each disc for the number the field holds, the figure that disc's HUD shows once its clock has ticked, as the level line gives it, since the discs count the file's number each its own way ([motion.md](motion.md)).
 
-The card's Plays as select writes `simon` through `setMeta` as one step, labelled "changed how the level plays", offering a bonus level or a Simon room while the level has no key, and shows an arcade level alone, disabled, where a key stands, since the keys decide and the flag waits, stored, for the last key to go; the sentence under the settings says the result, by `playsAs`.
+The card's Plays as select writes `simon` through `setMeta` as one step, labelled "changed how the level plays", offering a bonus level or a Simon room while the level has no key, and shows an arcade level alone, disabled, where a key stands, since the keys decide and the flag waits, stored, for the last key to go; the sentence under the select says the result, by `playsAs`.
 
 `new level` emits `edit-wanted` once the new draft is open, for the editor to turn its mode on; a copy and an opened file leave the mode as it is.
 
