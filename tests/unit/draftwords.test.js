@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { placeLine, playsLine, savedWords, stateLine } from "../../public/js/editor/draftwords.js";
+import {
+  bundleLine,
+  placeLine,
+  playsLine,
+  savedWords,
+  stateLine,
+} from "../../public/js/editor/draftwords.js";
 
 const level = (saved, edits) => ({ saved, edits });
 
@@ -42,4 +48,17 @@ test("how a level plays leaves the time out where none is given", () => {
 test("a level's place in its bundle is the bundle's title, then the level's number among the bundle's levels", () => {
   assert.equal(placeLine("Spiral campaign", 2, 3), "Spiral campaign · level 2 of 3");
   assert.equal(placeLine("Untitled bundle", 1, 1), "Untitled bundle · level 1 of 1");
+});
+
+test("a bundle's line of state is how many levels it holds, then how many of them are not saved to a file", () => {
+  assert.equal(bundleLine(3, 1), "3 levels · 1 not saved to a file");
+  assert.equal(bundleLine(3, 3), "3 levels · 3 not saved to a file");
+  assert.equal(bundleLine(12, 10), "12 levels · 10 not saved to a file");
+  assert.equal(bundleLine(1, 1), "1 level · 1 not saved to a file");
+});
+
+test("a bundle whose levels are all saved to a file says so, and a bundle with no level gives its count alone", () => {
+  assert.equal(bundleLine(3, 0), "3 levels · saved to a file");
+  assert.equal(bundleLine(1, 0), "1 level · saved to a file");
+  assert.equal(bundleLine(0, 0), "0 levels");
 });

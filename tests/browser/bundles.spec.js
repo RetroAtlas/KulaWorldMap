@@ -460,7 +460,7 @@ test("the box for a level in a bundle is worded as a move, says which bundle it 
   expect(errors).toEqual([]);
 });
 
-test("edit the bundle, on the bar under a group's heading, opens the bundle's card under its levels, whose fields write the bundle the bar's save then writes, and puts it away again", async ({
+test("edit the bundle, on the bar under a group's heading, opens the bundle's card under the bar and above its levels, whose fields write the bundle the bar's save then writes, and puts it away again", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -485,11 +485,21 @@ test("edit the bundle, on the bar under a group's heading, opens the bundle's ca
   await opener.click();
   await expect(card).toBeVisible();
   await expect(opener).toHaveAttribute("aria-expanded", "true");
+  await expect(fold.locator(".bar + .card + .members .tile")).toHaveCount(3);
   await expect(card.locator("h3")).toHaveText("Bundle");
   await expect(card.locator(".title")).toHaveValue("Spiral campaign");
   await expect(card.locator(".author")).toHaveValue("Ada");
   await expect(card.locator(".notes")).toHaveValue("Three up the wall.");
-  await expect(card.locator(".levels li .name")).toHaveText(["Spiral 1", "Spiral 2", "Spiral 3"]);
+  // the caption in sight names the list, whose rows open on their places
+  await expect(card.getByText("Levels, in play order")).toBeVisible();
+  const list = card.getByRole("list", { name: "Levels, in play order" });
+  await expect(list.locator("li .name")).toHaveText(["Spiral 1", "Spiral 2", "Spiral 3"]);
+  await expect(list.locator("li > :first-child")).toHaveText(["1", "2", "3"]);
+  // the line under the title follows a change of a level
+  const line = card.locator("label:has(.title) + .state");
+  await expect(line).toHaveText("3 levels · saved to a file");
+  await page.locator("#draftNotes").fill("Up the wall.");
+  await expect(line).toHaveText("3 levels · 1 not saved to a file");
   await card.locator(".title").fill("Spiral set");
   await expect(fold.locator("summary .name")).toHaveText("Spiral set");
   await card.locator(".author").fill("Grace");
@@ -592,6 +602,7 @@ test("take out, on the card's row and on the Level card, leaves the level among 
   await expect(rows).toHaveCount(0);
   await expect(fold.locator("summary .n")).toHaveText("0 levels");
   await expect(onBar(fold, "save the bundle")).toBeDisabled();
+  await expect(card.getByText("Levels, in play order")).toBeHidden();
   await expect(card.locator(".row button", { hasText: /^take apart/ })).toBeFocused();
   await expect(loose(page)).toHaveText(["Spiral 1", "Spiral 2", "Spiral 3"]);
   expect(errors).toEqual([]);
@@ -604,8 +615,14 @@ test("take apart asks to be pressed again, then forgets the bundle and leaves it
   const { fold, card } = await carded(page);
   const apart = card.locator(".row button", { hasText: /^take apart/ });
   await expect(apart).toHaveAttribute("title", "Keep the levels and forget the bundle");
+  // alone at the far end of the row that closes the card
+  const seat = await apart.boundingBox();
+  const row = await card.locator(".levels + .row").boundingBox();
+  expect(seat.x + seat.width).toBeCloseTo(row.x + row.width, 0);
   await apart.click();
   await expect(apart).toHaveText("take apart?");
+  // the button keeps its box while it asks, so nothing moves under the pointer
+  expect(await apart.boundingBox()).toEqual(seat);
   await expect(apart).toHaveAttribute(
     "title",
     "Press again to keep the levels and forget the bundle",

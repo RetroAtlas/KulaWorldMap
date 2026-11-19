@@ -1,11 +1,12 @@
-// The bundle's card, under its group among your levels: the form that sets the
-// bundle's title, author and notes and the order of its levels, takes a level
-// out or takes the bundle apart.
+// The bundle's card, under the bar of its group among your levels: the form
+// that sets the bundle's title, author and notes and the order of its levels,
+// takes a level out or takes the bundle apart.
 import { $, el } from "../viewer/ui/dom.js";
 import { say } from "../viewer/chrome/a11y.js";
 import { TEXT_MOST, TITLE_MOST } from "../format/project.js";
 import { UNTITLED_BUNDLE } from "../format/bundle.js";
-import { bundleName, field, nameOf, some, twice } from "./levelcard.js";
+import { bundleName, field, nameOf, some, twice, unsavedIn } from "./levelcard.js";
+import { bundleLine } from "./draftwords.js";
 import * as drafts from "./drafts.js";
 
 const levelName = (l) => nameOf(drafts.get(l).doc);
@@ -47,10 +48,16 @@ export function buildBundleCard(id, box) {
     title: "A few words about the bundle, shown with it wherever it goes",
   });
   typed(notes, "notes");
+  const state = el("p", { className: "state" });
+  const caption = el("p", {
+    id: `bundleOrder${id}`,
+    className: "order",
+    textContent: "Levels, in play order",
+  });
   const levels = el("ol", { className: "levels" });
-  levels.setAttribute("aria-label", "The bundle's levels in play order");
+  levels.setAttribute("aria-labelledby", caption.id);
 
-  const apart = el("button", { type: "button" });
+  const apart = el("button", { className: "quiet far", type: "button" });
   const disarm = twice(apart, "take apart", "Keep the levels and forget the bundle", () => {
     const b = drafts.bundle(id);
     if (!b) return;
@@ -65,10 +72,12 @@ export function buildBundleCard(id, box) {
   box.append(
     el("h3", { textContent: "Bundle" }),
     field("Title", title),
+    state,
     field("Author", author),
     field("Notes", notes),
+    caption,
     levels,
-    el("div", { className: "row" }, apart),
+    el("div", { className: "row last" }, apart),
   );
 
   const set = (control, value) => {
@@ -79,6 +88,8 @@ export function buildBundleCard(id, box) {
       set(title, b.title);
       set(author, b.author);
       set(notes, b.notes);
+      state.textContent = bundleLine(b.levels.length, unsavedIn(b));
+      caption.hidden = !b.levels.length;
       list(levels, id, b);
     },
     drop: disarm,
@@ -111,6 +122,7 @@ function row(id, l, i, n) {
   const li = el(
     "li",
     {},
+    el("span", { className: "num", textContent: String(i + 1) }),
     el("span", { className: "name", textContent: name }),
     button("up", "up", `Move ${name} up`, i === 0),
     button("down", "down", `Move ${name} down`, i === n - 1),

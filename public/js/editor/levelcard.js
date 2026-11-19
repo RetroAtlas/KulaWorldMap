@@ -82,12 +82,12 @@ export const field = (text, control) => el("label", {}, el("span", { textContent
 const cut = (text) => [...text].slice(0, TITLE_LENGTH).join("");
 const unsaved = (d) => d.saved === null || d.edits > 0;
 export const bundleName = (b) => b.title || UNTITLED_BUNDLE;
-/** Whether a level of the bundle is unsaved, or has changes since its save. */
-export const bundleUnsaved = (b) =>
-  b.levels.some((l) => {
+/** How many levels of the bundle are not saved to a file: never saved, or changed since their save. */
+export const unsavedIn = (b) =>
+  b.levels.filter((l) => {
     const d = drafts.get(l);
     return d !== null && unsaved(d);
-  });
+  }).length;
 
 /** Make `button` ask to be pressed again within a moment before it does `act`, carrying what it reads while it asks; returns what disarms it. */
 export function twice(button, label, title, act) {

@@ -1,4 +1,4 @@
-// The words Your levels says of a level, over titles and counts with no page in them.
+// The words Your levels says of a level and of a bundle, over titles and counts with no page in them.
 
 /** Whether a level is saved to a file and, once it has changes, how many, since its save where it has one. */
 export function savedWords({ saved, edits }) {
@@ -20,3 +20,10 @@ export function playsLine(kind, hidden, clock = null) {
 
 /** A level's place in its bundle: the bundle's title, then where the level stands among the bundle's levels, counted from one. */
 export const placeLine = (bundle, place, count) => `${bundle} · level ${place} of ${count}`;
+
+/** A bundle's line of state: how many levels it holds, then how many of them are not saved to a file, or that every one is; the count alone where it holds none. */
+export function bundleLine(count, unsaved) {
+  const levels = `${count} level${count === 1 ? "" : "s"}`;
+  if (!count) return levels;
+  return `${levels} · ${unsaved ? `${unsaved} not saved` : "saved"} to a file`;
+}

@@ -299,7 +299,13 @@ On a level that is in a bundle the button reads `move to another bundle…`, and
 
 The Bundle row of such a level opens on the bundle's title and the level's place in it, `Spiral campaign · level 2 of 3`, over `take out` and `move to another bundle…`.
 
-The bar's `edit the bundle` opens the bundle's card under its levels, and pressed again puts it away: the bundle's title, author and notes, its levels in play order to move up or down or take out, and `take apart`, which forgets the bundle and leaves its levels among your levels.
+The bar's `edit the bundle` opens the bundle's card directly under the bar, above the bundle's levels, and pressed again puts it away.
+
+The card reads in the Level card's order: the bundle's title, a line of state under it, its author and notes, then its levels in play order under the caption `Levels, in play order`, each row opening on the level's place before its name, to move up or down or take out, and last `take apart`, which forgets the bundle and leaves its levels among your levels.
+
+The line of state says how many levels the bundle holds and how many of them are not saved to a file, counted as the heading's dot counts them, `3 levels · 1 not saved to a file`, or `3 levels · saved to a file` where none is, and the count alone for a bundle with no level.
+
+`take apart` stands alone at the far end of a row of its own between two thin rules, as wide as the `take apart?` it reads while it asks to be pressed again, as the Level card's `delete` does.
 
 Folding the group puts the card away too, since the card stands inside it.
 

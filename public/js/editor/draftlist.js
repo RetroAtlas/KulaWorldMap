@@ -17,11 +17,11 @@ import { heldImage } from "./patchdialog.js";
 import {
   buildForm,
   bundleName,
-  bundleUnsaved,
   nameOf,
   saveBundle,
   signed,
   twice,
+  unsavedIn,
 } from "./levelcard.js";
 import { buildBundleCard } from "./bundlecard.js";
 import { SORTS, grouping, matches, ordering } from "./draftsort.js";
@@ -323,8 +323,8 @@ function foldOf(b) {
       { className: "bundle" },
       el("summary", {}, name, n, note, by),
       el("div", { className: "bar" }, save, edit),
-      members,
       card,
+      members,
     );
     fold.dataset.bundle = b.id;
     g = { fold, name, n, note, by, save, edit, members, card, form: null, grid: null, levels: [] };
@@ -339,7 +339,7 @@ function foldOf(b) {
   if (shown !== undefined && b.levels.includes(shown) && !g.levels.includes(shown))
     g.fold.open = true;
   g.levels = [...b.levels];
-  const unsaved = bundleUnsaved(b);
+  const unsaved = unsavedIn(b) > 0;
   g.name.textContent = bundleName(b);
   g.n.textContent = `${b.levels.length} level${b.levels.length === 1 ? "" : "s"}`;
   g.n.classList.toggle("unsaved", unsaved);
@@ -351,7 +351,7 @@ function foldOf(b) {
   return g;
 }
 
-/** Show the bundle's card under its levels, built on the first press, or put it away again. */
+/** Show the bundle's card under its bar, built on the first press, or put it away again. */
 function toggleCard(g, id) {
   const b = drafts.bundle(id);
   if (!b) return;
