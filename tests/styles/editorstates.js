@@ -48,6 +48,12 @@ export const editorStates = [
       stands: "#draftCard:has(.note:not([hidden])) .row .far.warn",
     },
     {
+      name: "a level with a key, How it plays unfolded by a press",
+      ...KEYED,
+      steps: (page) => page.click("#draftHow > summary"),
+      stands: "#draftHow[open] #draftMode:disabled",
+    },
+    {
       name: "a bundle unfolded in Your levels, its card open with take apart armed",
       ...SHELF,
       link: own(3),

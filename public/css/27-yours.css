@@ -441,6 +441,19 @@
   overflow: hidden;
   visibility: hidden;
 }
+.yours .card .how {
+  margin-top: 3px;
+}
+.yours .card .how > summary {
+  padding: 3px 0;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.yours .card .digest {
+  margin-left: 6px;
+  color: var(--dim);
+  font-size: 11.5px;
+}
 .yours .card .circuits {
   padding: 3px 0;
   font-size: 12.5px;

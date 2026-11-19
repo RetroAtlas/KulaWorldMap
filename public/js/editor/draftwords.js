@@ -10,5 +10,13 @@ export function savedWords({ saved, edits }) {
 /** A level's line of state: its world by the name the map shows, then whether it is saved. */
 export const stateLine = (world, level) => `${world} · ${savedWords(level)}`;
 
+const PLAYS = { arcade: "arcade level", bonus: "bonus level", simon: "Simon room" };
+
+/** How a level plays, in a few words: the kind of level it plays as, `hidden` before it where it is hidden, then the time its clock starts at where one is given. */
+export function playsLine(kind, hidden, clock = null) {
+  const how = `${hidden ? "hidden " : ""}${PLAYS[kind]}`;
+  return clock === null ? how : `${how} · time ${clock}`;
+}
+
 /** A level's place in its bundle: the bundle's title, then where the level stands among the bundle's levels, counted from one. */
 export const placeLine = (bundle, place, count) => `${bundle} · level ${place} of ${count}`;

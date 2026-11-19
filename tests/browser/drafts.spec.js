@@ -85,6 +85,8 @@ test("Your levels folds under its heading: closed at first, open once a level of
 }) => {
   const errors = trackErrors(page);
   const fold = page.locator("#yoursFold");
+  // the fold's own summary, apart from the summary of a fold that stands inside it
+  const summary = fold.locator(":scope > summary");
   const isOpen = () => fold.evaluate((d) => d.open);
   // the fold's state reaches the store on the toggle event, a moment after the click
   const kept = (value) =>
@@ -95,7 +97,7 @@ test("Your levels folds under its heading: closed at first, open once a level of
   expect(await isOpen()).toBe(false);
   await settle(page);
   await expect(page.locator("#draftNew")).toBeVisible();
-  await fold.locator("summary").click();
+  await summary.click();
   await expect(page.locator("#draftNew")).toBeHidden();
   await kept("closed");
   await page.reload();
@@ -108,7 +110,7 @@ test("Your levels folds under its heading: closed at first, open once a level of
   expect(await isOpen()).toBe(true);
   await expect(page.locator("#yoursCount")).toHaveText("1");
   // closed while editing, it stays closed through the edits
-  await fold.locator("summary").click();
+  await summary.click();
   await expect(page.locator("#draftRows button")).toBeHidden();
   await kept("closed");
   await page.evaluate(async () => {
@@ -124,7 +126,7 @@ test("Your levels folds under its heading: closed at first, open once a level of
   await page.reload();
   await expect(page.locator("#yoursCount")).toHaveText("1");
   expect(await isOpen()).toBe(false);
-  await fold.locator("summary").click();
+  await summary.click();
   await kept("open");
   await page.reload();
   await expect(page.locator("#yoursCount")).toHaveText("1");

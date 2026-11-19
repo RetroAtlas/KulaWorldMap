@@ -152,6 +152,8 @@ test("the Level card lets a level with no key play as a bonus level or a Simon r
   const mode = page.locator("#draftMode");
   const options = mode.locator("option");
   const plays = page.locator("#draftPlays");
+  // the line the settings fold under sums the level up in the options' words
+  const line = page.locator("#draftHow > summary");
   const errorLine = page.locator("#draftErrors");
   await expect(mode).toHaveAccessibleName("Plays as");
   await expect(mode).toBeEnabled();
@@ -160,6 +162,7 @@ test("the Level card lets a level with no key play as a bonus level or a Simon r
   await expect(mode).toHaveAttribute("title", NO_KEY);
   await expect(mode).toHaveAccessibleDescription(NO_KEY);
   await expect(plays).toHaveText("Plays as a bonus level since it has no key.");
+  await expect(line).toHaveText("How it plays bonus level · time 83");
   await expect(errorLine).toBeHidden();
   if ((await page.locator("#editBtn").getAttribute("aria-pressed")) !== "true")
     await page.keyboard.press("w");
@@ -169,6 +172,7 @@ test("the Level card lets a level with no key play as a bonus level or a Simon r
   await mode.selectOption("simon");
   expect((await docOf(page, id)).simon).toBe(true);
   await expect(plays).toHaveText("Plays as a Simon room.");
+  await expect(line).toHaveText("How it plays Simon room · time 83");
   await expect(page.locator("#say")).toBeEmpty();
   expect(await steps(page)).toEqual({ past: before.past + 1, future: 0 });
   await page.locator("#cv").focus();
@@ -213,6 +217,7 @@ test("the Level card lets a level with no key play as a bonus level or a Simon r
   await expect(plays).toHaveText(
     "Plays as a hidden level, with the glass ball on half-seen blocks.",
   );
+  await expect(line).toHaveText("How it plays hidden arcade level · time 83");
 
   await faced(page, 0, null);
   await expect(errorLine).toBeVisible();
@@ -393,6 +398,8 @@ test("the card's time field takes the numbers the file can hold and says when it
   expect((await shown(page)).time).toBe(200);
   await expect(page.locator("#chipLine")).toContainText("time 167");
   await expect(clock).toHaveText("The clock starts at 167 on US, 200 on EU and 200 on JP.");
+  // the line the settings fold under gives the clock as the level line does
+  await expect(page.locator("#draftHow > summary")).toContainText("time 167");
 
   const title = page.locator("#draftTitle");
   await expect(title).toHaveAttribute("maxlength", "80");
@@ -400,5 +407,37 @@ test("the card's time field takes the numbers the file can hold and says when it
   await title.pressSequentially("x".repeat(85));
   await expect(title).toHaveValue("x".repeat(80));
   await expect(page.locator("#draftRows button .name")).toHaveText("x".repeat(80));
+  expect(errors).toEqual([]);
+});
+
+test("How it plays folds the level's settings under one line, closed until it is pressed and then kept as left for the next level and the next visit", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const fold = page.locator("#draftHow");
+  const time = page.locator("#draftTime");
+  const kept = () => page.evaluate(() => localStorage.getItem("kula.plays"));
+  await page.goto(EDIT);
+  await settle(page);
+  // the suite works the fold open, so a first visit's browser is one that keeps nothing of it
+  await page.evaluate(() => localStorage.removeItem("kula.plays"));
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await expect(fold).not.toHaveAttribute("open");
+  await expect(time).toBeHidden();
+  await expect(page.locator("#draftWorld")).toBeVisible();
+  await fold.locator("summary").click();
+  await expect(time).toBeVisible();
+  // the fold's state reaches the store on the toggle event, a moment after the press
+  await expect.poll(kept).toBe("open");
+  // a card is built afresh for each level, and opens as the card before it was left
+  await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(2);
+  await expect(fold).toHaveAttribute("open");
+  await expect(time).toBeVisible();
+  await page.reload();
+  await expect(page.locator("#draftRows button")).toHaveCount(2);
+  await expect(fold).toHaveAttribute("open");
+  await expect(time).toBeVisible();
   expect(errors).toEqual([]);
 });

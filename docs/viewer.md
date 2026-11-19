@@ -225,7 +225,13 @@ For the shown draft a Level card edits its title, author, notes and world, its t
 
 The name typed into Author is remembered in this browser and given to every level `new level` makes and to every copy of one of the game's levels, while a copy of a draft, of a level that came by its link or of a community level, and a level opened from a file, keep the author they have.
 
-Under the settings Circuits lists the four colours, whether each starts on or off, which its button turns over, and how many switches, teleporters and lasers of it the level has, so a colour's starting state is set beside the level's other settings.
+The card's time, Plays as, its two switches and Circuits fold under one line after World, `How it plays`, since most visits change none of them.
+
+The line sums them up in dim words after its name, how the level plays in the words Plays as offers, `hidden` before them on a hidden level, and the level's time as the level line gives it for the disc shown: `bonus level · time 83`.
+
+The fold is closed until it is pressed and then stays as it was left, for every level and from one visit to the next.
+
+Last in the fold Circuits lists the four colours, whether each starts on or off, which its button turns over, and how many switches, teleporters and lasers of it the level has, so a colour's starting state is set beside the level's other settings.
 
 A circuit's button is named for a reader by its colour, "green circuit", with whether it starts on in whether it is pressed, since "starts on" is the state and not the name, and the swatch is there for the eye alone.
 
@@ -765,13 +771,14 @@ The planner hands play the route standing through `current` in `js/viewer/chrome
 The viewer tells the editor, the planner and play what has changed through the `emit`/`on` pair, and they tell it and each other there, by these events:
 
 - `level-changed` and `level-updated`, which the funnel says with the level's place as it installs a level, the second where the install is an update, and which the editor, the planner and play follow as the chrome beside the map does, the search building a list narrowed to the level anew on either.
-- `link-opening`, which the funnel says as a link opens, once the link's level is installed and before its view is laid, on which play lets the ball go.
+- `link-opening`, which the funnel says as a link opens, once the link's level is installed and before its view is laid, on which play lets the ball go and the Level card gives the level's time in the fold's line as the link's disc counts it.
 - `selection-changed`, which the panel says as the cell it shows changes or it closes, and which the editor follows.
 - `go-to`, which the panel says with the cell a click on a name in it leads to, on which the search finds that cell and play centres the view there and lets the ball go.
 - `show-changed`, which the sidebar says with a switch's key as it is turned and the level line as its note folds, on which play puts the dust away as its switch goes off.
 - `density-changed`, which the frame says once the canvas is sized again for a change in the screen's pixel density, on which whatever paints an icon or a tile paints it again.
 - `atlas-loaded`, which `js/viewer/draw/atlas.js` says with the world as that world's textures land, and again as the disc's sheets are drawn over them, on which the editor draws its palette, its icons and the tiles of that world's levels among your levels again.
 - `slice-changed`, which whatever moves the slice says, play among them as it takes the view and gives it back, and which the slice's control follows.
+- `release-changed`, which the disc's bar says with the disc as a press chooses another and never for a disc a link brings, on which the Level card gives the level's time in the fold's line as that disc counts it.
 - `course-changed`, which the planner says with the route as it changes, on which Follow and Keep let go of a route that no longer stands.
 - `editing-changed`, which the editor says as editing turns on or off, on which the planner drops the refusal its strip shows.
 - `drafts-moved`, which the editor says with the ids it moves drafts from and to, on which the planner moves the routes it keeps for those drafts to their new ids.

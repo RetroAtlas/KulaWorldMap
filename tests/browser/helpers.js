@@ -30,6 +30,15 @@ export async function settle(page) {
     }
     // the suite works "Your levels" open; the fold itself has checks of its own
     document.getElementById("yoursFold").open = true;
+    // and the Level card's "How it plays" open, a fold with a check of its own too: the key opens
+    // every card built from here on, and a card that stands already is opened where it stands
+    try {
+      localStorage.setItem("kula.plays", "open");
+    } catch {
+      /* a browser with no storage keeps the fold as each card finds it */
+    }
+    const how = document.getElementById("draftHow");
+    if (how) how.open = true;
   });
 }
 

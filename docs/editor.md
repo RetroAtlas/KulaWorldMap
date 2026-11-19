@@ -340,6 +340,12 @@ A line under the time field says what the clock starts at on each disc for the n
 
 The card's Plays as select writes `simon` through `setMeta` as one step, labelled "changed how the level plays", offering a bonus level or a Simon room while the level has no key, and shows an arcade level alone, disabled, where a key stands, since the keys decide and the flag waits, stored, for the last key to go; the sentence under the select says the result, by `playsAs`.
 
+The words of the line the card's settings fold under, How it plays, are `playsLine` in `public/js/editor/draftwords.js` over the kind of level, whether it is hidden and `levelClock` for the disc shown.
+
+A change of disc draws a draft's level line again and installs nothing, so the card says those words again on `release-changed`, which only a press of the disc's bar says, and on `link-opening`, since a link, Back and Forward change the disc with no press.
+
+The fold keeps whether it is open under `localStorage["kula.plays"]`, as the fold of Your levels does under `kula.yours`, read at every build of the card, since a card is built afresh for each level, and written at every toggle.
+
 `new level` emits `edit-wanted` once the new draft is open, for the editor to turn its mode on; a copy and an opened file leave the mode as it is.
 
 ### Reading the store

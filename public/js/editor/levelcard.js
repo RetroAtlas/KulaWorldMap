@@ -26,7 +26,7 @@ import { slotName } from "./shipped.js";
 import { readWith } from "./intake.js";
 import { openPatchDialog } from "./patchdialog.js";
 import { edit as step } from "./trail.js";
-import { placeLine, stateLine } from "./draftwords.js";
+import { placeLine, playsLine, stateLine } from "./draftwords.js";
 import * as drafts from "./drafts.js";
 import { TYPE } from "../format/lattice.js";
 
@@ -35,6 +35,7 @@ const CONFIRM_MS = 4000;
 const NOTE_MS = 2000;
 const TITLE_LENGTH = 80;
 const AUTHOR = "kula.author";
+const HOW = "kula.plays";
 const TIME_RANGE = `The time is from 1 to ${TIME_LIMIT}.`;
 const GAME_FILE = "application/octet-stream";
 const NO_KEY = "How the game plays the level while it has no key";
@@ -140,6 +141,24 @@ function rememberAuthor(name) {
 export function signed(doc) {
   const author = rememberedAuthor();
   return doc.author || !author ? doc : setMeta(doc, { author });
+}
+
+// --- the fold over how the level plays -----------------------------------------------------
+/** Whether the fold was left open, by any card of this browser. */
+function howKept() {
+  try {
+    return localStorage.getItem(HOW) === "open";
+  } catch {
+    return false;
+  }
+}
+
+function keepHow(open) {
+  try {
+    localStorage.setItem(HOW, open ? "open" : "closed");
+  } catch {
+    /* ignore */
+  }
 }
 
 // --- the form ------------------------------------------------------------------------------
@@ -308,6 +327,7 @@ export function buildForm(id, box, { imported, open }) {
     edit({ invisibleFromAfar: afar.checked }, "changed the invisible blocks setting");
   const circuits = circuitRows(id);
   const plays = el("p", { id: "draftPlays", className: "plays" });
+  const digest = el("span", { className: "digest" });
   const stateText = el("span", { id: "draftState" });
   const note = el("span", {
     className: "note",
@@ -399,6 +419,21 @@ export function buildForm(id, box, { imported, open }) {
     say(`Deleted ${name}. ${describeLevel(state.lvl)}`);
   });
 
+  // A card is built for each level, so each reads how the fold was left.
+  const how = el(
+    "details",
+    { id: "draftHow", className: "how", open: howKept() },
+    el("summary", {}, "How it plays ", digest),
+    field("Time", time),
+    clock,
+    field("Plays as", mode),
+    plays,
+    el("label", { className: "check" }, hidden, " Hidden level"),
+    el("label", { className: "check" }, afar, " Invisible blocks show from afar"),
+    circuits.box,
+  );
+  how.addEventListener("toggle", () => keepHow(how.open));
+
   box.append(
     imported?.id === id && imported.lines.length ? reportFold(imported) : [],
     el("h3", { textContent: "Level" }),
@@ -414,13 +449,7 @@ export function buildForm(id, box, { imported, open }) {
     field("Author", author),
     field("Notes", notes),
     field("World", world),
-    field("Time", time),
-    clock,
-    field("Plays as", mode),
-    plays,
-    el("label", { className: "check" }, hidden, " Hidden level"),
-    el("label", { className: "check" }, afar, " Invisible blocks show from afar"),
-    circuits.box,
+    how,
   );
 
   const set = (control, value) => {
@@ -440,7 +469,13 @@ export function buildForm(id, box, { imported, open }) {
       clock.hidden = !at.length;
       clock.textContent = at.length ? `The clock starts at ${listed(at)}.` : "";
       const key = keyed(d.doc);
-      offer(key, key ? "arcade" : d.doc.simon ? "simon" : "bonus");
+      const kind = key ? "arcade" : d.doc.simon ? "simon" : "bonus";
+      offer(key, kind);
+      digest.textContent = playsLine(
+        kind,
+        !!d.doc.hidden,
+        d.doc.time === undefined ? null : levelClock(d.doc),
+      );
       hidden.checked = !!d.doc.hidden;
       afar.checked = !!d.doc.invisibleFromAfar;
       circuits.sync(d.doc);

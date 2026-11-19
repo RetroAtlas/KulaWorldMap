@@ -71,6 +71,8 @@ export function wireDrafts() {
     unfold();
   });
   on("level-updated", sync);
+  on("release-changed", sync);
+  on("link-opening", sync);
   sync();
 }
 

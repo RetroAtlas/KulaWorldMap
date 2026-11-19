@@ -454,10 +454,17 @@ test("a draft on screen keeps the bar live, a press changes the points its line 
   await expect(page.locator("#draftRows button")).toHaveCount(1);
   await expect(page.locator("#chipLine .tag")).toHaveText("Draft");
   const before = await points(page);
+  const clock = page.locator("#chipLine .t");
+  const usClock = await clock.textContent();
   await expect(bar(page).locator("button:disabled")).toHaveCount(0);
   await press(page, "eu");
   await expect(pressed(page)).toHaveText("EU");
   await expect.poll(() => points(page)).toBe(before - 200);
+  // the Level card's line for how the level plays gives the clock as the level line then does
+  await expect(clock).not.toHaveText(usClock);
+  await expect(page.locator("#draftHow .digest")).toHaveText(
+    new RegExp(` · ${await clock.textContent()}$`),
+  );
   await expect(page.locator("#chipLine .tag")).toHaveText(["Draft", "EU"]);
   await expect(page.locator("#cv")).toHaveAttribute(
     "aria-label",
@@ -466,6 +473,7 @@ test("a draft on screen keeps the bar live, a press changes the points its line 
   expect(await shown(page)).toMatchObject({ release: "eu", li: -1, draft: 1 });
   await page.goBack();
   await expect(pressed(page)).toHaveText("US");
+  await expect(page.locator("#draftHow .digest")).toHaveText(new RegExp(` · ${usClock}$`));
   await expect(page.locator("#cv")).toHaveAttribute("aria-label", /^Draft, /);
 });
 

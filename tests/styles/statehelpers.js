@@ -53,7 +53,7 @@ const row = (kind, n, y) =>
 export const ONE = kept({ 1: entry(level("HIRO", "Alpha"), 1) });
 
 // blocks that between them bring up every part of the Level card and of the panel's form
-export const RICH = kept({
+const rich = kept({
   1: entry(
     built(
       "Rich",
@@ -76,6 +76,8 @@ export const RICH = kept({
     1,
   ),
 });
+// with how it plays unfolded on the card, as a visit that opened it leaves it
+export const RICH = { ...rich, seed: { ...rich.seed, "kula.plays": "open" } };
 
 export const KEYED = kept({
   1: entry(
