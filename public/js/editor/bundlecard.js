@@ -1,11 +1,11 @@
 // The bundle's card, under its group among your levels: the form that sets the
 // bundle's title, author and notes and the order of its levels, takes a level
-// out, saves the bundle as one file or takes it apart.
+// out or takes the bundle apart.
 import { $, el } from "../viewer/ui/dom.js";
 import { say } from "../viewer/chrome/a11y.js";
 import { TEXT_MOST, TITLE_MOST } from "../format/project.js";
 import { UNTITLED_BUNDLE } from "../format/bundle.js";
-import { bundleName, bundleUnsaved, field, nameOf, saveBundle, some, twice } from "./levelcard.js";
+import { bundleName, field, nameOf, some, twice } from "./levelcard.js";
 import * as drafts from "./drafts.js";
 
 const levelName = (l) => nameOf(drafts.get(l).doc);
@@ -50,12 +50,6 @@ export function buildBundleCard(id, box) {
   const levels = el("ol", { className: "levels" });
   levels.setAttribute("aria-label", "The bundle's levels in play order");
 
-  const save = el("button", {
-    type: "button",
-    textContent: "save as a bundle",
-    title: "Save the bundle, every level of it in order, as one file",
-  });
-  save.onclick = () => saveBundle(id);
   const apart = el("button", { type: "button" });
   const disarm = twice(apart, "take apart", "Keep the levels and forget the bundle", () => {
     const b = drafts.bundle(id);
@@ -74,7 +68,7 @@ export function buildBundleCard(id, box) {
     field("Author", author),
     field("Notes", notes),
     levels,
-    el("div", { className: "row" }, save, apart),
+    el("div", { className: "row" }, apart),
   );
 
   const set = (control, value) => {
@@ -85,8 +79,6 @@ export function buildBundleCard(id, box) {
       set(title, b.title);
       set(author, b.author);
       set(notes, b.notes);
-      save.disabled = !b.levels.length;
-      save.classList.toggle("unsaved", bundleUnsaved(b));
       list(levels, id, b);
     },
     drop: disarm,

@@ -352,17 +352,6 @@ export function buildForm(id, box, { imported, open }) {
     title: "Save this level as the .kwl file the game loads",
   });
   saveKwl.onclick = () => saveAs(id, true);
-  const saveAsBundle = el("button", {
-    id: "draftSaveBundle",
-    type: "button",
-    textContent: "save as a bundle",
-    title: "Save the bundle this level is in, every level of it in order, as one file",
-    hidden: true,
-  });
-  saveAsBundle.onclick = () => {
-    const b = bundleOf(id);
-    if (b) saveBundle(b.id);
-  };
   const patch = el("button", {
     id: "draftPatch",
     type: "button",
@@ -444,7 +433,7 @@ export function buildForm(id, box, { imported, open }) {
     captioned("draftFileCaption", "File", saveJson, saveKwl),
     captioned("draftShareCaption", "Share", share),
     captioned("draftGameCaption", "Game", patch),
-    captioned("draftBundleCaption", "Bundle", place, unbundle, toBundle, saveAsBundle),
+    captioned("draftBundleCaption", "Bundle", place, unbundle, toBundle),
     el("div", { className: "row last" }, duplicate, del),
     field("Author", author),
     field("Notes", notes),
@@ -486,8 +475,6 @@ export function buildForm(id, box, { imported, open }) {
       errors.textContent = n ? `${n} error${n === 1 ? "" : "s"}, listed under the level line` : "";
       saveJson.classList.toggle("unsaved", unsaved(d));
       const b = bundleOf(id);
-      saveAsBundle.hidden = !b;
-      saveAsBundle.classList.toggle("unsaved", b !== null && bundleUnsaved(b));
       const words = b ? MOVING : ADDING;
       toBundle.textContent = words.label;
       toBundle.title = words.tip;

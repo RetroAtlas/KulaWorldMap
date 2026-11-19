@@ -39,7 +39,7 @@
   color: var(--warn);
   border-color: var(--warn);
 }
-.yours .card .row .unsaved::after {
+.yours .unsaved::after {
   content: "";
   display: inline-block;
   width: 6px;
@@ -161,8 +161,9 @@
 }
 .drafts .bundle > summary {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 0 8px;
   padding: 4px 6px;
   border-radius: 6px;
   list-style: none;
@@ -189,19 +190,28 @@
   margin: -3px 3px 0 1px;
   transform: rotate(45deg);
 }
-.drafts .bundle > summary .by {
-  color: var(--dim);
-  font-size: 11.5px;
-  min-width: 0;
-  overflow-wrap: anywhere;
+.drafts .bundle > summary .name {
+  flex: 1 1 0;
 }
 .drafts .bundle > summary .n {
-  margin-left: auto;
   color: var(--dim);
   font-size: 11.5px;
   white-space: nowrap;
 }
-.drafts .bundle > summary .arrange,
+.drafts .bundle > summary .by {
+  flex: 0 0 100%;
+  padding-left: 19px;
+  color: var(--dim);
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+.drafts .bundle > .bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 6px 25px;
+}
+.drafts .bar button,
 .yours .card .levels button,
 .yours .card button.quiet {
   display: inline-block;
@@ -217,7 +227,7 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.drafts .bundle > summary .arrange:hover,
+.drafts .bar button:enabled:hover,
 .yours .card .levels button:enabled:hover,
 .yours .card button.quiet:hover {
   border-color: var(--accent-dim);
@@ -261,7 +271,7 @@
   overflow-wrap: anywhere;
 }
 .yours .card .levels button:disabled,
-.yours .card .row button:disabled {
+.drafts .bar button:disabled {
   opacity: 0.4;
   cursor: default;
 }

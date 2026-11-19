@@ -396,9 +396,9 @@ A draft saves as `<slug>.kula.json`, the project file `writeProject` writes, or 
 
 Either save flushes the store first and then marks the draft saved, `saved` the time and `edits` 0, so its line among your levels counts the changes since.
 
-`save as a bundle` on the card of a level in a bundle saves the bundle as `<slug>.kula-bundle.json`, the bundle file `writeBundle` writes of the bundle's title, author and notes and its levels' documents in the bundle's order, named by the slug of the bundle's title with `bundle` where nothing is left of it.
+`save the bundle` on the bar of a bundle's group saves the bundle as `<slug>.kula-bundle.json`, the bundle file `writeBundle` writes of the bundle's title, author and notes and its levels' documents in the bundle's order, named by the slug of the bundle's title with `bundle` where nothing is left of it.
 
-The save flushes the store first and then marks every level of the bundle saved, and the button carries a dot while any of them has changes since its save.
+The save flushes the store first and then marks every level of the bundle saved, and the button and the group's count carry a dot while any of them was never saved to a file or has changes since its save.
 
 `public/js/editor/files.js` opens a file by what it holds, never by its name, in the order "Levels from elsewhere" below gives:
 

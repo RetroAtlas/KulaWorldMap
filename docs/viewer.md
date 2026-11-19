@@ -217,6 +217,12 @@ The view and the sort are kept from one visit to the next, the view starting as 
 
 A bundle of your levels stands among them as a group under the bundle's title, its author and how many levels it holds, the groups first in the order the bundles were made, each with its levels in the bundle's order whatever the sort.
 
+The heading of a group gives the bundle's title and its count of levels on one line and, where the bundle has an author, `by Ada` on a line of its own under them, and no button stands in it.
+
+The count wears a dot while a level of the bundle is not saved to a file, one never saved or one changed since its save, and says so in words for a screen reader, so a folded group does not hide it.
+
+Under the heading, inside the group and so out of sight while the group is folded, a bar holds two quiet buttons, `save the bundle` and `edit the bundle`.
+
 A group opens when one of its levels comes on screen, or when it comes to hold the level on screen, so the shown level never disappears into a closed group, and nothing of the groups' folds is kept across visits.
 
 Levels this browser holds that could not be read are kept as they are, and a row under the drafts counts them and offers to remove them.
@@ -245,7 +251,7 @@ The count of the errors the checks find stands under that line, in sight of `sha
 
 The card's buttons stand between those lines and the card's other fields, in rows, each a group named by a caption in the fields' own column: File, Share, Game and Bundle.
 
-`save as .json`, `share…`, `patch the game's disc…` and `save as a bundle` are filled and the card's other buttons are quiet, with no fill and dim words, a circuit's button among them, so the only filled buttons of the card are ways out of this browser.
+`save as .json`, `share…` and `patch the game's disc…` are filled and the card's other buttons are quiet, with no fill and dim words, a circuit's button among them, so the only filled buttons of the card are ways out of this browser.
 
 `save as .kwl` is quiet beside `save as .json`, so the map's own file reads as the one to keep.
 
@@ -269,7 +275,13 @@ A level the checks find errors in gets no link until they are fixed, only the fi
 
 A level whose link would run past 8,000 characters has the file put first, the box saying the level is too large for a link.
 
-The File row's `save as .json` writes the draft as the map's own file and `save as .kwl` as the file the game loads, and for a level in a bundle the Bundle row's `save as a bundle` writes the bundle as one file, its levels in order.
+The File row's `save as .json` writes the draft as the map's own file and `save as .kwl` as the file the game loads.
+
+A bundle is saved from its group: the bar's `save the bundle` writes the bundle as one file, its levels in order.
+
+The button wears the dot the count wears.
+
+It is greyed while the bundle holds no level, since a bundle file with no level would open as nothing.
 
 `open a file…`, under `new level`, opens either file, or a level file from elsewhere, read for what it holds rather than by its name, as a new draft, saying what it had to repair, and a bundle file as new levels of your own gathered into a bundle.
 
@@ -285,9 +297,11 @@ The Bundle row's `add to a bundle…` puts the level last in a bundle this brows
 
 On a level that is in a bundle the button reads `move to another bundle…`, and its box is worded as a move and says which bundle the level leaves.
 
-The Bundle row of such a level opens on the bundle's title and the level's place in it, `Spiral campaign · level 2 of 3`, over `take out`, `move to another bundle…` and `save as a bundle`.
+The Bundle row of such a level opens on the bundle's title and the level's place in it, `Spiral campaign · level 2 of 3`, over `take out` and `move to another bundle…`.
 
-A group's `arrange…` opens the bundle's card under its levels: the bundle's title, author and notes, its levels in play order to move up or down or take out, `save as a bundle` while the bundle holds a level, since a bundle file with no level would open as nothing, and `take apart`, which forgets the bundle and leaves its levels among your levels.
+The bar's `edit the bundle` opens the bundle's card under its levels, and pressed again puts it away: the bundle's title, author and notes, its levels in play order to move up or down or take out, and `take apart`, which forgets the bundle and leaves its levels among your levels.
+
+Folding the group puts the card away too, since the card stands inside it.
 
 Your levels stay in this browser, written a moment after each change, and travel only as a file or as a link that carries one whole; a browser that cannot keep them says so.
 
@@ -636,7 +650,7 @@ The partials are named for what they hold, and the page links them in this order
 - `10-base.css` holds the tokens, the resets, the body, `.sr` and `.mono`, which any surface may wear, and the frame the sidebar and the map stand in.
 - `20-sidebar.css` holds the sidebar: its head, its sections, whose class is `.panel`, the small button of a heading and the link-like button, which the count line and the level line's notes wear too, the worlds and their levels, the folds, the switches, the keys' caps, the slice, the legend and the foot.
 - `25-search.css` holds the search box, whose wrapper's class, `.field`, the rows of the panel's form and the fields of the import picker and of the paste, share and bundle boxes wear too, the scope bar, whose look the release's buttons and the palette's tabs wear, the count line and the results.
-- `27-yours.css` holds Your levels: a level's row, a bundle, the Level card, and the tiles and the row that stands above a list and sorts and filters it, both worn by the community levels too.
+- `27-yours.css` holds Your levels: a level's row, a bundle with its bar, the Level card, and the tiles and the row that stands above a list and sorts and filters it, both worn by the community levels too.
 - `30-map.css` holds the map and its canvas.
 - `40-readouts.css` holds the readout, the corner with its buttons and the compass, the tip and the toasts.
 - `50-panels.css` holds the panel, which a click on a block opens, with its form, and the tags.

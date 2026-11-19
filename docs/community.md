@@ -160,7 +160,7 @@ The list is capped at three tenths of the window's height and scrolls, as the ov
 
 A link of the list holding the focus hands it to the marked link once the level it names is on screen, since the note is built afresh for every level.
 
-For a level of a bundle `save the file` writes the whole bundle through `documentOf` and `writeBundle`, named by the slug of the bundle's title with `.kula-bundle.json`, as the Level card's `save as a bundle` names one.
+For a level of a bundle `save the file` writes the whole bundle through `documentOf` and `writeBundle`, named by the slug of the bundle's title with `.kula-bundle.json`, as a group's `save the bundle` names one.
 
 The panel answers a link's slot through `provideLevels`: `COMMUNITY/<id>` with a level entry's document and `COMMUNITY/<id>-<n>` with the level at place `n` of a bundle entry's list, both read by one regular expression and `Number`, from the catalogue held.
 

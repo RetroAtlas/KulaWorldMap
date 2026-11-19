@@ -59,7 +59,7 @@ export const editorStates = [
       link: own(3),
       async steps(page) {
         await quiet(page);
-        await page.click("#draftRows details.bundle > summary .arrange");
+        await page.click("#draftRows details.bundle > .bar button[aria-expanded]");
         await page.click('#draftRows details.bundle > .card .row button:has-text("take apart")');
       },
       stands: "#draftRows details.bundle[open] > .card .row button.warn",
@@ -67,8 +67,11 @@ export const editorStates = [
     {
       name: "a bundle with no level in Your levels, its card open",
       ...EMPTIED,
-      steps: (page) => page.click("#draftRows details.bundle > summary .arrange"),
-      stands: "#draftRows details.bundle[open] > .card .row button:disabled",
+      async steps(page) {
+        await page.click("#draftRows details.bundle > summary");
+        await page.click("#draftRows details.bundle > .bar button[aria-expanded]");
+      },
+      stands: "#draftRows details.bundle[open]:has(> .bar button:disabled) > .card .row button",
     },
     {
       name: "Your levels as a list, a bundle folded and a level that cannot be read, its removal armed",
@@ -78,7 +81,8 @@ export const editorStates = [
         await page.click('#draftView button[data-view="list"]');
         await page.click("#draftUnread button");
       },
-      stands: "#yours:has(#draftUnread .warn) #draftRows details.bundle:not([open]) > summary",
+      stands:
+        "#yours:has(#draftUnread .warn) #draftRows details.bundle:not([open]) > summary .n.unsaved",
     },
     {
       name: "a bundle's file read with a report",
