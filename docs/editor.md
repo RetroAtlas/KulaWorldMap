@@ -340,7 +340,7 @@ A line under the time field says what the clock starts at on each disc for the n
 
 The card's Plays as select writes `simon` through `setMeta` as one step, labelled "changed how the level plays", offering a bonus level or a Simon room while the level has no key, and shows an arcade level alone, disabled, where a key stands, since the keys decide and the flag waits, stored, for the last key to go; the sentence under the settings says the result, by `playsAs`.
 
-`new` emits `edit-wanted` once the new draft is open, for the editor to turn its mode on; a copy and an opened file leave the mode as it is.
+`new level` emits `edit-wanted` once the new draft is open, for the editor to turn its mode on; a copy and an opened file leave the mode as it is.
 
 ### Reading the store
 
@@ -406,7 +406,7 @@ The save flushes the store first and then marks every level of the bundle saved,
 
 Every open makes a new draft marked saved, since the file is the record, and the reader's report shows as one toast, the line itself where there is one, the count of repairs where there are more, or that the level was read with notes where no line is a repair, and in full in a fold at the top of the Level card, under the same count or the same words, until another draft is shown.
 
-The read and the draft are one rule in `public/js/editor/intake.js`, which the sidebar's `open a file…` and `paste a link…` and the disc box's `a file…` share: `readLevel` reads a file through `readLevelFile` in the world on screen and says a refusal in one toast, and `draftOf` makes the draft marked saved and says the report, so a level from elsewhere becomes a draft the same way wherever it is opened from; the sidebar then shows the draft with the fold, and the box adds its row and leaves the map where it was.
+The read and the draft are one rule in `public/js/editor/intake.js`, which the sidebar's `open a file…` and `open a link…` and the disc box's `a file…` share: `readLevel` reads a file through `readLevelFile` in the world on screen and says a refusal in one toast, and `draftOf` makes the draft marked saved and says the report, so a level from elsewhere becomes a draft the same way wherever it is opened from; the sidebar then shows the draft with the fold, and the box adds its row and leaves the map where it was.
 
 `draftsOf` makes a draft marked saved of each of several reads of one file, a patch or a bundle, and says how many opened from it in one toast in place of their reports; the sidebar shows the first, and the box adds a row for each.
 
@@ -586,7 +586,7 @@ Each level a patch lists is read by `readKwl` in its slot's world, titled by the
 
 Every file opened this way makes a new draft marked saved, as the map's own file does, with the reader's report in the card's fold, and a patch makes one of each level it lists.
 
-`readLevelText` reads what is pasted into the box the sidebar's `paste a link…` opens and tries the map's own link first: where the text is a URL whose hash, or a hash alone, carries a level as "The link that carries a level" says, `decodeSegment` reads the segment, the level is refused in the checks' words where it is over one of the game's caps, so a hand-made link of thousands of blocks reaches neither the map nor the store, and the read keeps the title its document carries and passes through the writer as a file does; any other text is read as the community viewer's link below.
+`readLevelText` reads what is pasted into the box the sidebar's `open a link…` opens and tries the map's own link first: where the text is a URL whose hash, or a hash alone, carries a level as "The link that carries a level" says, `decodeSegment` reads the segment, the level is refused in the checks' words where it is over one of the game's caps, so a hand-made link of thousands of blocks reaches neither the map nor the store, and the read keeps the title its document carries and passes through the writer as a file does; any other text is read as the community viewer's link below.
 
 ### The community's viewer
 
@@ -604,7 +604,7 @@ Of the viewer's 203 level files, 169 read back to the canonical bytes of a shipp
 
 The share link carries the level as text, a header of `time|hidden|reverse` and a line a block, every number in base 36 with `~` for 65535 and `_` for an empty slot, gzipped and written in base64url without padding under `level=`, with the viewer's theme under `theme=`; `readOrbitLink` takes a whole URL, a query or the bare value, refuses a value that is only digits, which names one of the viewer's own levels, reads the level in the world `theme` names where that is one of the disc's worlds and the world on screen otherwise, saying so where it is not, and `readLevelText` titles it Shared level.
 
-The link is pasted into the box the sidebar's `paste a link…` opens, which reads it in the world on screen, shows the reader's refusal under the field and keeps the field for another paste, and the result is a new draft marked saved, as it is for a file. The fixture holds the link the viewer's own encoder makes of each of its five levels.
+The link is pasted into the box the sidebar's `open a link…` opens, which reads it in the world on screen, shows the reader's refusal under the field and keeps the field for another paste, and the result is a new draft marked saved, as it is for a file. The fixture holds the link the viewer's own encoder makes of each of its five levels.
 
 ### The PC recompilation's editor
 

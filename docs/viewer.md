@@ -197,7 +197,7 @@ The sidebar's "Your levels", after the worlds, lists the levels of your own this
 
 The editor loads only when it is wanted, so a plain visit loads none of its code ("Loading the editor and play mode" below).
 
-`new` makes a level of one plain block and a start in the world on screen and opens it editing, and `copy this level` makes one out of the level on screen, a shipped level as the game loads it and a level that came by its link or from the community levels as its own document, its author and notes kept; either is a draft at once, drawn as the game would load it.
+`new level` makes a level of one plain block and a start in the world on screen and opens it editing, and `copy this level` makes one out of the level on screen, a shipped level as the game loads it and a level that came by its link or from the community levels as its own document, its author and notes kept; either is a draft at once, drawn as the game would load it.
 
 A copy of a level that is the PAL or the Japanese disc's own carries that disc's tag after its title, `BONUS 30 (EU)`, so copies of one slot from two discs are told apart among your levels.
 
@@ -223,7 +223,7 @@ Levels this browser holds that could not be read are kept as they are, and a row
 
 For the shown draft a Level card edits its title, author, notes and world, its time as its file holds it with what the clock starts at on each disc under it, whether it is a hidden level or shows invisible blocks from afar, and whether a level with no key plays as a bonus level or a Simon room; a level with a key plays as an arcade level, since the game decides that from the keys.
 
-The name typed into Author is remembered in this browser and given to every level `new` makes and to every copy of one of the game's levels, while a copy of a draft, of a level that came by its link or of a community level, and a level opened from a file, keep the author they have.
+The name typed into Author is remembered in this browser and given to every level `new level` makes and to every copy of one of the game's levels, while a copy of a draft, of a level that came by its link or of a community level, and a level opened from a file, keep the author they have.
 
 Under the settings Circuits lists the four colours, whether each starts on or off, which its button turns over, and how many switches, teleporters and lasers of it the level has, so a colour's starting state is set beside the level's other settings.
 
@@ -253,7 +253,7 @@ A level whose link would run past 8,000 characters has the file put first, the b
 
 The card's `save as .json` writes the draft as the map's own file and `save as .kwl` as the file the game loads, and for a level in a bundle `save as a bundle` writes the bundle as one file, its levels in order.
 
-`open a file…`, beside `new`, opens either file, or a level file from elsewhere, read for what it holds rather than by its name, as a new draft, saying what it had to repair, and a bundle file as new levels of your own gathered into a bundle.
+`open a file…`, under `new level`, opens either file, or a level file from elsewhere, read for what it holds rather than by its name, as a new draft, saying what it had to repair, and a bundle file as new levels of your own gathered into a bundle.
 
 It takes one of the game's packs too, which asks which of its levels to open and opens it in the world on screen, since a pack does not say which world it is from, and a disc image, which asks for the pack and the level and opens it in the world the map lists the level under, named as the disc its boot line names names it, or as the disc the map shows where it names none of the three.
 
@@ -261,7 +261,7 @@ It takes a level saved by the community's level viewer too, read in the world on
 
 It takes a patch the disc box made too, a PPF or an xdelta, which asks for the disc image it was made for, since a patch carries only what it changes and its levels come back whole only over that image, and opens the levels the patch puts on the disc as drafts on their slots.
 
-`paste a link…` beside it makes a level of your own out of a link that carries a level, the map's own or one shared from the community's level viewer, where following the map's link shows the level without keeping it.
+`open a link…` beside it makes a level of your own out of a link that carries a level, the map's own or one shared from the community's level viewer, where following the map's link shows the level without keeping it.
 
 The card's `add to a bundle…` puts the level last in a bundle this browser holds or in a new one, a level standing in one bundle at most, and `take out of the bundle` leaves it in none.
 

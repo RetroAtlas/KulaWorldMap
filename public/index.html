@@ -227,11 +227,17 @@
             <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg>
           </summary>
           <div class="actions">
-            <button id="draftNew" type="button" title="Make a new level in this world">new</button>
+            <button id="draftNew" class="lead" type="button" title="Make a new level in this world">
+              new level
+            </button>
             <button id="draftCopy" type="button" title="Make a level of your own out of this one">
               copy this level
             </button>
-            <button id="draftOpen" type="button" title="Open a level file of the map or the game">
+            <button
+              id="draftOpen"
+              type="button"
+              title="Open a level file, a bundle, one of the game's packs, a disc image or a patch"
+            >
               open a file…
             </button>
             <input
@@ -240,8 +246,12 @@
               accept=".json,.kwl,.rlv,.pak,.bin,.img,.iso,.ppf,.xdelta"
               hidden
             />
-            <button id="draftPaste" type="button" title="Open a shared level by its link">
-              paste a link…
+            <button
+              id="draftPaste"
+              type="button"
+              title="Open a shared level by its link, as a copy among your levels"
+            >
+              open a link…
             </button>
           </div>
           <div id="draftView" class="view" hidden>

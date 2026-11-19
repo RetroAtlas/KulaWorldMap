@@ -419,7 +419,7 @@ test("w on a disc level over a spent store makes no copy and leaves editing off"
   expect(errors).toEqual([]);
 });
 
-test("new on a store that has handed out every number it has leaves editing off where a draft is on screen", async ({
+test("new level on a store that has handed out every number it has leaves editing off where a draft is on screen", async ({
   page,
 }) => {
   const errors = trackErrors(page);

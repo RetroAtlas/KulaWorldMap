@@ -116,6 +116,12 @@ test("a draft saves as the map's file and as the game's file, and the row counts
     "draftOpen",
     "draftPaste",
   ]);
+  await expect(actions).toHaveText([
+    "new level",
+    "copy this level",
+    "open a file…",
+    "open a link…",
+  ]);
   await expect(page.locator("#draftExport")).toHaveCount(0);
   expect(errors).toEqual([]);
 });

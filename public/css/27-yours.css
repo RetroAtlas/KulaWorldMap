@@ -1,11 +1,13 @@
-.yours .actions,
+.yours .actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
 .yours .card .row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-.yours .actions {
-  margin-bottom: 8px;
 }
 .yours .actions button,
 .yours .card .row button,
@@ -25,6 +27,14 @@
 .yours .card .circuit button:hover,
 .yours .unread button:hover {
   border-color: var(--accent-dim);
+}
+.yours .actions .lead {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 600;
+}
+.yours .actions .lead:hover {
+  border-color: var(--accent);
 }
 .yours .card .row .warn,
 .yours .unread .warn {

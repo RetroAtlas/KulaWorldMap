@@ -703,7 +703,7 @@ test("a read that finishes after the box was closed and opened again answers nei
   expect(errors).toEqual([]);
 });
 
-test("the sidebar's paste a link… makes a draft of the shared level", async ({ page }) => {
+test("the sidebar's open a link… makes a draft of the shared level", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto(EDIT_MARS);
   await settle(page);

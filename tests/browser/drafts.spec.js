@@ -132,7 +132,7 @@ test("Your levels folds under its heading: closed at first, open once a level of
   expect(errors).toEqual([]);
 });
 
-test("new makes a draft, shown and kept in this browser, which a reload brings back", async ({
+test("new level makes a draft, shown and kept in this browser, which a reload brings back", async ({
   page,
 }) => {
   const errors = trackErrors(page);
@@ -261,7 +261,7 @@ test("copy this level and w title a copy of a level that differs on the disc sho
   expect(errors).toEqual([]);
 });
 
-test("new asks for editing once its level is open, and copy this level does not", async ({
+test("new level asks for editing once its level is open, and copy this level does not", async ({
   page,
 }) => {
   const errors = trackErrors(page);
