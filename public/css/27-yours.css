@@ -1,3 +1,62 @@
+.yours .fold > div {
+  scroll-margin: 14px 0;
+}
+.yours .card:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: 4px;
+}
+.yours .back,
+.yours .shown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.yours .back {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+}
+.yours .shown {
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 3px 8px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--dim);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.yours .shown:hover {
+  border-color: var(--accent-dim);
+}
+.yours .shown .cap {
+  flex: none;
+}
+.yours .shown .name {
+  min-width: 0;
+  margin-left: auto;
+  color: var(--accent);
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.yours .back svg,
+.yours .shown svg {
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: rotate(-90deg);
+}
+.yours .back svg {
+  transform: rotate(90deg);
+}
 .yours .actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -245,6 +304,8 @@
 }
 .drafts .bundle > .card {
   margin: 4px 0 8px 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
 }
 .yours .card .order {
   margin: 6px 0 2px;
@@ -336,11 +397,6 @@
 .tiles .line {
   color: var(--dim);
   font-size: 11.5px;
-}
-.yours .card {
-  margin-top: 10px;
-  border-top: 1px solid var(--line);
-  padding-top: 8px;
 }
 .yours .card h3 {
   font-size: 11px;

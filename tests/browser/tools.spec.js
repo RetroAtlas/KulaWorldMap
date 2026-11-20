@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { settle, topPixels, trackErrors } from "./helpers.js";
+import { toList } from "./drafthelpers.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 
@@ -186,6 +187,7 @@ test("editing turns the ground grid on with it, which can be turned off while ed
   // a level made to be edited turns it on as well
   await page.keyboard.press("g");
   await expect(grid).not.toBeChecked();
+  await toList(page);
   await page.locator("#draftNew").click();
   await expect(edit).toHaveAttribute("aria-pressed", "true");
   await expect(grid).toBeChecked();

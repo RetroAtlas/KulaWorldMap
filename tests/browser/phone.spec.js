@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { settle, steps, still } from "./helpers.js";
+import { toList } from "./drafthelpers.js";
 
 /** Tap as a finger does, with no mouse left elsewhere to take the hover away. */
 const fingerTap = async (page, target, position) => {
@@ -635,9 +636,11 @@ test.describe("editing on a phone", () => {
     await page.goto(EDIT);
     await settle(page);
     await page.keyboard.press("s");
-    await page.locator("#draftNew").click();
-    await page.locator("#draftNew").click();
     const rows = page.locator("#draftRows > button");
+    await page.locator("#draftNew").click();
+    await expect(rows).toHaveCount(1);
+    await toList(page);
+    await page.locator("#draftNew").click();
     await expect(rows).toHaveCount(2);
     await expect(rows.locator(".state")).toHaveText(["not saved to a file", "not saved to a file"]);
     await expect(page.locator("#draftRows .tile")).toHaveCount(0);

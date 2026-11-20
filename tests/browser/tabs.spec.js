@@ -11,6 +11,7 @@ import {
   room,
   shown,
   stored,
+  toList,
   toasts,
   written,
 } from "./drafthelpers.js";
@@ -35,6 +36,8 @@ test("a draft deleted here is not taken back from another tab's copy, and one ch
   await page.goto(EDIT);
   await settle(page);
   await page.locator("#draftNew").click();
+  await expect(page.locator("#draftRows button")).toHaveCount(1);
+  await toList(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(2);
   const gone = (await shown(page)).draft;
@@ -266,6 +269,7 @@ test("a draft whose id another tab handed out before this tab's write landed mov
   const mine = (await shown(page)).draft;
   await page.locator("#draftTitle").fill("Mine");
   await expect(page.locator("#chipLine b")).toHaveText("Mine");
+  await toList(page);
   // the other tab, with room, makes a level of its own under the same id
   const theirs = {
     version: 1,
@@ -289,9 +293,10 @@ test("a draft whose id another tab handed out before this tab's write landed mov
   await room(page, true);
   await arrives(page, theirs);
   await expect(page.locator("#draftRows button .name")).toHaveText(["Theirs", "Mine"]);
-  // the screen follows this tab's draft to its new id
+  // the screen follows this tab's draft to its new id, the list standing as it was left
   expect((await shown(page)).draft).toBe(mine + 1);
   await expect(page.locator("#chipLine b")).toHaveText("Mine");
+  await expect(page.locator("#draftList")).toBeVisible();
   await expect(page.locator("#draftRows button").nth(1)).toHaveAttribute("aria-current", "true");
   await expect
     .poll(() => page.evaluate(() => location.hash))

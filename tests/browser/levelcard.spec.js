@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { settle, steps, textured, trackErrors } from "./helpers.js";
-import { EDIT, docOf, faced, shown, stored, written } from "./drafthelpers.js";
+import { EDIT, docOf, faced, shown, stored, toList, written } from "./drafthelpers.js";
 
 test("the Level card edits the draft as the game would load it, keeping the view", async ({
   page,
@@ -127,6 +127,7 @@ test("the Level card edits the draft as the game would load it, keeping the view
 
   // the name typed last is remembered in this browser and signs the next level made here
   expect(await page.evaluate(() => localStorage.getItem("kula.author"))).toBe("Mario");
+  await toList(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(2);
   expect(await docOf(page, (await shown(page)).draft)).toMatchObject({
@@ -431,6 +432,7 @@ test("How it plays folds the level's settings under one line, closed until it is
   // the fold's state reaches the store on the toggle event, a moment after the press
   await expect.poll(kept).toBe("open");
   // a card is built afresh for each level, and opens as the card before it was left
+  await toList(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(2);
   await expect(fold).toHaveAttribute("open");

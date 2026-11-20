@@ -106,12 +106,16 @@ test("Enter starts the level again after a button was clicked in the sidebar or 
     await expect(line(page)).toHaveText("Playing · on the top of 17,17,17, facing -y");
     await expect(clockLine(page)).toHaveText("Time 2");
   };
-  // the sidebar's new button keeps the focus its click left it, and Enter starts the level again
-  // rather than making a draft
+  // a button of the sidebar's legend keeps the focus its click left it, and Enter starts the level
+  // again rather than pressing it
+  const kind = page.locator("#kinds button.kind").first();
+  await kind.click();
+  await expect(kind).toHaveAttribute("aria-pressed", "false");
   await ended(TIME_UP);
-  await expect(page.locator("#draftNew")).toBeFocused();
+  await expect(kind).toBeFocused();
   await page.keyboard.press("Enter");
   await started();
+  await expect(kind).toHaveAttribute("aria-pressed", "false");
   await expect(page.locator("#chipLine")).toContainText("time 2");
   // so does a strip button clicked with the mouse, which Enter leaves as the click left it
   await ended(TIME_UP);

@@ -89,5 +89,19 @@ export const faced = (page, face, object) =>
     [face, object],
   );
 
+/** Bring the list of your levels back by the card's way back, where the Level card stands in its place. */
+export async function toList(page) {
+  const back = page.locator("#draftBack");
+  if (await back.isVisible()) await back.click();
+  await expect(page.locator("#draftList")).toBeVisible();
+}
+
+/** Stand the Level card of the level on screen by the On screen line, where the list stands in its place. */
+export async function toCard(page) {
+  const line = page.locator("#draftOnScreen");
+  if (await line.isVisible()) await line.click();
+  await expect(page.locator("#draftCard")).toBeVisible();
+}
+
 export const EDITOR_FILES =
-  /\/js\/(editor\/(editor|drafts|draftlist|draftsort|draftwords|levelcard|palette|trail)|community\/[a-z]+|format\/(project|kwl)|vendor\/pako_deflate\.min|play\/(play|ball|dust))\.js$/;
+  /\/js\/(editor\/(editor|drafts|draftlist|draftparts|draftsort|draftwords|levelcard|palette|trail)|community\/[a-z]+|format\/(project|kwl)|vendor\/pako_deflate\.min|play\/(play|ball|dust))\.js$/;

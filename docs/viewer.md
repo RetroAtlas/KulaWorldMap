@@ -197,6 +197,42 @@ The sidebar's "Your levels", after the worlds, lists the levels of your own this
 
 The editor loads only when it is wanted, so a plain visit loads none of its code ("Loading the editor and play mode" below).
 
+Under its heading the section shows one thing at a time: the list of your levels, or the Level card of the level of your own on screen.
+
+The part that does not stand is hidden whole, out of the Tab order and of what a screen reader reads.
+
+The sentence that closes the section stays under whichever part stands.
+
+A level of your own coming on screen stands its card, whether by its tile or row, `new level`, `copy this level`, a file, a link, the browser's Back or Forward or the key `w`.
+
+A level that is not your own coming on screen, a level of the game, one that came by its link or a community level, stands the list.
+
+The card's first line is the way back, `your levels` behind a chevron pointing back, named `Back to your levels` for a screen reader, which stands the list.
+
+The card keeps its heading, under the way back.
+
+While the list stands with a level of your own on screen, its first line, above `new level`, is the On screen line, which reads `On screen` and the level's title before a chevron pointing on and stands that level's card.
+
+Pressing the tile or row of the level already on screen stands its card too.
+
+An edit, a save, another tab's change to the level on screen, a change of disc and a level moved to a new number leave whichever part stood.
+
+A level deleted, here or in another tab, gives way to the disc's level, so the list stands.
+
+When the list and the card change places and the one hidden held the keyboard's focus, the focus goes to the one that then stands, and otherwise it stays where it was.
+
+On the card the focus goes to the card itself, a group named by its heading that takes the focus by script alone, so Enter and Space press nothing there and Tab goes on to the way back.
+
+In the list the focus goes to the tile or row of the level on screen, its bundle's group opened for it, to the On screen line where the filter hides that level, and to `new level` where no level of your own is on screen.
+
+On the same condition and no other the sidebar scrolls to show the part that then stands, by its nearest edge as for a level's button, or from its top where the part is taller than the sidebar.
+
+So a press on a tile, on `new level` or on an opener whose box has closed takes the keyboard and the sidebar's view to the card, while the key `w` pressed on the map, Back, Forward and a link leave both where they were.
+
+The browser's Back goes from level to level, since the list and the card changing places adds no entry to the history.
+
+Which part stands is in no link and is not kept across visits, since it follows the level on screen.
+
 `new level` makes a level of one plain block and a start in the world on screen and opens it editing, and `copy this level` makes one out of the level on screen, a shipped level as the game loads it and a level that came by its link or from the community levels as its own document, its author and notes kept; either is a draft at once, drawn as the game would load it.
 
 A copy of a level that is the PAL or the Japanese disc's own carries that disc's tag after its title, `BONUS 30 (EU)`, so copies of one slot from two discs are told apart among your levels.
@@ -231,9 +267,11 @@ The filter narrows what the two keys step through as it narrows the list.
 
 From a level of your own the filter hides, `]` goes to the first level listed and `[` to the last.
 
-The level stepped to has its tile or row brought into the sidebar's view, as a level of the game has its button.
+A step keeps the part that stands: the list stays, and a level's card gives way to the card of the level stepped to.
 
-A step taken with the keyboard on a control of the Level card leaves it on the same control of the next level's card, or on that level's tile or row where the next card has no such control in sight.
+While the list stands, the level stepped to has its tile or row brought into the sidebar's view, as a level of the game has its button.
+
+A step taken with the keyboard on a control of the Level card leaves it on the same control of the next level's card, or on the card itself where the next card has no such control in sight.
 
 Levels this browser holds that could not be read are kept as they are, and a row under the drafts counts them and offers to remove them.
 
@@ -266,6 +304,8 @@ The card's buttons stand between those lines and the card's other fields, in row
 `save as .kwl` is quiet beside `save as .json`, so the map's own file reads as the one to keep.
 
 `duplicate` and `delete` close the rows in a row of their own between two thin rules, `delete` at its far end and as wide as the `delete?` it reads while it asks to be pressed again, so arming it moves nothing.
+
+`delete` leaves the keyboard on `new level`, in the list that stands once the level is gone.
 
 The Share row's `share…` opens a box with the link that carries the level whole, as Permalinks says, which holds the level as it is now and opens it framed to fit any window and turned as the map was turned when the box opened, with the slice kept and no block selected.
 
@@ -666,7 +706,7 @@ The partials are named for what they hold, and the page links them in this order
 - `10-base.css` holds the tokens, the resets, the body, `.sr` and `.mono`, which any surface may wear, and the frame the sidebar and the map stand in.
 - `20-sidebar.css` holds the sidebar: its head, its sections, whose class is `.panel`, the small button of a heading and the link-like button, which the count line and the level line's notes wear too, the worlds and their levels, the folds, the switches, the keys' caps, the slice, the legend and the foot.
 - `25-search.css` holds the search box, whose wrapper's class, `.field`, the rows of the panel's form and the fields of the import picker and of the paste, share and bundle boxes wear too, the scope bar, whose look the release's buttons and the palette's tabs wear, the count line and the results.
-- `27-yours.css` holds Your levels: a level's row, a bundle with its bar, the Level card, and the tiles and the row that stands above a list and sorts and filters it, both worn by the community levels too.
+- `27-yours.css` holds Your levels: the On screen line, a level's row, a bundle with its bar, the Level card with its way back, and the tiles and the row that stands above a list and sorts and filters it, both worn by the community levels too.
 - `30-map.css` holds the map and its canvas.
 - `40-readouts.css` holds the readout, the corner with its buttons and the compass, the tip and the toasts.
 - `50-panels.css` holds the panel, which a click on a block opens, with its form, and the tags.

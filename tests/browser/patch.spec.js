@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { settle, steps, trackErrors } from "./helpers.js";
+import { toList } from "./drafthelpers.js";
 import { writeProject } from "../../public/js/format/project.js";
 import { SLUG_MOST } from "../../public/js/viewer/ui/download.js";
 import { synthetic, syntheticImage } from "../unit/synthetic.js";
@@ -609,8 +610,9 @@ test("the box keeps its levels and the image once closed, a card's opening adds 
   const add = dialog.locator("#patchAdd");
   const clear = dialog.locator("#patchClear");
   const status = dialog.locator("#patchStatus");
-  /** Show the draft and open the box from its card. */
+  /** Show the draft from the list and open the box from its card. */
   const openFrom = async (id) => {
+    await toList(page);
     await page.locator(`#draftRows button[data-key="${id}"]`).click();
     await expect.poll(() => shownDraft(page)).toBe(id);
     await page.locator("#draftPatch").click();
@@ -647,6 +649,7 @@ test("the box keeps its levels and the image once closed, a card's opening adds 
   await expect(dialog).toBeHidden();
 
   // a level deleted while the box was closed is gone from the rows without a word
+  await toList(page);
   await page.locator(`#draftRows button[data-key="${tower}"]`).click();
   await expect.poll(() => shownDraft(page)).toBe(tower);
   const del = page.locator("#draftCard button", { hasText: /^delete/ });

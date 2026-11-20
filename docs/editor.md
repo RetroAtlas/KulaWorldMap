@@ -302,7 +302,7 @@ HIDDEN 10 comes to 766 by that count, and one more plain block in the open takes
 
 ## The drafts a browser keeps
 
-The browser store is a convenience and the exported file is the record; the viewer's "Your levels" says so under its levels.
+The browser store is a convenience and the exported file is the record; the viewer's "Your levels" says so in the sentence that closes it.
 
 The link that carries a level whole is the other way out of the browser, which the same sentence names beside the file.
 
@@ -410,7 +410,7 @@ The save flushes the store first and then marks every level of the bundle saved,
 - JSON that is none of the map's file, a bundle and the viewer's file is refused, as is anything the order places nowhere.
 - A project whose blocks carry more records than a link word can name is refused in the checks' words for the record cap, and a document the writer cannot write with the writer's reason.
 
-Every open makes a new draft marked saved, since the file is the record, and the reader's report shows as one toast, the line itself where there is one, the count of repairs where there are more, or that the level was read with notes where no line is a repair, and in full in a fold at the top of the Level card, under the same count or the same words, until another draft is shown.
+Every open makes a new draft marked saved, since the file is the record, and the reader's report shows as one toast, the line itself where there is one, the count of repairs where there are more, or that the level was read with notes where no line is a repair, and in full in a fold above the Level card's heading, under the same count or the same words, until another draft is shown.
 
 The read and the draft are one rule in `public/js/editor/intake.js`, which the sidebar's `open a file…` and `open a link…` and the disc box's `a file…` share: `readLevel` reads a file through `readLevelFile` in the world on screen and says a refusal in one toast, and `draftOf` makes the draft marked saved and says the report, so a level from elsewhere becomes a draft the same way wherever it is opened from; the sidebar then shows the draft with the fold, and the box adds its row and leaves the map where it was.
 

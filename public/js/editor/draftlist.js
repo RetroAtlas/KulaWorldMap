@@ -1,5 +1,5 @@
-// The sidebar's "Your levels": the drafts this browser holds, and the box the
-// Level card stands in for the shown one.
+// The sidebar's "Your levels": the list of the drafts this browser holds, the
+// Level card of the shown one, and which of the two stands.
 import { $, el, emit, on } from "../viewer/ui/dom.js";
 import { tiles } from "../viewer/ui/tiles.js";
 import { state } from "../viewer/state.js";
@@ -25,6 +25,7 @@ import {
 } from "./levelcard.js";
 import { buildBundleCard } from "./bundlecard.js";
 import { SORTS, grouping, listed, matches, ordering, stepFrom } from "./draftsort.js";
+import { BACK, CHOSEN, LEVEL, LIST, MOVED, SHOWN, STEPPED, partAfter } from "./draftparts.js";
 import { savedWords, stateLine } from "./draftwords.js";
 import * as drafts from "./drafts.js";
 
@@ -38,6 +39,9 @@ let drawn = null;
 let form = null;
 // What the reader repaired in the file the shown draft was opened from.
 let imported = null;
+// The part that stands, and the road a draft shown here comes by, read as the change is heard.
+let part = LIST;
+let road = SHOWN;
 
 /** The level a link to a draft names, or null where this browser has none. */
 export function levelFor(slot) {
@@ -62,11 +66,14 @@ export function wireDrafts() {
   $("draftFile").onchange = openFile;
   $("draftPaste").onclick = async () =>
     openRead(await pasteLevelLink(state.lvl.theme, readLevelText));
+  $("draftBack").onclick = () => turn(BACK);
+  $("draftOnScreen").onclick = () => turn(CHOSEN);
   wireView();
   on("drafts-moved", (pairs) => {
     const to = pairs.find(([from]) => from === state.lvl?.draft)?.[1];
     const d = to === undefined ? null : drafts.get(to);
-    if (d) show(to, d.doc, { keepView: true, push: false, keep: state.selected?.key ?? null });
+    const opts = { keepView: true, push: false, keep: state.selected?.key ?? null };
+    if (d) show(to, d.doc, opts, MOVED);
   });
   on("drafts-changed", sync);
   on("drafts-written", () => form?.wrote());
@@ -75,6 +82,7 @@ export function wireDrafts() {
     else if (state.lvl.draft !== undefined && (shownBefore || !yoursClosed()))
       $("yoursFold").open = true;
     shownBefore = true;
+    part = partAfter(part, road, onOwn());
     sync();
     unfold();
   });
@@ -86,9 +94,17 @@ export function wireDrafts() {
 }
 
 // --- showing and opening a draft -----------------------------------------------------------
-function show(id, doc, opts) {
+function show(id, doc, opts, by = SHOWN) {
   drawn = doc;
+  road = by;
   showLevel(toLevel(doc, id), opts);
+  road = SHOWN;
+}
+
+/** Show draft `id` as a press on its tile or row does, which stands its card where it was on screen already too. */
+function choose(id) {
+  show(id, drafts.get(id).doc, { push: true });
+  turn(CHOSEN);
 }
 
 /** Step from the draft on screen to the draft `delta` places on in the list's order, its tile or row brought into the sidebar's view and the keyboard kept on the Level card where it was there; whether a draft was on screen. */
@@ -100,13 +116,12 @@ function stepDraft(delta, push) {
   if (to === null) return true;
   const card = $("draftCard");
   const held = card.contains(document.activeElement) ? document.activeElement.id : null;
-  show(to, drafts.get(to).doc, { push });
-  const marked = $("draftRows").querySelector('[aria-current="true"]');
-  marked?.scrollIntoView({ block: "nearest" });
-  // the card is built afresh for each level, which takes the control that held the focus with it
-  if (held !== null) {
+  show(to, drafts.get(to).doc, { push }, STEPPED);
+  marked()?.scrollIntoView({ block: "nearest" });
+  // the form is built afresh for each level, which takes the control that held the focus with it
+  if (held !== null && !card.contains(document.activeElement)) {
     if (held) $(held)?.focus();
-    if (!card.contains(document.activeElement)) marked?.focus();
+    if (!card.contains(document.activeElement)) card.focus({ preventScroll: true });
   }
   return true;
 }
@@ -224,6 +239,41 @@ function wireView() {
 
 const grids = () => [grid, ...[...folds.values()].map((g) => g.grid)].filter(Boolean);
 
+// --- the part that stands ------------------------------------------------------------------
+const BOXES = { [LIST]: "draftList", [LEVEL]: "draftCard" };
+
+const onOwn = () => state.lvl?.draft !== undefined;
+const marked = () => $("draftRows").querySelector('[aria-current="true"]');
+
+function turn(what) {
+  part = partAfter(part, what, onOwn());
+  stand();
+}
+
+/** Show the part that stands and no other, and where that hides what held the keyboard's focus, bring the part into the sidebar's view and give it the focus. */
+function stand() {
+  const active = document.activeElement;
+  let held = false;
+  for (const [name, id] of Object.entries(BOXES)) {
+    held ||= name !== part && $(id).contains(active);
+    $(id).hidden = name !== part;
+  }
+  if (!held) return;
+  const box = $(BOXES[part]);
+  // by its nearest edge, as a level's button is, or from its top where it is taller than the view
+  const tall = box.offsetHeight > $("sidebar").clientHeight;
+  box.scrollIntoView({ block: tall ? "start" : "nearest" });
+  if (part === LIST) seat().focus();
+  else box.focus({ preventScroll: true });
+}
+
+/** What takes the focus in the list: the level on screen, its group opened for it, else the On screen line, else the first opener. */
+function seat() {
+  unfold();
+  const line = $("draftOnScreen");
+  return marked() ?? (line.hidden ? $("draftNew") : line);
+}
+
 // --- the rows and the card -----------------------------------------------------------------
 // The shown draft is drawn again whenever the store's copy of it is not the
 // one on screen, whichever tab changed it, and gives way to the disc's level
@@ -271,6 +321,10 @@ function rows() {
   const all = drafts.list();
   const unread = drafts.unreadCount();
   $("yoursCount").textContent = all.length ? String(all.length) : "";
+  const here = all.find((d) => d.id === state.lvl?.draft);
+  const line = $("draftOnScreen");
+  line.hidden = !here;
+  line.querySelector(".name").textContent = here ? nameOf(here.doc) : "";
   const bar = $("draftView");
   bar.hidden = all.length < 2;
   if (bar.hidden) $("draftFilter").value = "";
@@ -430,7 +484,7 @@ function rowOf({ d, title }) {
     el("span", { className: "state", textContent: savedWords(d) }),
   );
   b.setAttribute("aria-current", state.lvl?.draft === d.id ? "true" : "false");
-  b.onclick = () => show(d.id, drafts.get(d.id).doc, { push: true });
+  b.onclick = () => choose(d.id);
   return b;
 }
 
@@ -443,7 +497,7 @@ const itemOf = ({ d, title, world }) => ({
   title,
   line: stateLine(world, d),
   current: state.lvl?.draft === d.id,
-  open: () => show(d.id, drafts.get(d.id).doc, { push: true }),
+  open: () => choose(d.id),
   paint: (canvas) => paintDraft(canvas, d.id),
 });
 
@@ -478,20 +532,21 @@ function unreadRow(n) {
   );
 }
 
+/** Bring the card's form up to date with the shown draft, stand the part that stands, and empty the form once no draft is shown. */
 function card(id, d) {
-  const box = $("draftCard");
-  if (!d) {
-    form?.drop();
-    form = null;
-    box.textContent = "";
-    box.hidden = true;
-    return;
+  const box = $("draftForm");
+  if (d) {
+    if (form?.id !== id) {
+      form?.drop();
+      if (imported && imported.id !== id) imported = null;
+      form = buildForm(id, box, { imported, open });
+    }
+    form.sync(d);
   }
-  if (form?.id !== id) {
-    form?.drop();
-    if (imported && imported.id !== id) imported = null;
-    form = buildForm(id, box, { imported, open });
-  }
-  form.sync(d);
-  box.hidden = false;
+  // before the form is emptied, while a control of it may still hold the focus
+  stand();
+  if (d) return;
+  form?.drop();
+  form = null;
+  box.textContent = "";
 }

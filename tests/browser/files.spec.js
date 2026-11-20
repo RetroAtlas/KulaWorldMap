@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { test, expect } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
+import { toList } from "./drafthelpers.js";
 import { blank, readProject, setMeta, writeProject } from "../../public/js/format/project.js";
 import { RECORD, readKwl, writeKwl } from "../../public/js/format/kwl.js";
 
@@ -248,9 +249,11 @@ test("what the reader repaired shows as a toast and in a fold on the card, until
   await expect(fold.locator("li")).toHaveCount(4);
   await expect(page.locator("#toastStack .toast").first()).toHaveText("Read with 200 repairs.");
 
+  await toList(page);
   await page.locator("#draftNew").click();
   await expect(rows).toHaveCount(3);
   await expect(page.locator("#draftCard details.report")).toHaveCount(0);
+  await toList(page);
   await rows.filter({ hasText: "cut" }).click();
   expect((await shown(page)).draft).toBe(out.draft);
   await expect(page.locator("#draftCard details.report")).toHaveCount(0);

@@ -403,8 +403,8 @@ export function buildForm(id, box, { imported, open }) {
   const del = el("button", { className: "quiet far", type: "button" });
   const disarm = twice(del, "delete", "Delete this level from this browser", () => {
     const name = nameOf(drafts.get(id).doc);
-    $("draftNew").focus();
     drafts.remove(id);
+    $("draftNew").focus();
     say(`Deleted ${name}. ${describeLevel(state.lvl)}`);
   });
 
@@ -425,7 +425,7 @@ export function buildForm(id, box, { imported, open }) {
 
   box.append(
     imported?.id === id && imported.lines.length ? reportFold(imported) : [],
-    el("h3", { textContent: "Level" }),
+    el("h3", { id: "draftHeading", textContent: "Level" }),
     field("Title", title),
     source,
     el("p", { className: "state" }, stateText, note),

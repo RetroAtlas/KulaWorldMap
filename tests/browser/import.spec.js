@@ -720,6 +720,8 @@ test("the sidebar's open a link… makes a draft of the shared level", async ({ 
   const opened = await shown(page);
   expect(opened).toMatchObject({ li: -1, theme: "MARS" });
   expect(opened.chip).toContain("Shared level");
+  // the box gave the focus back to its opener, which the level's card then took the place of
+  await expect(page.locator("#draftCard")).toBeFocused();
   const entry = await entryOf(page, opened.draft);
   expect(entry.doc).toMatchObject({ title: "Shared level", world: "MARS", time: own.time });
   expect(entry.doc.blocks).toEqual(own.blocks);

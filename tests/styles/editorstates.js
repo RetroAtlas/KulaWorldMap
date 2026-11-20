@@ -54,11 +54,30 @@ export const editorStates = [
       stands: "#draftHow[open] #draftMode:disabled",
     },
     {
+      name: "the list of your levels with a level of the game on screen",
+      seed: SHELF.seed,
+      async steps(page) {
+        await visible(page, "#draftRows > .tiles .tile");
+        await quiet(page);
+      },
+      stands: "#draftList:not([hidden]):has(#draftOnScreen[hidden]) #draftRows > .tiles .tile",
+    },
+    {
+      name: "the list of your levels brought back from a level's card, the On screen line at its head",
+      ...SHELF,
+      async steps(page) {
+        await quiet(page);
+        await page.click("#draftBack");
+      },
+      stands: "#draftList:not([hidden]) #draftOnScreen:not([hidden]) .name:not(:empty)",
+    },
+    {
       name: "a bundle unfolded in Your levels, its card open with take apart armed",
       ...SHELF,
       link: own(3),
       async steps(page) {
         await quiet(page);
+        await page.click("#draftBack");
         await page.click("#draftRows details.bundle > .bar button[aria-expanded]");
         await page.click('#draftRows details.bundle > .card .row button:has-text("take apart")');
       },
@@ -68,6 +87,7 @@ export const editorStates = [
       name: "a bundle with no level in Your levels, its card open",
       ...EMPTIED,
       async steps(page) {
+        await page.click("#draftBack");
         await page.click("#draftRows details.bundle > summary");
         await page.click("#draftRows details.bundle > .bar button[aria-expanded]");
       },
@@ -78,6 +98,7 @@ export const editorStates = [
       ...SHELF,
       async steps(page) {
         await quiet(page);
+        await page.click("#draftBack");
         await page.click('#draftView button[data-view="list"]');
         await page.click("#draftUnread button");
       },
@@ -253,6 +274,7 @@ export const editorStates = [
       name: "the paste box asked to open with nothing pasted",
       ...ONE,
       async steps(page) {
+        await page.click("#draftBack");
         await page.click("#draftPaste");
         await page.click("#pasteOpen");
       },
@@ -291,6 +313,12 @@ export const editorStates = [
     },
   ]),
   ...on(PHONE, [
+    {
+      name: "a level's card on a phone, the sidebar open",
+      ...ONE,
+      steps: (page) => page.tap("#menuBtn"),
+      stands: "body.sidebar-open #draftCard:not([hidden]) #draftBack",
+    },
     {
       name: "editing on a phone",
       ...ONE,

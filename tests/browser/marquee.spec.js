@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
+import { toList } from "./drafthelpers.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const START = [17, 17, 17];
@@ -453,6 +454,7 @@ test("choosing another level takes the set's line off the strip with the set", a
   await fresh(page);
   await marquee(page, [B, C]);
   await expect(status(page)).toHaveText(selected(2));
+  await toList(page);
   await page.locator("#draftNew").click();
   await expect(said(page)).toHaveText(/^Made a new level/);
   await expect(status(page)).toHaveText("");

@@ -226,60 +226,97 @@
             <span id="yoursCount" class="n" aria-hidden="true"></span>
             <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg>
           </summary>
-          <div class="actions">
-            <button id="draftNew" class="lead" type="button" title="Make a new level in this world">
-              new level
-            </button>
-            <button id="draftCopy" type="button" title="Make a level of your own out of this one">
-              copy this level
-            </button>
+          <div id="draftList">
             <button
-              id="draftOpen"
+              id="draftOnScreen"
+              class="shown"
               type="button"
-              title="Open a level file, a bundle, one of the game's packs, a disc image or a patch"
-            >
-              open a file…
-            </button>
-            <input
-              id="draftFile"
-              type="file"
-              accept=".json,.kwl,.rlv,.pak,.bin,.img,.iso,.ppf,.xdelta"
+              title="Show the Level card of the level on screen"
               hidden
-            />
-            <button
-              id="draftPaste"
-              type="button"
-              title="Open a shared level by its link, as a copy among your levels"
             >
-              open a link…
+              <span class="cap">On screen</span>
+              <span class="name"></span>
+              <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg>
             </button>
+            <div class="actions">
+              <button
+                id="draftNew"
+                class="lead"
+                type="button"
+                title="Make a new level in this world"
+              >
+                new level
+              </button>
+              <button id="draftCopy" type="button" title="Make a level of your own out of this one">
+                copy this level
+              </button>
+              <button
+                id="draftOpen"
+                type="button"
+                title="Open a level file, a bundle, one of the game's packs, a disc image or a patch"
+              >
+                open a file…
+              </button>
+              <input
+                id="draftFile"
+                type="file"
+                accept=".json,.kwl,.rlv,.pak,.bin,.img,.iso,.ppf,.xdelta"
+                hidden
+              />
+              <button
+                id="draftPaste"
+                type="button"
+                title="Open a shared level by its link, as a copy among your levels"
+              >
+                open a link…
+              </button>
+            </div>
+            <div id="draftView" class="view" hidden>
+              <span class="scope" role="group" aria-label="Show your levels as">
+                <button type="button" data-view="list" aria-pressed="false">list</button>
+                <button type="button" data-view="tiles" aria-pressed="true">tiles</button>
+              </span>
+              <label class="sr" for="draftSort">Sort your levels by</label>
+              <select id="draftSort" title="The order of your levels">
+                <option value="changed">last changed</option>
+                <option value="title">title</option>
+                <option value="world">world</option>
+                <option value="unsaved">not saved first</option>
+              </select>
+              <label class="sr" for="draftFilter">Filter your levels</label>
+              <input
+                id="draftFilter"
+                type="search"
+                placeholder="filter by title or world"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+            <div id="draftRows" class="drafts"></div>
+            <p id="draftEmpty" class="sub">
+              Nothing yet. Make a level of your own, or copy this one to start from.
+            </p>
           </div>
-          <div id="draftView" class="view" hidden>
-            <span class="scope" role="group" aria-label="Show your levels as">
-              <button type="button" data-view="list" aria-pressed="false">list</button>
-              <button type="button" data-view="tiles" aria-pressed="true">tiles</button>
-            </span>
-            <label class="sr" for="draftSort">Sort your levels by</label>
-            <select id="draftSort" title="The order of your levels">
-              <option value="changed">last changed</option>
-              <option value="title">title</option>
-              <option value="world">world</option>
-              <option value="unsaved">not saved first</option>
-            </select>
-            <label class="sr" for="draftFilter">Filter your levels</label>
-            <input
-              id="draftFilter"
-              type="search"
-              placeholder="filter by title or world"
-              autocomplete="off"
-              spellcheck="false"
-            />
+          <div
+            id="draftCard"
+            class="card"
+            role="group"
+            aria-labelledby="draftHeading"
+            tabindex="-1"
+            hidden
+          >
+            <button
+              id="draftBack"
+              class="linkish back"
+              type="button"
+              title="Back to your levels"
+              aria-label="Back to your levels"
+            >
+              <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg>
+              your levels
+            </button>
+            <div id="draftForm"></div>
           </div>
-          <div id="draftRows" class="drafts"></div>
-          <p id="draftEmpty" class="sub">
-            Nothing yet. Make a level of your own, or copy this one to start from.
-          </p>
-          <div id="draftCard" class="card" hidden></div>
           <p class="sub">
             Your levels stay in this browser. Save one as a file, or share it by a link that carries
             it whole.

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
+import { toList } from "./drafthelpers.js";
 
 const EDIT = "/#HIRO/0/45,35/fit/33";
 const HOME = [17, 17, 17];
@@ -357,6 +358,7 @@ test.describe("on a phone", () => {
     await summary.click();
     expect(await isOpen()).toBe(true);
     await page.keyboard.press("s");
+    await toList(page);
     await page.locator("#draftNew").click();
     await expect(page.locator("#draftRows button")).toHaveCount(2);
     await page.keyboard.press("s");

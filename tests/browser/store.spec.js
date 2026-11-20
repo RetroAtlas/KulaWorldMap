@@ -11,6 +11,7 @@ import {
   room,
   shown,
   stored,
+  toList,
   toasts,
   written,
 } from "./drafthelpers.js";
@@ -143,7 +144,7 @@ test("entries that cannot be read do not load the editor by themselves, and a ke
   await expect(page.locator("#draftUnread .state")).toHaveText(
     "2 drafts in this browser could not be read",
   );
-  await expect(page.locator("#draftEmpty")).toBeHidden();
+  await expect(page.locator("#draftEmpty")).toHaveAttribute("hidden", "");
   // read inside the page, since a key named __proto__ does not survive the trip out of it
   const keys = () =>
     page.evaluate((key) => {
@@ -438,6 +439,7 @@ test("new level on a store that has handed out every number it has leaves editin
   await settle(page);
   expect((await shown(page)).draft).toBe(1);
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");
+  await toList(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#toastStack .toast")).toHaveText([NUMBERED_OUT]);
   await expect(page.locator("#editBtn")).toHaveAttribute("aria-pressed", "false");

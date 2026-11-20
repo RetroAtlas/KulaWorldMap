@@ -128,6 +128,10 @@ Where a test compares two reads of the frame after the ball has taken a thing, i
 
 A tile's picture is painted from an intersection observer's callback, which the browser runs on a frame of its own once the tile has come within a screen of showing, so a browser test of the tiles awaits the paint with a poll rather than reading it after the step that scrolled the tile in, and reads a repaint an update or a change of density gives a tile in view in the same step, since that paint is synchronous.
 
+The list of your levels and the Level card stand one at a time, so a browser test that uses the list once a level of your own is on screen brings it back through `toList` in `drafthelpers.js`, and one that then wants the card stands it through `toCard`; `settle` does neither, since which of them stands follows the level on screen.
+
+A tile of the list is not painted while the card stands in the list's place, so a test of a tile's picture brings the list back before it awaits the paint.
+
 A unit test of the simulation builds its level from the builders beside its file, `rules-level.js`, `ball-lattice.js`, `hazards-level.js` or `project-doc.js`, which also set the viewer's state from the fixtures.
 
 A feature commit adds a unit test where the change is arithmetic, one assertion to the browser test of the same behaviour where it is wiring, and a new browser test only for a new behaviour the browser alone shows; its body names the unit test, by file and title, that holds what the change computes.

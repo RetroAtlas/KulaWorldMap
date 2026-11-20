@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { filledTiles, settle, textured, topPixels, trackErrors } from "./helpers.js";
-import { EDIT, docOf, faced, shown, stored, written } from "./drafthelpers.js";
+import { EDIT, docOf, faced, shown, stored, toList, written } from "./drafthelpers.js";
 
 /** Put `block` into the shown draft at `cell`, or take the block there out with null, through the
     model. */
@@ -62,8 +62,9 @@ const picture = (page, id) =>
   }, id);
 const painted = (page, id) => expect.poll(async () => (await picture(page, id)).drawn);
 const kept = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("kula.tiles")));
-/** A new level titled `title`, in `world` where one is named. */
+/** A new level titled `title`, in `world` where one is named, made from the list. */
 async function made(page, title, world) {
+  await toList(page);
   await page.locator("#draftNew").click();
   await page.locator("#draftTitle").fill(title);
   if (world) await page.selectOption("#draftWorld", world);
@@ -111,7 +112,7 @@ test("Your levels folds under its heading: closed at first, open once a level of
   await expect(page.locator("#yoursCount")).toHaveText("1");
   // closed while editing, it stays closed through the edits
   await summary.click();
-  await expect(page.locator("#draftRows button")).toBeHidden();
+  await expect(page.locator("#draftCard")).toBeHidden();
   await kept("closed");
   await page.evaluate(async () => {
     const at = (p) => import(new URL(`js/${p}`, location.href).href);
@@ -151,7 +152,7 @@ test("new level makes a draft, shown and kept in this browser, which a reload br
   await expect(row).toHaveAttribute("aria-current", "true");
   // a tile's words are its title and its line of state, with no tag
   await expect(row.locator("span")).toHaveText(["Untitled level", "HIRO · not saved to a file"]);
-  await expect(page.locator("#draftEmpty")).toBeHidden();
+  await expect(page.locator("#draftEmpty")).toHaveAttribute("hidden", "");
   await expect(page.locator("#chipLine b")).toHaveText("Untitled level");
   await expect(page.locator("#chipLine .tag")).toHaveText("Draft");
   await expect(page.locator("#say")).toContainText("Made a new level. Draft, Untitled level,");
@@ -204,6 +205,7 @@ test("copy this level makes a draft out of the level on screen, and of a draft a
   await expect(page.locator("#draftFrom")).toHaveText("Copied from LEVEL 1");
   await expect(page.locator("#say")).toContainText("Copied LEVEL 1. Draft, LEVEL 1");
 
+  await toList(page);
   await page.locator("#draftCopy").click();
   await expect(page.locator("#draftRows button")).toHaveCount(2);
   const second = await shown(page);
@@ -276,9 +278,11 @@ test("new level asks for editing once its level is open, and copy this level doe
     window.__wanted = [];
     on("edit-wanted", () => window.__wanted.push(state.lvl.draft));
   });
+  await toList(page);
   await page.locator("#draftCopy").click();
   await expect(page.locator("#draftRows button")).toHaveCount(2);
   expect(await page.evaluate(() => window.__wanted)).toEqual([]);
+  await toList(page);
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows button")).toHaveCount(3);
   const made = (await shown(page)).draft;
@@ -409,6 +413,7 @@ test("a level's tile carries a picture of the level, painted as the tile shows",
   const id = (await shown(page)).draft;
   await expect(tile).toHaveAttribute("data-key", String(id));
   await expect(tile.locator("canvas.thumb")).toHaveAttribute("aria-hidden", "true");
+  await toList(page);
   await painted(page, id).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });
@@ -422,9 +427,11 @@ test("list and tiles switch the view once this browser holds two levels, and the
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows .tile")).toHaveCount(1);
   const bar = page.locator("#draftView");
+  await toList(page);
   await expect(bar).toBeHidden();
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows .tile")).toHaveCount(2);
+  await toList(page);
   await expect(bar).toBeVisible();
   const pressed = bar.locator(".scope button[aria-pressed='true']");
   await expect(pressed).toHaveText("tiles");
@@ -442,6 +449,7 @@ test("list and tiles switch the view once this browser holds two levels, and the
   await settle(page);
   await expect(rows).toHaveCount(2);
   await expect(bar.locator(".scope button[aria-pressed='true']")).toHaveText("list");
+  await toList(page);
   await bar.getByRole("button", { name: "tiles" }).click();
   await expect(page.locator("#draftRows .tile")).toHaveCount(2);
   await expect(rows).toHaveCount(0);
@@ -462,6 +470,7 @@ test("the sort orders your levels by the last change, by title, by world in the 
   await expect(names).toHaveText(["Gamma", "Beta", "Alpha"]);
   const sort = page.locator("#draftSort");
   await expect(sort).toHaveValue("changed");
+  await toList(page);
   await sort.selectOption("title");
   await expect(names).toHaveText(["Alpha", "Beta", "Gamma"]);
   await sort.selectOption("world");
@@ -492,6 +501,7 @@ test("the filter keeps the levels whose title or world holds its text, whatever 
   const filter = page.locator("#draftFilter");
   const empty = page.locator("#draftEmpty");
   await expect(names).toHaveText(["Beta", "Alpha"]);
+  await toList(page);
   await filter.fill("ALP");
   await expect(names).toHaveText(["Alpha"]);
   await expect(page.locator("#yoursCount")).toHaveText("2");
@@ -521,6 +531,7 @@ test("a tile's picture is painted again when its level changes", async ({ page }
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows .tile")).toHaveCount(1);
   const id = (await shown(page)).draft;
+  await toList(page);
   await painted(page, id).toBeGreaterThan(0);
   const before = (await picture(page, id)).hash;
   await laid(page, [19, 17, 17], { kind: 0 });
@@ -543,9 +554,17 @@ test("a tile's picture is flat until its world's textures land, and painted agai
   await page.locator("#draftNew").click();
   await expect(page.locator("#draftRows .tile")).toHaveCount(1);
   const id = (await shown(page)).draft;
+  await toList(page);
   await painted(page, id).toBeGreaterThan(0);
   const hiro = (await picture(page, id)).hash;
-  await page.selectOption("#draftWorld", "MARS");
+  // through the model, since the tile is painted only while the list stands
+  await page.evaluate(async (id) => {
+    const at = (p) => import(new URL(`js/${p}`, location.href).href);
+    const [{ get, update }, { setMeta }] = await Promise.all(
+      ["editor/drafts.js", "format/project.js"].map(at),
+    );
+    update(id, setMeta(get(id).doc, { world: "MARS" }));
+  }, id);
   const line = page.locator(`#draftRows .tile[data-key="${id}"] .line`);
   await expect(line).toHaveText("MARS · not saved to a file · 1 change");
   const flat = (await picture(page, id)).hash;
