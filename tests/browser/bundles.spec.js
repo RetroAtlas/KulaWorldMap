@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
-import { EDIT, docOf, shown, toCard, toList, written } from "./drafthelpers.js";
+import { EDIT, docOf, shown, toBundle, toCard, toList, written } from "./drafthelpers.js";
 import { file, listed, openPatch, rows, saved } from "./patchhelpers.js";
 import { blank, setMeta } from "../../public/js/format/project.js";
 import { readBundle, writeBundle } from "../../public/js/format/bundle.js";
@@ -86,15 +86,20 @@ async function openAdd(page) {
   await expect(box(page)).toBeVisible();
 }
 
-/** Open the page with the bundle file and, from the list, the bundle's card through its group's edit the bundle, giving the group, the card and the levels' ids in the file's order. */
+const bundleCard = (page) => page.locator("#bundleCard");
+/** The save of the File row on the bundle's card. */
+const cardSave = (page) =>
+  bundleCard(page)
+    .getByRole("group", { name: "File", exact: true })
+    .getByRole("button", { name: "save the bundle" });
+
+/** Open the page with the bundle file and, from the list, stand the bundle's card through its group's edit the bundle, giving the group, the card and the levels' ids in the file's order. */
 async function carded(page) {
   await openedBundle(page);
   await toList(page);
   const fold = group(page);
-  await onBar(fold, "edit the bundle").click();
-  const card = fold.locator(".card");
-  await expect(card).toBeVisible();
-  return { fold, card, ids: (await made(page)).map((d) => d.id) };
+  await toBundle(page, fold);
+  return { fold, card: bundleCard(page), ids: (await made(page)).map((d) => d.id) };
 }
 
 test("a bundle file opens its levels as drafts marked saved and gathered into a bundle, the first shown, with one toast", async ({
@@ -537,34 +542,44 @@ test("the box for a level in a bundle is worded as a move, says which bundle it 
   expect(errors).toEqual([]);
 });
 
-test("edit the bundle, on the bar under a group's heading, opens the bundle's card under the bar and above its levels, whose fields write the bundle the bar's save then writes, and puts it away again", async ({
+test("edit the bundle, on the bar under a group's heading, stands the bundle's card, which reads in the Level card's order with the bundle's save in its File row, and whose fields write the bundle that save then writes", async ({
   page,
 }) => {
   const errors = trackErrors(page);
   await openedBundle(page);
   await toList(page);
   const fold = group(page);
-  // by its attribute, since nothing of a folded group but its heading is found by a role
-  const opener = fold.locator(".bar button[aria-expanded]");
-  const card = fold.locator(".card");
-  // the bar stands directly under the heading, which holds no button of its own
+  const opener = onBar(fold, "edit the bundle");
+  const card = bundleCard(page);
+  // the bar stands directly under the heading, which holds no button of its own, and over the levels
   await expect(fold.locator("summary + .bar button")).toHaveText([
     "save the bundle",
     "edit the bundle",
   ]);
   await expect(fold.locator("summary button")).toHaveCount(0);
+  await expect(fold.locator(".bar + .members .tile")).toHaveCount(3);
   await expect(opener).toHaveAttribute(
     "title",
     "Set the bundle's title, author and notes and the order of its levels, or take it apart",
   );
-  await expect(opener).toHaveAttribute("aria-expanded", "false");
-  await expect(opener).toHaveAttribute("aria-controls", await card.getAttribute("id"));
+  // the opener unfolds nothing, so it says nothing of a fold
+  await expect(opener).not.toHaveAttribute("aria-expanded");
   await expect(card).toBeHidden();
   await opener.click();
   await expect(card).toBeVisible();
-  await expect(opener).toHaveAttribute("aria-expanded", "true");
-  await expect(fold.locator(".bar + .card + .members .tile")).toHaveCount(3);
+  await expect(fold).toBeHidden();
   await expect(card.locator("h3")).toHaveText("Bundle");
+  await expect(
+    card.locator(
+      "h3 + label:has(.title) + .state + .row.named + label:has(.author) + label:has(.notes) + .order + .levels + .row.last",
+    ),
+  ).toHaveCount(1);
+  const save = cardSave(page);
+  await expect(save).toHaveAttribute(
+    "title",
+    "Save the bundle, every level of it in order, as one file",
+  );
+  await expect(save).not.toHaveClass(/unsaved/);
   await expect(card.locator(".title")).toHaveValue("Spiral campaign");
   await expect(card.locator(".author")).toHaveValue("Ada");
   await expect(card.locator(".notes")).toHaveValue("Three up the wall.");
@@ -578,6 +593,7 @@ test("edit the bundle, on the bar under a group's heading, opens the bundle's ca
   await expect(line).toHaveText("3 levels · saved to a file");
   await amended(page, { notes: "Up the wall." });
   await expect(line).toHaveText("3 levels · 1 not saved to a file");
+  await expect(save).toHaveClass(/unsaved/);
   await card.locator(".title").fill("Spiral set");
   await expect(fold.locator("summary .name")).toHaveText("Spiral set");
   await card.locator(".author").fill("Grace");
@@ -588,7 +604,6 @@ test("edit the bundle, on the bar under a group's heading, opens the bundle's ca
     author: "Grace",
     notes: "Four up the wall.",
   });
-  const save = onBar(fold, "save the bundle");
   await expect(save).toBeEnabled();
   const out = await saved(page, save);
   expect(out.name).toBe("spiral-set.kula-bundle.json");
@@ -599,22 +614,9 @@ test("edit the bundle, on the bar under a group's heading, opens the bundle's ca
     notes: "Four up the wall.",
   });
   expect(back.bundle.levels.map((p) => p.title)).toEqual(["Spiral 1", "Spiral 2", "Spiral 3"]);
-  // pressed again, the card goes and the group stays open
-  await opener.click();
-  await expect(card).toBeHidden();
-  await expect(opener).toHaveAttribute("aria-expanded", "false");
-  expect(await isOpen(fold)).toBe(true);
-  // closing the group puts the card away, and it stays away when the group opens again
-  await opener.click();
-  await expect(card).toBeVisible();
-  await fold.locator("summary").click();
-  await expect.poll(() => isOpen(fold)).toBe(false);
-  await expect(opener).toHaveAttribute("aria-expanded", "false");
-  await expect(card).toHaveAttribute("hidden", "");
-  await fold.locator("summary").click();
-  await expect.poll(() => isOpen(fold)).toBe(true);
-  await expect(opener).toHaveAttribute("aria-expanded", "false");
-  await expect(card).toBeHidden();
+  // the save marks every level saved, which the card's line and the button's dot follow
+  await expect(line).toHaveText("3 levels · saved to a file");
+  await expect(save).not.toHaveClass(/unsaved/);
   expect(errors).toEqual([]);
 });
 
@@ -655,8 +657,13 @@ test("take out, on the card's row and on the Level card, leaves the level among 
   page,
 }) => {
   const errors = trackErrors(page);
-  const { fold, card, ids } = await carded(page);
+  await openedBundle(page);
+  await toList(page);
   await page.locator("#draftSort").selectOption("title");
+  const fold = group(page);
+  await toBundle(page, fold);
+  const card = bundleCard(page);
+  const ids = (await made(page)).map((d) => d.id);
   const rows = card.locator(".levels li");
   await rows.nth(1).locator('[data-act="out"]').click();
   await expect(rows.locator(".name")).toHaveText(["Spiral 1", "Spiral 3"]);
@@ -666,9 +673,9 @@ test("take out, on the card's row and on the Level card, leaves the level among 
   await expect(page.locator("#say")).toHaveText("Took Spiral 2 out of Spiral campaign.");
   // the Level card's button takes the shown level out and gives way to add to a bundle…
   await expect(page.locator("#draftPlace")).toHaveText("Spiral campaign · level 1 of 2");
+  await toList(page);
   await toCard(page);
   await page.locator("#draftUnbundle").click();
-  await expect(rows.locator(".name")).toHaveText(["Spiral 3"]);
   await expect(loose(page)).toHaveText(["Spiral 1", "Spiral 2"]);
   await expect(page.locator("#draftUnbundle")).toBeHidden();
   await expect(page.locator("#draftPlace")).toBeHidden();
@@ -678,13 +685,18 @@ test("take out, on the card's row and on the Level card, leaves the level among 
   expect((await bundles(page))[0].levels).toEqual([ids[2]]);
   // the last level out leaves a bundle that cannot be saved, the focus on take apart
   await toList(page);
+  await toBundle(page, fold);
+  await expect(rows.locator(".name")).toHaveText(["Spiral 3"]);
+  await expect(cardSave(page)).toBeEnabled();
   await rows.nth(0).locator('[data-act="out"]').click();
   await expect(rows).toHaveCount(0);
   await expect(fold.locator("summary .n")).toHaveText("0 levels");
-  await expect(onBar(fold, "save the bundle")).toBeDisabled();
+  await expect(cardSave(page)).toBeDisabled();
   await expect(card.getByText("Levels, in play order")).toBeHidden();
   await expect(card.locator(".row button", { hasText: /^take apart/ })).toBeFocused();
   await expect(loose(page)).toHaveText(["Spiral 1", "Spiral 2", "Spiral 3"]);
+  await toList(page);
+  await expect(onBar(fold, "save the bundle")).toBeDisabled();
   expect(errors).toEqual([]);
 });
 

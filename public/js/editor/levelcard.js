@@ -210,8 +210,8 @@ function reportFold({ lines, repairs }) {
   );
 }
 
-/** A row of the card's buttons as a group named by its caption, which stands in the fields' own column. */
-function captioned(id, caption, ...controls) {
+/** A row of a card's buttons as a group named by its caption, which stands in the fields' own column. */
+export function captioned(id, caption, ...controls) {
   const row = el(
     "div",
     { className: "row named" },

@@ -5,6 +5,7 @@ import {
   KEPT,
   KEY,
   NO_ROOM,
+  arrives,
   docOf,
   flush,
   refusing,
@@ -15,19 +16,6 @@ import {
   toasts,
   written,
 } from "./drafthelpers.js";
-
-/** Another tab's copy of the store, written and announced as the browser would. */
-const arrives = (page, copy) =>
-  page.evaluate(
-    ([key, copy]) => {
-      const text = JSON.stringify(copy);
-      localStorage.setItem(key, text);
-      dispatchEvent(
-        new StorageEvent("storage", { key, newValue: text, storageArea: localStorage }),
-      );
-    },
-    [KEY, copy],
-  );
 
 test("a draft deleted here is not taken back from another tab's copy, and one changed here is kept, until the write", async ({
   page,

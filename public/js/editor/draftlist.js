@@ -1,5 +1,6 @@
 // The sidebar's "Your levels": the list of the drafts this browser holds, the
-// Level card of the shown one, and which of the two stands.
+// Level card of the shown one, the card of one bundle, and which of the three
+// stands.
 import { $, el, emit, on } from "../viewer/ui/dom.js";
 import { tiles } from "../viewer/ui/tiles.js";
 import { state } from "../viewer/state.js";
@@ -14,19 +15,23 @@ import { readLevelText } from "./files.js";
 import { pasteLevelLink } from "./importdialog.js";
 import { draftsOf, openedFrom, readLevel, readsOf } from "./intake.js";
 import { heldImage } from "./patchdialog.js";
-import {
-  buildForm,
-  bundleName,
-  nameOf,
-  saveBundle,
-  signed,
-  twice,
-  unsavedIn,
-} from "./levelcard.js";
-import { buildBundleCard } from "./bundlecard.js";
+import { buildForm, bundleName, nameOf, signed, twice, unsavedIn } from "./levelcard.js";
+import { buildBundleCard, saveButton } from "./bundlecard.js";
 import { SORTS, grouping, listed, matches, ordering, stepFrom } from "./draftsort.js";
-import { BACK, CHOSEN, LEVEL, LIST, MOVED, SHOWN, STEPPED, partAfter } from "./draftparts.js";
-import { savedWords, stateLine } from "./draftwords.js";
+import {
+  ASKED,
+  BACK,
+  BUNDLE,
+  CHOSEN,
+  GONE,
+  LEVEL,
+  LIST,
+  MOVED,
+  SHOWN,
+  STEPPED,
+  partAfter,
+} from "./draftparts.js";
+import { bundleCardName, savedWords, stateLine } from "./draftwords.js";
 import * as drafts from "./drafts.js";
 
 // --- the state and the wiring --------------------------------------------------------------
@@ -42,6 +47,9 @@ let imported = null;
 // The part that stands, and the road a draft shown here comes by, read as the change is heard.
 let part = LIST;
 let road = SHOWN;
+// The bundle whose card was asked for last, and the card's form while it stands.
+let asked = null;
+let bundleForm = null;
 
 /** The level a link to a draft names, or null where this browser has none. */
 export function levelFor(slot) {
@@ -67,6 +75,7 @@ export function wireDrafts() {
   $("draftPaste").onclick = async () =>
     openRead(await pasteLevelLink(state.lvl.theme, readLevelText));
   $("draftBack").onclick = () => turn(BACK);
+  $("bundleBack").onclick = () => turn(BACK);
   $("draftOnScreen").onclick = () => turn(CHOSEN);
   wireView();
   on("drafts-moved", (pairs) => {
@@ -179,7 +188,6 @@ function openRead(read, name) {
 const VIEW_KEY = "kula.tiles";
 const VIEWS = ["list", "tiles"];
 const NO_MATCH = "Nothing matches.";
-const SAVE_BUNDLE = "Save the bundle, every level of it in order, as one file";
 const EDIT_BUNDLE =
   "Set the bundle's title, author and notes and the order of its levels, or take it apart";
 const NOT_ALL_SAVED = ", not all saved to a file";
@@ -240,7 +248,7 @@ function wireView() {
 const grids = () => [grid, ...[...folds.values()].map((g) => g.grid)].filter(Boolean);
 
 // --- the part that stands ------------------------------------------------------------------
-const BOXES = { [LIST]: "draftList", [LEVEL]: "draftCard" };
+const BOXES = { [LIST]: "draftList", [LEVEL]: "draftCard", [BUNDLE]: "bundleCard" };
 
 const onOwn = () => state.lvl?.draft !== undefined;
 const marked = () => $("draftRows").querySelector('[aria-current="true"]');
@@ -250,25 +258,64 @@ function turn(what) {
   stand();
 }
 
-/** Show the part that stands and no other, and where that hides what held the keyboard's focus, bring the part into the sidebar's view and give it the focus. */
+/** Stand the card of bundle `id`, saying which bundle's card it is, which the card's own name leaves out. */
+function editBundle(id) {
+  asked = id;
+  turn(ASKED);
+  if (part === BUNDLE) say(`${bundleCardName(bundleName(drafts.bundle(id)))}.`);
+}
+
+/** The bundle whose card stands, the card's form built for it and brought up to date, or null where no bundle's card stands, as none does once its bundle is gone. */
+function bundled() {
+  if (part !== BUNDLE) return null;
+  const b = drafts.bundle(asked);
+  if (!b) {
+    part = partAfter(part, GONE, onOwn());
+    return null;
+  }
+  if (bundleForm?.id !== asked) {
+    bundleForm?.drop();
+    bundleForm = buildBundleCard(asked, $("bundleForm"));
+  }
+  bundleForm.sync(b);
+  return b;
+}
+
+/** Stand the part that stands, a bundle's card with its form up to date, and empty that form once the card stands no more. */
 function stand() {
+  const b = bundled();
+  swap();
+  // only after the swap, until which a control of the form may hold the focus
+  if (b || !bundleForm) return;
+  bundleForm.drop();
+  bundleForm = null;
+  $("bundleForm").textContent = "";
+}
+
+/** Show the part that stands and no other, and where that hides what held the keyboard's focus, bring the part into the sidebar's view and give it the focus. */
+function swap() {
   const active = document.activeElement;
-  let held = false;
+  let from = null;
   for (const [name, id] of Object.entries(BOXES)) {
-    held ||= name !== part && $(id).contains(active);
+    if (name !== part && $(id).contains(active)) from = name;
     $(id).hidden = name !== part;
   }
-  if (!held) return;
+  if (from === null) return;
   const box = $(BOXES[part]);
   // by its nearest edge, as a level's button is, or from its top where it is taller than the view
   const tall = box.offsetHeight > $("sidebar").clientHeight;
   box.scrollIntoView({ block: tall ? "start" : "nearest" });
-  if (part === LIST) seat().focus();
+  if (part === LIST) seat(from).focus();
   else box.focus({ preventScroll: true });
 }
 
-/** What takes the focus in the list: the level on screen, its group opened for it, else the On screen line, else the first opener. */
-function seat() {
+/** What takes the focus in the list: from a bundle's card the opener of that card, else the level on screen, either with its group opened for it, else the On screen line, else the first opener. */
+function seat(from) {
+  const g = from === BUNDLE ? folds.get(asked) : null;
+  if (g && !g.fold.hidden) {
+    g.fold.open = true;
+    return g.edit;
+  }
   unfold();
   const line = $("draftOnScreen");
   return marked() ?? (line.hidden ? $("draftNew") : line);
@@ -352,12 +399,10 @@ function layout(box, groups, loose) {
     g.fold.hidden = hidden;
     if (box.children[i] !== g.fold) box.insertBefore(g.fold, box.children[i] ?? null);
     fill(g, kept, asTiles);
-    g.form?.sync(b);
   });
   for (const [id, g] of folds)
     if (!drafts.bundle(id)) {
       g.grid?.destroy();
-      g.form?.drop();
       g.fold.remove();
       folds.delete(id);
     }
@@ -377,7 +422,7 @@ function layout(box, groups, loose) {
   if (focused) box.querySelector(`[data-id="${focused}"]`)?.focus();
 }
 
-/** The group of bundle `b`, made once and worded afresh: its title, how many levels it holds and whether all of them are saved to a file, its author, and under them the bar that saves the bundle and opens its card; opened as it comes to hold the level on screen. */
+/** The group of bundle `b`, made once and worded afresh: its title, how many levels it holds and whether all of them are saved to a file, its author, and under them the bar that saves the bundle and stands its card; opened as it comes to hold the level on screen. */
 function foldOf(b) {
   let g = folds.get(b.id);
   if (!g) {
@@ -385,35 +430,23 @@ function foldOf(b) {
     const n = el("span", { className: "n" });
     const note = el("span", { className: "sr" });
     const by = el("span", { className: "by" });
-    const save = el("button", {
-      type: "button",
-      textContent: "save the bundle",
-      title: SAVE_BUNDLE,
-    });
+    const save = saveButton(b.id);
     const edit = el("button", {
       type: "button",
       textContent: "edit the bundle",
       title: EDIT_BUNDLE,
     });
     const members = el("div", { className: "members" });
-    const card = el("div", { id: `bundleCard${b.id}`, className: "card", hidden: true });
-    edit.setAttribute("aria-expanded", "false");
-    edit.setAttribute("aria-controls", card.id);
     const fold = el(
       "details",
       { className: "bundle" },
       el("summary", {}, name, n, note, by),
-      el("div", { className: "bar" }, save, edit),
-      card,
+      el("div", { className: "bar" }, save.button, edit),
       members,
     );
     fold.dataset.bundle = b.id;
-    g = { fold, name, n, note, by, save, edit, members, card, form: null, grid: null, levels: [] };
-    save.onclick = () => saveBundle(b.id);
-    edit.onclick = () => toggleCard(g, b.id);
-    fold.addEventListener("toggle", () => {
-      if (!fold.open) putAway(g);
-    });
+    g = { fold, name, n, note, by, save, edit, members, grid: null, levels: [] };
+    edit.onclick = () => editBundle(b.id);
     folds.set(b.id, g);
   }
   const shown = state.lvl?.draft;
@@ -427,29 +460,8 @@ function foldOf(b) {
   g.note.textContent = unsaved ? NOT_ALL_SAVED : "";
   g.by.textContent = b.author ? `by ${b.author}` : "";
   g.by.hidden = !b.author;
-  g.save.disabled = !b.levels.length;
-  g.save.classList.toggle("unsaved", unsaved);
+  g.save.sync(b);
   return g;
-}
-
-/** Show the bundle's card under its bar, built on the first press, or put it away again. */
-function toggleCard(g, id) {
-  const b = drafts.bundle(id);
-  if (!b) return;
-  if (!g.card.hidden) {
-    putAway(g);
-    return;
-  }
-  g.form ??= buildBundleCard(id, g.card);
-  g.form.sync(b);
-  g.card.hidden = false;
-  g.edit.setAttribute("aria-expanded", "true");
-}
-
-/** Put the card away, as the group's closing does too, since the card lives inside the fold. */
-function putAway(g) {
-  g.card.hidden = true;
-  g.edit.setAttribute("aria-expanded", "false");
 }
 
 /** Put the levels the filter keeps inside the group, as tiles or as rows. */
@@ -532,7 +544,7 @@ function unreadRow(n) {
   );
 }
 
-/** Bring the card's form up to date with the shown draft, stand the part that stands, and empty the form once no draft is shown. */
+/** Bring the Level card's form up to date with the shown draft, stand the part that stands, and empty the form once no draft is shown. */
 function card(id, d) {
   const box = $("draftForm");
   if (d) {

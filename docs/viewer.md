@@ -197,19 +197,23 @@ The sidebar's "Your levels", after the worlds, lists the levels of your own this
 
 The editor loads only when it is wanted, so a plain visit loads none of its code ("Loading the editor and play mode" below).
 
-Under its heading the section shows one thing at a time: the list of your levels, or the Level card of the level of your own on screen.
+Under its heading the section shows one thing at a time: the list of your levels, the Level card of the level of your own on screen, or the card of one bundle.
 
-The part that does not stand is hidden whole, out of the Tab order and of what a screen reader reads.
+The parts that do not stand are hidden whole, out of the Tab order and of what a screen reader reads.
 
 The sentence that closes the section stays under whichever part stands.
 
 A level of your own coming on screen stands its card, whether by its tile or row, `new level`, `copy this level`, a file, a link, the browser's Back or Forward or the key `w`.
 
-A level that is not your own coming on screen, a level of the game, one that came by its link or a community level, stands the list.
+A level that is not your own coming on screen, a level of the game, one that came by its link or a community level, stands the list where a Level card stood.
 
-The card's first line is the way back, `your levels` behind a chevron pointing back, named `Back to your levels` for a screen reader, which stands the list.
+`edit the bundle` on a bundle's bar stands that bundle's card, whatever level is on screen.
 
-The card keeps its heading, under the way back.
+A bundle's card is about no level, so it stays while a level that is not your own comes on screen, and gives way to the Level card of a level of your own that does.
+
+Either card's first line is the way back, `your levels` behind a chevron pointing back, named `Back to your levels` for a screen reader, which stands the list.
+
+Either card keeps its heading, `Level` or `Bundle`, under the way back.
 
 While the list stands with a level of your own on screen, its first line, above `new level`, is the On screen line, which reads `On screen` and the level's title before a chevron pointing on and stands that level's card.
 
@@ -217,21 +221,29 @@ Pressing the tile or row of the level already on screen stands its card too.
 
 An edit, a save, another tab's change to the level on screen, a change of disc and a level moved to a new number leave whichever part stood.
 
-A level deleted, here or in another tab, gives way to the disc's level, so the list stands.
+A change to a bundle or to its levels, here or in another tab, leaves whichever part stood too, that bundle's card brought up to date where it stands.
 
-When the list and the card change places and the one hidden held the keyboard's focus, the focus goes to the one that then stands, and otherwise it stays where it was.
+A level deleted, here or in another tab, gives way to the disc's level, so the list stands in its card's place.
 
-On the card the focus goes to the card itself, a group named by its heading that takes the focus by script alone, so Enter and Space press nothing there and Tab goes on to the way back.
+A bundle taken apart, here or in another tab, gives the place of its card to the list.
+
+When two parts change places and the one hidden held the keyboard's focus, the focus goes to the one that then stands, and otherwise it stays where it was.
+
+On either card the focus goes to the card itself, a group named by its heading that takes the focus by script alone, so Enter and Space press nothing there and Tab goes on to the way back.
+
+A bundle's card is named `Bundle` whichever bundle it is, so `edit the bundle` also has the page say `Spiral campaign, the bundle's card.` to a screen reader.
 
 In the list the focus goes to the tile or row of the level on screen, its bundle's group opened for it, to the On screen line where the filter hides that level, and to `new level` where no level of your own is on screen.
+
+From a bundle's card the focus goes to that bundle's `edit the bundle` instead, its group opened for it, unless the bundle is gone or the filter hides its group.
 
 On the same condition and no other the sidebar scrolls to show the part that then stands, by its nearest edge as for a level's button, or from its top where the part is taller than the sidebar.
 
 So a press on a tile, on `new level` or on an opener whose box has closed takes the keyboard and the sidebar's view to the card, while the key `w` pressed on the map, Back, Forward and a link leave both where they were.
 
-The browser's Back goes from level to level, since the list and the card changing places adds no entry to the history.
+The browser's Back goes from level to level, since two parts changing places adds no entry to the history.
 
-Which part stands is in no link and is not kept across visits, since it follows the level on screen.
+Which part stands is in no link and is not kept across visits, so a visit opens on the Level card of a level of your own and on the list under any other level.
 
 `new level` makes a level of one plain block and a start in the world on screen and opens it editing, and `copy this level` makes one out of the level on screen, a shipped level as the game loads it and a level that came by its link or from the community levels as its own document, its author and notes kept; either is a draft at once, drawn as the game would load it.
 
@@ -267,7 +279,7 @@ The filter narrows what the two keys step through as it narrows the list.
 
 From a level of your own the filter hides, `]` goes to the first level listed and `[` to the last.
 
-A step keeps the part that stands: the list stays, and a level's card gives way to the card of the level stepped to.
+A step keeps the part that stands: the list and a bundle's card stay, and a level's card gives way to the card of the level stepped to.
 
 While the list stands, the level stepped to has its tile or row brought into the sidebar's view, as a level of the game has its button.
 
@@ -333,6 +345,8 @@ The button wears the dot the count wears.
 
 It is greyed while the bundle holds no level, since a bundle file with no level would open as nothing.
 
+The bundle's card saves the bundle too, by a button of the same words in a row captioned File, filled there as the Level card's `save as .json` is, with the same dot and greyed on the same condition.
+
 `open a file…`, under `new level`, opens either file, or a level file from elsewhere, read for what it holds rather than by its name, as a new draft, saying what it had to repair, and a bundle file as new levels of your own gathered into a bundle.
 
 It takes one of the game's packs too, which asks which of its levels to open and opens it in the world on screen, since a pack does not say which world it is from, and a disc image, which asks for the pack and the level and opens it in the world the map lists the level under, named as the disc its boot line names names it, or as the disc the map shows where it names none of the three.
@@ -349,15 +363,15 @@ On a level that is in a bundle the button reads `move to another bundle…`, and
 
 The Bundle row of such a level opens on the bundle's title and the level's place in it, `Spiral campaign · level 2 of 3`, over `take out` and `move to another bundle…`.
 
-The bar's `edit the bundle` opens the bundle's card directly under the bar, above the bundle's levels, and pressed again puts it away.
+The bar's `edit the bundle` stands the bundle's card in the list's place, as a level's tile stands the Level card.
 
-The card reads in the Level card's order: the bundle's title, a line of state under it, its author and notes, then its levels in play order under the caption `Levels, in play order`, each row opening on the level's place before its name, to move up or down or take out, and last `take apart`, which forgets the bundle and leaves its levels among your levels.
+The card reads in the Level card's order: the bundle's title, a line of state under it, the File row, its author and notes, then its levels in play order under the caption `Levels, in play order`, each row opening on the level's place before its name, to move up or down or take out, and last `take apart`, which forgets the bundle and leaves its levels among your levels.
 
 The line of state says how many levels the bundle holds and how many of them are not saved to a file, counted as the heading's dot counts them, `3 levels · 1 not saved to a file`, or `3 levels · saved to a file` where none is, and the count alone for a bundle with no level.
 
 `take apart` stands alone at the far end of a row of its own between two thin rules, as wide as the `take apart?` it reads while it asks to be pressed again, as the Level card's `delete` does.
 
-Folding the group puts the card away too, since the card stands inside it.
+`take apart` leaves the keyboard on `new level`, in the list that stands once the bundle is gone.
 
 Your levels stay in this browser, written a moment after each change, and travel only as a file or as a link that carries one whole; a browser that cannot keep them says so.
 
@@ -706,7 +720,7 @@ The partials are named for what they hold, and the page links them in this order
 - `10-base.css` holds the tokens, the resets, the body, `.sr` and `.mono`, which any surface may wear, and the frame the sidebar and the map stand in.
 - `20-sidebar.css` holds the sidebar: its head, its sections, whose class is `.panel`, the small button of a heading and the link-like button, which the count line and the level line's notes wear too, the worlds and their levels, the folds, the switches, the keys' caps, the slice, the legend and the foot.
 - `25-search.css` holds the search box, whose wrapper's class, `.field`, the rows of the panel's form and the fields of the import picker and of the paste, share and bundle boxes wear too, the scope bar, whose look the release's buttons and the palette's tabs wear, the count line and the results.
-- `27-yours.css` holds Your levels: the On screen line, a level's row, a bundle with its bar, the Level card with its way back, and the tiles and the row that stands above a list and sorts and filters it, both worn by the community levels too.
+- `27-yours.css` holds Your levels: the On screen line, a level's row, a bundle with its bar, the Level card and the bundle's card with their way back, and the tiles and the row that stands above a list and sorts and filters it, both worn by the community levels too.
 - `30-map.css` holds the map and its canvas.
 - `40-readouts.css` holds the readout, the corner with its buttons and the compass, the tip and the toasts.
 - `50-panels.css` holds the panel, which a click on a block opens, with its form, and the tags.

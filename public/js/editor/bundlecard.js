@@ -1,15 +1,40 @@
-// The bundle's card, under the bar of its group among your levels: the form
-// that sets the bundle's title, author and notes and the order of its levels,
-// takes a level out or takes the bundle apart.
+// The bundle's card: the form that sets the bundle's title, author and notes
+// and the order of its levels, saves the bundle, takes a level out or takes
+// the bundle apart, and the button that saves a bundle wherever it stands.
 import { $, el } from "../viewer/ui/dom.js";
 import { say } from "../viewer/chrome/a11y.js";
 import { TEXT_MOST, TITLE_MOST } from "../format/project.js";
 import { UNTITLED_BUNDLE } from "../format/bundle.js";
-import { bundleName, field, nameOf, some, twice, unsavedIn } from "./levelcard.js";
+import {
+  bundleName,
+  captioned,
+  field,
+  nameOf,
+  saveBundle,
+  some,
+  twice,
+  unsavedIn,
+} from "./levelcard.js";
 import { bundleLine } from "./draftwords.js";
 import * as drafts from "./drafts.js";
 
+const SAVE = "Save the bundle, every level of it in order, as one file";
+
 const levelName = (l) => nameOf(drafts.get(l).doc);
+
+// --- the save ------------------------------------------------------------------------------
+/** A button that saves bundle `id`, with what brings it up to date: greyed while the bundle holds no level, and wearing the dot while a level of it is not saved to a file. */
+export function saveButton(id) {
+  const button = el("button", { type: "button", textContent: "save the bundle", title: SAVE });
+  button.onclick = () => saveBundle(id);
+  return {
+    button,
+    sync(b) {
+      button.disabled = !b.levels.length;
+      button.classList.toggle("unsaved", unsavedIn(b) > 0);
+    },
+  };
+}
 
 // --- the form ------------------------------------------------------------------------------
 /** The card's form for bundle `id` in `box`. */
@@ -49,8 +74,9 @@ export function buildBundleCard(id, box) {
   });
   typed(notes, "notes");
   const state = el("p", { className: "state" });
+  const save = saveButton(id);
   const caption = el("p", {
-    id: `bundleOrder${id}`,
+    id: "bundleOrder",
     className: "order",
     textContent: "Levels, in play order",
   });
@@ -62,17 +88,18 @@ export function buildBundleCard(id, box) {
     const b = drafts.bundle(id);
     if (!b) return;
     const n = b.levels.length;
-    $("draftNew").focus();
     drafts.removeBundle(id);
+    $("draftNew").focus();
     say(
       `Took ${bundleName(b)} apart${n ? `, leaving its ${some(n, "level")} among your levels` : ""}.`,
     );
   });
 
   box.append(
-    el("h3", { textContent: "Bundle" }),
+    el("h3", { id: "bundleCardHeading", textContent: "Bundle" }),
     field("Title", title),
     state,
+    captioned("bundleFileCaption", "File", save.button),
     field("Author", author),
     field("Notes", notes),
     caption,
@@ -84,11 +111,13 @@ export function buildBundleCard(id, box) {
     if (document.activeElement !== control) control.value = value;
   };
   return {
+    id,
     sync(b) {
       set(title, b.title);
       set(author, b.author);
       set(notes, b.notes);
       state.textContent = bundleLine(b.levels.length, unsavedIn(b));
+      save.sync(b);
       caption.hidden = !b.levels.length;
       list(levels, id, b);
     },

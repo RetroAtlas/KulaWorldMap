@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  bundleCardName,
   bundleLine,
   placeLine,
   playsLine,
@@ -61,4 +62,9 @@ test("a bundle whose levels are all saved to a file says so, and a bundle with n
   assert.equal(bundleLine(3, 0), "3 levels · saved to a file");
   assert.equal(bundleLine(1, 0), "1 level · saved to a file");
   assert.equal(bundleLine(0, 0), "0 levels");
+});
+
+test("a bundle's card is named by the bundle's title, then what the card is", () => {
+  assert.equal(bundleCardName("Spiral campaign"), "Spiral campaign, the bundle's card");
+  assert.equal(bundleCardName("Untitled bundle"), "Untitled bundle, the bundle's card");
 });

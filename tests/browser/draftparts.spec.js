@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { settle, trackErrors } from "./helpers.js";
-import { EDIT, KEY, shown } from "./drafthelpers.js";
+import { EDIT, KEY, arrives, shown, stored, toBundle } from "./drafthelpers.js";
 import { blank, setMeta } from "../../public/js/format/project.js";
 
 const own = (id) => `/#DRAFT/${id}/45,35/fit/33`;
+const SPIRAL = { title: "Spiral", author: "", notes: "", levels: [2, 3], updated: 1 };
 
 /** Open the map on `hash` with levels of your own kept under these titles, numbered from one. */
 async function kept(page, titles, { bundles = {}, hash = EDIT } = {}) {
@@ -31,6 +32,11 @@ const tile = (page, title) => tiles(page).filter({ hasText: title });
 const current = (page) => page.locator('#draftRows .tile[aria-current="true"]');
 const title = (page) => page.locator("#chipLine b");
 const scrolled = (page) => page.locator("#sidebar").evaluate((side) => side.scrollTop);
+const group = (page) => page.locator("#draftRows details.bundle");
+const bundleCard = (page) => page.locator("#bundleCard");
+const isOpen = (fold) => fold.evaluate((d) => d.open);
+/** Show the level a link names, as a link followed in the tab does. */
+const follow = (page, hash) => page.evaluate((hash) => (location.hash = hash), hash);
 
 test("a level of your own coming on screen stands its card in the list's place, and the card's way back stands the list with the keyboard on the level's tile", async ({
   page,
@@ -143,14 +149,12 @@ test("the way back opens the group of a bundled level for its tile, and gives th
   page,
 }) => {
   const errors = trackErrors(page);
-  const bundles = { 4: { title: "Spiral", author: "", notes: "", levels: [2, 3], updated: 1 } };
-  await kept(page, ["Alpha", "Beta", "Gamma"], { bundles, hash: own(3) });
-  const group = page.locator("#draftRows details.bundle");
+  await kept(page, ["Alpha", "Beta", "Gamma"], { bundles: { 4: SPIRAL }, hash: own(3) });
   await expect(card(page)).toBeVisible();
   // folded behind the card, as a visitor may have left it before the level came on screen
-  await group.evaluate((fold) => (fold.open = false));
+  await group(page).evaluate((fold) => (fold.open = false));
   await back(page).click();
-  expect(await group.evaluate((fold) => fold.open)).toBe(true);
+  expect(await isOpen(group(page))).toBe(true);
   await expect(current(page)).toBeFocused();
   await expect(current(page).locator(".name")).toHaveText("Gamma");
   await page.locator("#draftFilter").fill("alpha");
@@ -190,5 +194,98 @@ test("the browser's Back goes from level to level whatever part stood, and stand
   await expect(list(page)).toBeHidden();
   await expect(page.locator("#cv")).toBeFocused();
   expect(await scrolled(page)).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test("edit the bundle stands the bundle's card in the list's place and says which bundle's card it is, and the card's way back stands the list with the keyboard on edit the bundle, or where it goes with no bundle once the filter hides the group", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await kept(page, ["Alpha", "Beta", "Gamma"], { bundles: { 4: SPIRAL } });
+  const opener = group(page).locator(".bar").getByRole("button", { name: "edit the bundle" });
+  await group(page).locator("summary").click();
+  await opener.click();
+  await expect(bundleCard(page)).toBeVisible();
+  await expect(list(page)).toBeHidden();
+  await expect(card(page)).toBeHidden();
+  await expect(page.locator("#yoursFold > p.sub")).toBeVisible();
+  await expect(page.getByRole("group", { name: "Bundle", exact: true })).toHaveId("bundleCard");
+  await expect(bundleCard(page)).toBeFocused();
+  await expect(page.locator("#say")).toHaveText("Spiral, the bundle's card.");
+  await expect(bundleCard(page).locator(":scope > :first-child")).toHaveId("bundleBack");
+  await expect(bundleCard(page).locator(".title")).toHaveValue("Spiral");
+  const way = bundleCard(page).getByRole("button", { name: "Back to your levels", exact: true });
+  await expect(way).toHaveText("your levels");
+  // folded behind the card
+  await group(page).evaluate((fold) => (fold.open = false));
+  await way.click();
+  await expect(list(page)).toBeVisible();
+  await expect(bundleCard(page)).toBeHidden();
+  // the card is built for the bundle asked for, and holds nothing once it stands no more
+  await expect(page.locator("#bundleForm")).toBeEmpty();
+  expect(await isOpen(group(page))).toBe(true);
+  await expect(opener).toBeFocused();
+  // the filter keeps the group for one level, which the card then takes out
+  await page.locator("#draftFilter").fill("beta");
+  await opener.click();
+  await bundleCard(page).locator('.levels [data-act="out"]').first().click();
+  await way.click();
+  await expect(group(page)).toBeHidden();
+  await expect(page.locator("#draftNew")).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
+test("a bundle taken apart, in another tab or here, gives its card's place back to the list, and the keyboard with it where another tab took the bundle apart", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  const tower = { title: "Tower", author: "", notes: "", levels: [1], updated: 2 };
+  await kept(page, ["Alpha", "Beta", "Gamma"], { bundles: { 4: SPIRAL, 5: tower } });
+  const theirs = await stored(page);
+  delete theirs.bundles[5];
+  await group(page).nth(1).locator("summary").click();
+  await toBundle(page, group(page).nth(1));
+  await expect(bundleCard(page).locator(".title")).toHaveValue("Tower");
+  await arrives(page, theirs);
+  await expect(group(page)).toHaveCount(1);
+  await expect(list(page)).toBeVisible();
+  await expect(bundleCard(page)).toBeHidden();
+  await expect(page.locator("#bundleForm")).toBeEmpty();
+  await expect(page.locator("#draftNew")).toBeFocused();
+  await group(page).locator("summary").click();
+  await toBundle(page);
+  const apart = bundleCard(page).getByRole("button", { name: "take apart" });
+  await apart.click();
+  await apart.click();
+  await expect(group(page)).toHaveCount(0);
+  await expect(list(page)).toBeVisible();
+  await expect(bundleCard(page)).toBeHidden();
+  await expect(page.locator("#bundleForm")).toBeEmpty();
+  expect(errors).toEqual([]);
+});
+
+test("a level of your own coming on screen takes the place of a bundle's card and the keyboard from it, where a step along your levels and a level of the game leave the bundle's card standing", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await kept(page, ["Alpha", "Beta", "Gamma"], { bundles: { 4: SPIRAL }, hash: own(2) });
+  await back(page).click();
+  await toBundle(page);
+  await expect(bundleCard(page)).toBeFocused();
+  await page.keyboard.press("]");
+  await expect(title(page)).toHaveText("Gamma");
+  await expect(bundleCard(page)).toBeVisible();
+  await expect(card(page)).toBeHidden();
+  await follow(page, "#HIRO/1/45,35/fit/33");
+  await expect(title(page)).toHaveText("LEVEL 2");
+  await expect(bundleCard(page)).toBeVisible();
+  await expect(list(page)).toBeHidden();
+  await expect(bundleCard(page)).toBeFocused();
+  await follow(page, own(1).slice(1));
+  await expect(title(page)).toHaveText("Alpha");
+  await expect(card(page)).toBeVisible();
+  await expect(bundleCard(page)).toBeHidden();
+  await expect(page.locator("#draftTitle")).toHaveValue("Alpha");
+  await expect(card(page)).toBeFocused();
   expect(errors).toEqual([]);
 });

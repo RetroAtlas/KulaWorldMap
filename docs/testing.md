@@ -130,6 +130,8 @@ A tile's picture is painted from an intersection observer's callback, which the 
 
 The list of your levels and the Level card stand one at a time, so a browser test that uses the list once a level of your own is on screen brings it back through `toList` in `drafthelpers.js`, and one that then wants the card stands it through `toCard`; `settle` does neither, since which of them stands follows the level on screen.
 
+A bundle's card stands in the list's place too, which a test stands from the list through `toBundle` and leaves through `toList`.
+
 A tile of the list is not painted while the card stands in the list's place, so a test of a tile's picture brings the list back before it awaits the paint.
 
 A unit test of the simulation builds its level from the builders beside its file, `rules-level.js`, `ball-lattice.js`, `hazards-level.js` or `project-doc.js`, which also set the viewer's state from the fixtures.

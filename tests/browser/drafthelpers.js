@@ -33,6 +33,19 @@ export const stored = (page) => page.evaluate((key) => JSON.parse(localStorage.g
 /** What `pick` reads off the store once the write that waits has landed. */
 export const written = (page, pick = (s) => s) => expect.poll(async () => pick(await stored(page)));
 
+/** Another tab's copy of the store, written and announced as the browser would. */
+export const arrives = (page, copy) =>
+  page.evaluate(
+    ([key, copy]) => {
+      const text = JSON.stringify(copy);
+      localStorage.setItem(key, text);
+      dispatchEvent(
+        new StorageEvent("storage", { key, newValue: text, storageArea: localStorage }),
+      );
+    },
+    [KEY, copy],
+  );
+
 export const flush = (page) =>
   page.evaluate(async () =>
     (await import(new URL("js/editor/drafts.js", location.href).href)).flush(),
@@ -89,10 +102,10 @@ export const faced = (page, face, object) =>
     [face, object],
   );
 
-/** Bring the list of your levels back by the card's way back, where the Level card stands in its place. */
+/** Bring the list of your levels back by the way back of the card that stands in its place, the Level card or a bundle's card. */
 export async function toList(page) {
-  const back = page.locator("#draftBack");
-  if (await back.isVisible()) await back.click();
+  const back = page.locator("#draftBack:visible, #bundleBack:visible");
+  if (await back.count()) await back.click();
   await expect(page.locator("#draftList")).toBeVisible();
 }
 
@@ -101,6 +114,12 @@ export async function toCard(page) {
   const line = page.locator("#draftOnScreen");
   if (await line.isVisible()) await line.click();
   await expect(page.locator("#draftCard")).toBeVisible();
+}
+
+/** Stand the card of the bundle whose group is `fold` by edit the bundle on the group's bar, where the list stands. */
+export async function toBundle(page, fold = page.locator("#draftRows details.bundle")) {
+  await fold.locator(".bar").getByRole("button", { name: "edit the bundle" }).click();
+  await expect(page.locator("#bundleCard")).toBeVisible();
 }
 
 export const EDITOR_FILES =

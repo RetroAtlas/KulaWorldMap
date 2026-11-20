@@ -28,6 +28,8 @@ import {
   visible,
 } from "./statehelpers.js";
 
+const EDIT_BUNDLE = '#draftRows details.bundle > .bar button:has-text("edit the bundle")';
+
 export const editorStates = [
   ...on(WIDE, [
     {
@@ -72,26 +74,35 @@ export const editorStates = [
       stands: "#draftList:not([hidden]) #draftOnScreen:not([hidden]) .name:not(:empty)",
     },
     {
-      name: "a bundle unfolded in Your levels, its card open with take apart armed",
+      name: "a bundle with no level unfolded in the list of your levels",
+      ...EMPTIED,
+      async steps(page) {
+        await page.click("#draftBack");
+        await page.click("#draftRows details.bundle > summary");
+      },
+      stands: "#draftList:not([hidden]) details.bundle[open] > .bar button:disabled",
+    },
+    {
+      name: "a bundle's card, a level of the bundle not saved to a file and take apart armed",
       ...SHELF,
       link: own(3),
       async steps(page) {
         await quiet(page);
         await page.click("#draftBack");
-        await page.click("#draftRows details.bundle > .bar button[aria-expanded]");
-        await page.click('#draftRows details.bundle > .card .row button:has-text("take apart")');
+        await page.click(EDIT_BUNDLE);
+        await page.click("#bundleCard .row .far");
       },
-      stands: "#draftRows details.bundle[open] > .card .row button.warn",
+      stands: "#bundleCard:not([hidden]):has(.row .unsaved) .row .far.warn",
     },
     {
-      name: "a bundle with no level in Your levels, its card open",
+      name: "the card of a bundle with no level",
       ...EMPTIED,
       async steps(page) {
         await page.click("#draftBack");
         await page.click("#draftRows details.bundle > summary");
-        await page.click("#draftRows details.bundle > .bar button[aria-expanded]");
+        await page.click(EDIT_BUNDLE);
       },
-      stands: "#draftRows details.bundle[open]:has(> .bar button:disabled) > .card .row button",
+      stands: "#bundleCard:not([hidden]):has(.order[hidden]) .row button:disabled",
     },
     {
       name: "Your levels as a list, a bundle folded and a level that cannot be read, its removal armed",

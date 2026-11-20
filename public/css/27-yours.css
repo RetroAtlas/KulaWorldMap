@@ -302,11 +302,6 @@
   gap: 3px;
   margin: 2px 0 6px 8px;
 }
-.drafts .bundle > .card {
-  margin: 4px 0 8px 8px;
-  border-top: 1px solid var(--line);
-  padding-top: 8px;
-}
 .yours .card .order {
   margin: 6px 0 2px;
   color: var(--dim);
@@ -336,9 +331,13 @@
   overflow-wrap: anywhere;
 }
 .yours .card .levels button:disabled,
+.yours .card .row button:disabled,
 .drafts .bar button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+.yours .card .row button:disabled:hover {
+  border-color: var(--line);
 }
 .tiles {
   list-style: none;
@@ -477,6 +476,9 @@
   gap: 8px;
   margin-top: 6px;
   font-size: 12.5px;
+}
+.yours .card .named + label {
+  margin-top: 3px;
 }
 .yours .card .caption {
   flex: 0 0 52px;
