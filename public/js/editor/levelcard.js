@@ -26,7 +26,7 @@ import { slotName } from "./shipped.js";
 import { readWith } from "./intake.js";
 import { openPatchDialog } from "./patchdialog.js";
 import { edit as step } from "./trail.js";
-import { placeLine, playsLine, stateLine } from "./draftwords.js";
+import { bundleCardName, placeWords, playsLine, stateLine } from "./draftwords.js";
 import * as drafts from "./drafts.js";
 import { TYPE } from "../format/lattice.js";
 
@@ -223,8 +223,8 @@ export function captioned(id, caption, ...controls) {
   return row;
 }
 
-/** The card's form for draft `id` in `box`, with the reader's report on it, if any, and `open`, which shows a draft the form makes. */
-export function buildForm(id, box, { imported, open }) {
+/** The card's form for draft `id` in `box`, with the reader's report on it, if any, `open`, which shows a draft the form makes, and `showBundle`, which stands a bundle's card. */
+export function buildForm(id, box, { imported, open, showBundle }) {
   box.textContent = "";
   const edit = (meta, label, merge = false) => {
     const d = drafts.get(id);
@@ -367,7 +367,24 @@ export function buildForm(id, box, { imported, open }) {
   });
   share.onclick = () => shareLevel(id, () => saveAs(id, false));
 
-  const place = el("span", { id: "draftPlace", className: "place", hidden: true });
+  const inBundle = el("button", {
+    id: "draftInBundle",
+    className: "linkish",
+    type: "button",
+    title: "Show the bundle's card",
+  });
+  inBundle.onclick = () => {
+    const b = bundleOf(id);
+    if (b) showBundle(b.id);
+  };
+  const placed = el("span");
+  const place = el(
+    "span",
+    { id: "draftPlace", className: "place", hidden: true },
+    inBundle,
+    " · ",
+    placed,
+  );
   const toBundle = el("button", {
     id: "draftBundle",
     className: "quiet",
@@ -480,9 +497,11 @@ export function buildForm(id, box, { imported, open }) {
       toBundle.title = words.tip;
       unbundle.hidden = !b;
       place.hidden = !b;
-      place.textContent = b
-        ? placeLine(bundleName(b), b.levels.indexOf(id) + 1, b.levels.length)
-        : "";
+      if (b) {
+        inBundle.textContent = bundleName(b);
+        inBundle.setAttribute("aria-label", bundleCardName(bundleName(b)));
+        placed.textContent = placeWords(b.levels.indexOf(id) + 1, b.levels.length);
+      }
     },
     wrote() {
       note.hidden = false;

@@ -110,7 +110,7 @@ function show(id, doc, opts, by = SHOWN) {
   road = SHOWN;
 }
 
-/** Show draft `id` as a press on its tile or row does, which stands its card where it was on screen already too. */
+/** Show draft `id` as a press on its tile, its row or its name on a bundle's card does, which stands its card where it was on screen already too. */
 function choose(id) {
   show(id, drafts.get(id).doc, { push: true });
   turn(CHOSEN);
@@ -275,9 +275,9 @@ function bundled() {
   }
   if (bundleForm?.id !== asked) {
     bundleForm?.drop();
-    bundleForm = buildBundleCard(asked, $("bundleForm"));
+    bundleForm = buildBundleCard(asked, $("bundleForm"), choose);
   }
-  bundleForm.sync(b);
+  bundleForm.sync(b, state.lvl?.draft);
   return b;
 }
 
@@ -551,7 +551,7 @@ function card(id, d) {
     if (form?.id !== id) {
       form?.drop();
       if (imported && imported.id !== id) imported = null;
-      form = buildForm(id, box, { imported, open });
+      form = buildForm(id, box, { imported, open, showBundle: editBundle });
     }
     form.sync(d);
   }

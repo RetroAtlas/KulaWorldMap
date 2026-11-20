@@ -147,7 +147,7 @@ test("a group's save the bundle writes the bundle as one file that reads back wi
       .locator("#draftCard")
       .getByRole("group", { name: "Bundle", exact: true })
       .getByRole("button"),
-  ).toHaveText(["take out", "move to another bundle…"]);
+  ).toHaveText(["Spiral campaign", "take out", "move to another bundle…"]);
   await page.locator("#draftTitle").fill("Spiral One");
   await toList(page);
   await expect(button).toHaveClass(/unsaved/);

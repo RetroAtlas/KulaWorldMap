@@ -18,10 +18,10 @@ export function playsLine(kind, hidden, clock = null) {
   return clock === null ? how : `${how} · time ${clock}`;
 }
 
-/** A level's place in its bundle: the bundle's title, then where the level stands among the bundle's levels, counted from one. */
-export const placeLine = (bundle, place, count) => `${bundle} · level ${place} of ${count}`;
+/** A level's place in its bundle: where the level stands among the bundle's levels, counted from one. */
+export const placeWords = (place, count) => `level ${place} of ${count}`;
 
-/** What names a bundle's card where the page says that it stands: the bundle's title, then what the card is. */
+/** What names a bundle's card, where the page says that it stands and on a button that leads to it: the bundle's title, then what the card is. */
 export const bundleCardName = (bundle) => `${bundle}, the bundle's card`;
 
 /** A bundle's line of state: how many levels it holds, then how many of them are not saved to a file, or that every one is; the count alone where it holds none. */

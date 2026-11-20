@@ -330,6 +330,24 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+.yours .card .levels .name[aria-current="true"] {
+  font-weight: 600;
+}
+.yours .card .row .linkish,
+.yours .card .levels .linkish {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font-size: inherit;
+  text-align: left;
+  white-space: normal;
+  /* a title on several lines leaves the row's baseline on its first */
+  vertical-align: top;
+}
+.yours .card .levels .linkish:enabled:hover {
+  color: var(--accent);
+}
 .yours .card .levels button:disabled,
 .yours .card .row button:disabled,
 .drafts .bar button:disabled {

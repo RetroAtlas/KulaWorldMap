@@ -209,6 +209,8 @@ A level that is not your own coming on screen, a level of the game, one that cam
 
 `edit the bundle` on a bundle's bar stands that bundle's card, whatever level is on screen.
 
+The bundle's title on the Level card of a level in a bundle stands that bundle's card too.
+
 A bundle's card is about no level, so it stays while a level that is not your own comes on screen, and gives way to the Level card of a level of your own that does.
 
 Either card's first line is the way back, `your levels` behind a chevron pointing back, named `Back to your levels` for a screen reader, which stands the list.
@@ -218,6 +220,8 @@ Either card keeps its heading, `Level` or `Bundle`, under the way back.
 While the list stands with a level of your own on screen, its first line, above `new level`, is the On screen line, which reads `On screen` and the level's title before a chevron pointing on and stands that level's card.
 
 Pressing the tile or row of the level already on screen stands its card too.
+
+So does pressing that level's name on the card of its bundle.
 
 An edit, a save, another tab's change to the level on screen, a change of disc and a level moved to a new number leave whichever part stood.
 
@@ -231,7 +235,7 @@ When two parts change places and the one hidden held the keyboard's focus, the f
 
 On either card the focus goes to the card itself, a group named by its heading that takes the focus by script alone, so Enter and Space press nothing there and Tab goes on to the way back.
 
-A bundle's card is named `Bundle` whichever bundle it is, so `edit the bundle` also has the page say `Spiral campaign, the bundle's card.` to a screen reader.
+A bundle's card is named `Bundle` whichever bundle it is, so whatever stands it also has the page say `Spiral campaign, the bundle's card.` to a screen reader.
 
 In the list the focus goes to the tile or row of the level on screen, its bundle's group opened for it, to the On screen line where the filter hides that level, and to `new level` where no level of your own is on screen.
 
@@ -363,9 +367,15 @@ On a level that is in a bundle the button reads `move to another bundle…`, and
 
 The Bundle row of such a level opens on the bundle's title and the level's place in it, `Spiral campaign · level 2 of 3`, over `take out` and `move to another bundle…`.
 
+The title in that line is a link-like button that stands the bundle's card, named for a screen reader by where it leads, `Spiral campaign, the bundle's card`, and the level's place after it stays plain words.
+
 The bar's `edit the bundle` stands the bundle's card in the list's place, as a level's tile stands the Level card.
 
 The card reads in the Level card's order: the bundle's title, a line of state under it, the File row, its author and notes, then its levels in play order under the caption `Levels, in play order`, each row opening on the level's place before its name, to move up or down or take out, and last `take apart`, which forgets the bundle and leaves its levels among your levels.
+
+A level's name in those rows is a link-like button that shows that level, and so stands its Level card.
+
+The name of the level on screen is marked as the current one, for a screen reader and by heavier letters.
 
 The line of state says how many levels the bundle holds and how many of them are not saved to a file, counted as the heading's dot counts them, `3 levels · 1 not saved to a file`, or `3 levels · saved to a file` where none is, and the count alone for a bundle with no level.
 

@@ -289,3 +289,57 @@ test("a level of your own coming on screen takes the place of a bundle's card an
   await expect(card(page)).toBeFocused();
   expect(errors).toEqual([]);
 });
+
+test("the bundle's title on the Level card of a level in a bundle stands that bundle's card, and is named for where it leads", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await kept(page, ["Alpha", "Beta", "Gamma"], { bundles: { 4: SPIRAL }, hash: own(3) });
+  await expect(page.locator("#draftPlace")).toHaveText("Spiral · level 2 of 2");
+  // the title alone is the button, and the level's place stays words
+  await expect(page.locator("#draftPlace button")).toHaveText(["Spiral"]);
+  const link = card(page).getByRole("button", { name: "Spiral, the bundle's card", exact: true });
+  await expect(link).toHaveText("Spiral");
+  await link.click();
+  await expect(bundleCard(page)).toBeVisible();
+  await expect(card(page)).toBeHidden();
+  await expect(list(page)).toBeHidden();
+  await expect(bundleCard(page).locator(".title")).toHaveValue("Spiral");
+  await expect(bundleCard(page)).toBeFocused();
+  await expect(page.locator("#say")).toHaveText("Spiral, the bundle's card.");
+  expect(errors).toEqual([]);
+});
+
+test("a level's name on the bundle's card shows that level and stands its card, also where the level is on screen already, and the name of the level on screen is the current one", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await kept(page, ["Alpha", "Beta", "Gamma"], { bundles: { 4: SPIRAL }, hash: own(2) });
+  await back(page).click();
+  await toBundle(page);
+  const marked = bundleCard(page).locator('.levels .name[aria-current="true"]');
+  const name = (title) => bundleCard(page).getByRole("button", { name: title, exact: true });
+  await expect(marked).toHaveText(["Beta"]);
+  await name("Gamma").click();
+  await expect(title(page)).toHaveText("Gamma");
+  await expect(card(page)).toBeVisible();
+  await expect(bundleCard(page)).toBeHidden();
+  await expect(page.locator("#draftTitle")).toHaveValue("Gamma");
+  await expect(card(page)).toBeFocused();
+  await back(page).click();
+  await toBundle(page);
+  await expect(marked).toHaveText(["Gamma"]);
+  // a step moves the mark and leaves the keyboard on the name it was on
+  await name("Gamma").focus();
+  await page.keyboard.press("[");
+  await expect(title(page)).toHaveText("Beta");
+  await expect(marked).toHaveText(["Beta"]);
+  await expect(name("Gamma")).toBeFocused();
+  // the level already on screen comes on screen no more, and its name stands its card all the same
+  await name("Beta").click();
+  await expect(card(page)).toBeVisible();
+  await expect(bundleCard(page)).toBeHidden();
+  await expect(page.locator("#draftTitle")).toHaveValue("Beta");
+  await expect(card(page)).toBeFocused();
+  expect(errors).toEqual([]);
+});

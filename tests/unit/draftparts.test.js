@@ -25,7 +25,7 @@ test("a step along the list to another level of your own keeps what stood", () =
   assert.deepEqual(after(STEPPED, true), [LIST, LEVEL, BUNDLE]);
 });
 
-test("the level on screen chosen again in the list stands its card", () => {
+test("the level on screen chosen again, in the list or on a bundle's card, stands its card", () => {
   assert.deepEqual(after(CHOSEN, true), [LEVEL, LEVEL, LEVEL]);
 });
 

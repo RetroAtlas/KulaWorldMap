@@ -37,8 +37,8 @@ export function saveButton(id) {
 }
 
 // --- the form ------------------------------------------------------------------------------
-/** The card's form for bundle `id` in `box`. */
-export function buildBundleCard(id, box) {
+/** The card's form for bundle `id` in `box`, with `choose`, which shows a level of the bundle. */
+export function buildBundleCard(id, box, choose) {
   box.textContent = "";
   /** Typing into `control` writes `key` of the bundle. */
   const typed = (control, key) => {
@@ -112,22 +112,22 @@ export function buildBundleCard(id, box) {
   };
   return {
     id,
-    sync(b) {
+    sync(b, shown) {
       set(title, b.title);
       set(author, b.author);
       set(notes, b.notes);
       state.textContent = bundleLine(b.levels.length, unsavedIn(b));
       save.sync(b);
       caption.hidden = !b.levels.length;
-      list(levels, id, b);
+      list(levels, id, b, shown, choose);
     },
     drop: disarm,
   };
 }
 
 // --- the levels in order -------------------------------------------------------------------
-/** The rows for the levels in play order, built afresh, the keyboard kept on the row it was on. */
-function list(ol, id, b) {
+/** The rows for the levels in play order, built afresh, the name of the level `shown` on screen marked as the current one and the keyboard kept on the row it was on. */
+function list(ol, id, b, shown, choose) {
   const active = document.activeElement;
   const was = ol.contains(active)
     ? {
@@ -136,12 +136,22 @@ function list(ol, id, b) {
         at: [...ol.children].indexOf(active.closest("li")),
       }
     : null;
-  ol.replaceChildren(...b.levels.map((l, i) => row(id, l, i, b.levels.length)));
+  ol.replaceChildren(
+    ...b.levels.map((l, i) => row(id, l, i, b.levels.length, l === shown, choose)),
+  );
   if (was) refocus(ol, was);
 }
 
-function row(id, l, i, n) {
+function row(id, l, i, n, current, choose) {
   const name = levelName(l);
+  const link = el("button", {
+    className: "name linkish",
+    type: "button",
+    textContent: name,
+    title: `Show ${name}`,
+  });
+  if (current) link.setAttribute("aria-current", "true");
+  link.onclick = () => choose(l);
   const button = (act, text, title, disabled) => {
     const b = el("button", { type: "button", textContent: text, title, disabled });
     b.dataset.act = act;
@@ -152,7 +162,7 @@ function row(id, l, i, n) {
     "li",
     {},
     el("span", { className: "num", textContent: String(i + 1) }),
-    el("span", { className: "name", textContent: name }),
+    link,
     button("up", "up", `Move ${name} up`, i === 0),
     button("down", "down", `Move ${name} down`, i === n - 1),
     button("out", "take out", `Take ${name} out of the bundle; the level stays`, false),
@@ -161,22 +171,21 @@ function row(id, l, i, n) {
   return li;
 }
 
-// The button pressed again where it still stands and still works, else the
-// row's other button, else the row that took a gone row's place, else what
-// follows the rows.
+// The button that held the focus where it still stands and still works, else
+// the row's first button with an act that works, else the row that took a
+// gone row's place, else what follows the rows. A level's name is the row's
+// one button with no act.
 function refocus(ol, { level, act, at }) {
+  const held = act ? `[data-act="${act}"]` : ".name";
   const li = ol.querySelector(`li[data-level="${level}"]`);
   if (li) {
-    const b = li.querySelector(`[data-act="${act}"]`);
-    (b.disabled ? li.querySelector("button:enabled") : b).focus();
+    const b = li.querySelector(held);
+    (b.disabled ? li.querySelector("[data-act]:enabled") : b).focus();
     return;
   }
   const rows = ol.children;
   const next = rows[Math.min(at, rows.length - 1)];
-  (
-    next?.querySelector(`[data-act="${act}"]`) ??
-    ol.nextElementSibling.querySelector("button:enabled")
-  )?.focus();
+  (next?.querySelector(held) ?? ol.nextElementSibling.querySelector("button:enabled"))?.focus();
 }
 
 /** Move level `l` of bundle `id` by `by` places, saying where it then stands. */

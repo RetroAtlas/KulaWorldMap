@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   bundleCardName,
   bundleLine,
-  placeLine,
+  placeWords,
   playsLine,
   savedWords,
   stateLine,
@@ -46,9 +46,9 @@ test("how a level plays leaves the time out where none is given", () => {
   assert.equal(playsLine("arcade", true, null), "hidden arcade level");
 });
 
-test("a level's place in its bundle is the bundle's title, then the level's number among the bundle's levels", () => {
-  assert.equal(placeLine("Spiral campaign", 2, 3), "Spiral campaign · level 2 of 3");
-  assert.equal(placeLine("Untitled bundle", 1, 1), "Untitled bundle · level 1 of 1");
+test("a level's place in its bundle is the level's number among the bundle's levels", () => {
+  assert.equal(placeWords(2, 3), "level 2 of 3");
+  assert.equal(placeWords(1, 1), "level 1 of 1");
 });
 
 test("a bundle's line of state is how many levels it holds, then how many of them are not saved to a file", () => {
